@@ -1,0 +1,192 @@
+Game Vision
+
+The game combines:
+- Battle Network / Duelists of Eden style combat
+- HD-2D JRPG presentation
+- Dungeon rooms that feel like real physical spaces
+
+Core Philosophy
+
+Keep gameplay logic fully 2D and grid-based.
+Fake the 3D visually through rendering techniques.
+
+This keeps:
+- combat simple
+- collision easy
+- projectiles manageable
+- performance strong
+- implementation realistic in LibGDX
+
+Rendering Approach
+
+Use:
+- pixel/stylized sprites
+- fake vertical height
+- shadows
+- Y-sorting
+- layered rendering
+- lighting and particles
+
+Entity example:
+- groundPosition (x/y on floor)
+- height (visual vertical offset)
+
+Render:
+- shadow at ground position
+- sprite slightly above based on height
+
+This creates:
+- jumping
+- hovering
+- projectile arcs
+- depth illusion
+without real 3D complexity.
+
+Environment Design
+
+Do NOT use:
+- disconnected combat boards
+- flat background images
+
+Instead:
+- build real dungeon rooms from tiles and props
+
+Examples:
+- walls
+- pillars
+- stairs
+- torches
+- decorations
+- foreground objects
+
+The combat grid should feel embedded into the room floor.
+
+Grid Visibility
+
+The floor itself defines the combat grid through:
+- stone seams
+- glowing runes
+- floor patterns
+- subtle tile edges
+
+During combat:
+- tiles glow slightly
+- movement highlights appear
+- active tiles pulse subtly
+
+The player should feel like:
+- they are fighting inside a room
+not:
+- standing on a floating game board
+
+Rendering Layers
+
+Recommended draw order:
+1. background
+2. walls
+3. floor
+4. shadows
+5. entities/projectiles
+6. foreground props
+7. lighting/effects
+8. UI
+
+Foreground props help create depth:
+- arches
+- pillars
+- hanging chains
+- cloth
+- fog
+
+Depth Sorting
+
+Sort objects by Y position so closer objects draw over farther ones.
+
+This creates:
+- natural overlap
+- “behind/in front of” feeling
+- stronger room depth illusion
+
+Lighting and Effects
+
+Strong presentation is critical.
+
+Important effects:
+- bloom
+- glow
+- torch flicker
+- particles
+- screen shake
+- hit flash
+- fog
+- projectile trails
+
+Camera Style
+
+Use a slightly angled top-down camera.
+Not fully top-down and not true isometric.
+
+References:
+- Octopath Traveler
+- Triangle Strategy
+- CrossCode
+- Children of Morta
+
+Battle Transition Concept
+
+Exploration:
+- room appears normal
+
+Battle starts:
+- doors close
+- camera shifts
+- lights intensify
+- floor glyphs glow
+- combat tiles become visible
+
+This makes combat feel like:
+- a transformation of the room
+instead of:
+- a separate arena screen
+
+Recommended LibGDX Tools
+
+- SpriteBatch
+- OrthographicCamera
+- TextureAtlas
+- TiledMap
+- ShaderProgram
+- FrameBuffer
+- ParticleEffect
+
+Suggested First Prototype
+
+Build:
+- one dungeon room
+- one player
+- one enemy
+- one projectile
+- fake height rendering
+- shadows
+- Y sorting
+- simple particles
+- battle transition
+
+Avoid:
+- real 3D
+- multiplayer
+- advanced shaders initially
+- overengineering
+
+Overall Architecture
+
+2D gameplay simulation
++
+2.5D rendering layer
++
+environment-based combat spaces
++
+heavy visual polish
+
+Goal:
+Fast readable combat with immersive atmospheric dungeon presentation.
