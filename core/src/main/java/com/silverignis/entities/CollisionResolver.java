@@ -13,17 +13,15 @@ import java.util.List;
  *   <li>Pass A: opposing projectiles overlap &rarr; both are killed (cancel),
  *       and the world-space midpoint is appended to {@code clashPositions}
  *       so the caller can spawn a VFX there.</li>
- *   <li>Pass B: projectile vs opposing entity &rarr; projectile is killed and
- *       the entity's {@code flash()} is triggered.</li>
+ *   <li>Pass B: projectile vs opposing entity &rarr; projectile is killed.
+ *       If it carries damage ({@code getDamage() > 0}) the entity takes that
+ *       damage (which also flashes); otherwise it only flashes.</li>
  * </ul>
  *
  * <p>Order matters: cancels are resolved first so a projectile that meets
  * an opposing projectile on the same frame it would have hit an entity is
- * canceled instead of dealing the hit.
- *
- * <p>Damage is intentionally not handled here yet. The caller (e.g.
- * {@code GameScreen}) is expected to cull dead projectiles after this
- * runs.
+ * canceled instead of dealing the hit. The caller (e.g. {@code GameScreen})
+ * is expected to cull dead projectiles after this runs.
  */
 public final class CollisionResolver {
 
@@ -67,12 +65,14 @@ public final class CollisionResolver {
             if (!p.isAlive()) continue;
             if (p.getTeam() == Team.PLAYER) {
                 if (enemy.isAlive() && p.getBounds().overlaps(enemy.getBounds())) {
-                    enemy.flash();
+                    if (p.getDamage() > 0) enemy.takeDamage(p.getDamage());
+                    else                   enemy.flash();
                     p.kill();
                 }
             } else {
                 if (player.isAlive() && p.getBounds().overlaps(player.getBounds())) {
-                    player.flash();
+                    if (p.getDamage() > 0) player.takeDamage(p.getDamage());
+                    else                   player.flash();
                     p.kill();
                 }
             }

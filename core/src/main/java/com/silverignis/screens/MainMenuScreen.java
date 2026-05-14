@@ -29,13 +29,12 @@ public class MainMenuScreen implements Screen {
 
         game.batch.begin();
 
-        game.font.draw(game.batch, "Welcome to Drop~!!! ", 1, 1.5f);
+        game.font.draw(game.batch, "Wake up its time to adapt and evolve!!! ", 1, 1.5f);
         game.font.draw(game.batch, "Tap anywhere to begin!", 1, 1);
         game.batch.end();
 
         if (Gdx.input.isTouched()){
             game.setScreen(new GameScreen(game));
-            dispose();
         }
     }
 

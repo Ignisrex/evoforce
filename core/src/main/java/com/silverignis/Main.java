@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
@@ -41,6 +42,13 @@ public class Main extends Game {
 
     public void render(){
         super.render();
+    }
+
+    @Override
+    public void setScreen(Screen newScreen) {
+        Screen old = getScreen();
+        super.setScreen(newScreen);
+        if (old != null) Gdx.app.postRunnable(old::dispose);
     }
 
     public void dispose(){

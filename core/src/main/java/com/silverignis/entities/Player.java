@@ -22,6 +22,7 @@ public class Player implements Collider {
     private final Sprite sprite;
     private final Battlefield battlefield;
     private int hp;
+    private final int maxHp;
 
     private final InputLock inputLock = new InputLock();
     private final HitFlash  hitFlash  = new HitFlash();
@@ -48,6 +49,7 @@ public class Player implements Collider {
         this.sprite = sprite;
         this.battlefield = battlefield;
         this.hp = hp;
+        this.maxHp = hp;
         this.basicAttackCooldown = 0.5f;
         this.timeSinceLastAttack = basicAttackCooldown; // ready to fire immediately
         this.basicAttackTexture = basicAttackTexture;
@@ -61,6 +63,7 @@ public class Player implements Collider {
     public int getCol()             { return col; }
     public int getRow()             { return row; }
     public int getHp()              { return hp; }
+    public int getMaxHp()           { return maxHp; }
     public void setHp(int hp)       { this.hp = hp; }
     public Sprite getSprite()       { return sprite; }
     public InputLock  getInputLock()  { return inputLock; }
@@ -168,6 +171,6 @@ public class Player implements Collider {
         Vector2 position = new Vector2(spawnX, spawnY);
         Vector2 velocity = new Vector2(BASIC_ATTACK_SPEED, 0f);
 
-        return new Projectile(position, velocity, projectileSprite, Team.PLAYER);
+        return new Projectile(position, velocity, projectileSprite, Team.PLAYER, 5);
     }
 }

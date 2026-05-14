@@ -15,6 +15,7 @@ import com.crashinvaders.vfx.effects.BloomEffect;
 import com.silverignis.entities.*;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.input.GameAction;
+import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillFactory;
@@ -73,6 +74,8 @@ public class PlayState implements GameScreenState {
     private final VfxManager vfxManager;
     private final BloomEffect bloomEffect;
 
+    private boolean transitionScheduled = false;
+
     public PlayState(GameScreen screen) {
         this.screen = screen;
         this.assets = new Assets();
@@ -98,6 +101,8 @@ public class PlayState implements GameScreenState {
         bloomEffect.setThreshold(0.25f);
         vfxManager.addEffect(bloomEffect);
     }
+
+    public Player getPlayer() { return player; }
 
     @Override
     public void onEnter() {}
@@ -126,9 +131,25 @@ public class PlayState implements GameScreenState {
         enemyAi();
         tickProjectiles(delta);
         combatSystem.update(delta);
+        if (checkBattleOver()) return;
         resolveCollisions();
         tickAndCullEffects(delta);
         cullDeadProjectiles();
+    }
+
+    private boolean checkBattleOver() {
+        if (transitionScheduled) return true;
+        if (enemy.isDead()) {
+            transitionScheduled = true;
+            screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.WON));
+            return true;
+        }
+        if (!player.isAlive()) {
+            transitionScheduled = true;
+            screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.LOST));
+            return true;
+        }
+        return false;
     }
 
     private void tickEntities(float delta) {
@@ -219,9 +240,9 @@ public class PlayState implements GameScreenState {
         // ── Layer 4: Entities — Y-sorted (higher Y = farther = drawn first) ─
         if (player.getVisualY() >= enemy.getVisualY()) {
             player.render(batch);
-            enemy.render(batch);
+            enemy.render(batch, screen.game.font);
         } else {
-            enemy.render(batch);
+            enemy.render(batch, screen.game.font);
             player.render(batch);
         }
 

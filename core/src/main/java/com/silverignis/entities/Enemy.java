@@ -2,6 +2,8 @@ package com.silverignis.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -13,6 +15,7 @@ import com.silverignis.util.PositionSmoother;
 public class Enemy implements Collider {
 
     private static final float BASIC_ATTACK_SPEED = 10f;
+    private static final int   BASIC_ATTACK_DAMAGE = 5;
 
     private static final float MIN_MOVE_INTERVAL = 0.5f;
     private static final float MAX_MOVE_INTERVAL = 1.5f;
@@ -33,8 +36,9 @@ public class Enemy implements Collider {
     /** Visual height above the ground plane (world units). Non-zero for jumps/floats. */
     public float visualHeight = 0f;
 
-    private final Rectangle bounds   = new Rectangle();
-    private final HitFlash  hitFlash = new HitFlash();
+    private final Rectangle   bounds   = new Rectangle();
+    private final HitFlash    hitFlash = new HitFlash();
+    private final GlyphLayout hpLayout = new GlyphLayout();
     private float freezeTimer = 0f;
     private float deathTimer  = 0f;
 
@@ -184,7 +188,7 @@ public class Enemy implements Collider {
         Vector2 position = new Vector2(spawnX, spawnY);
         Vector2 velocity = new Vector2(-BASIC_ATTACK_SPEED, 0f);
 
-        return new Projectile(position, velocity, projectileSprite, Team.ENEMY);
+        return new Projectile(position, velocity, projectileSprite, Team.ENEMY, BASIC_ATTACK_DAMAGE);
     }
 
     /** Shadow ellipse drawn at ground position before the sprite pass. */
@@ -200,7 +204,7 @@ public class Enemy implements Collider {
         batch.setColor(Color.WHITE);
     }
 
-    public void render(SpriteBatch batch) {
+    public void render(SpriteBatch batch, BitmapFont font) {
         if (isDead()) return;
 
         float pw = battlefield.getPanelWidth() * depthScale;
@@ -211,17 +215,23 @@ public class Enemy implements Collider {
             sprite.setColor(1f, 1f, 1f, alpha);
             sprite.draw(batch);
             sprite.setColor(Color.WHITE);
-            return;
+        } else if (!hitFlash.isHidden()) {
+            if (freezeTimer > 0f) sprite.setColor(FREEZE_TINT);
+            sprite.draw(batch);
+            if (freezeTimer > 0f) sprite.setColor(Color.WHITE);
         }
 
-        if (hitFlash.isHidden()) return;
+        renderHpLabel(batch, font);
+    }
 
-        if (freezeTimer > 0f) {
-            sprite.setColor(FREEZE_TINT);
-        }
-        sprite.draw(batch);
-        if (freezeTimer > 0f) {
-            sprite.setColor(Color.WHITE);
-        }
+    private void renderHpLabel(SpriteBatch batch, BitmapFont font) {
+        hpLayout.setText(font, Integer.toString(Math.max(0, hp)));
+        float x = smoother.getX() - hpLayout.width * 0.5f;
+        float y = smoother.getY() - 0.05f;
+        float alpha = isDying() ? deathTimer / DEATH_DURATION : 1f;
+        Color prev = font.getColor().cpy();
+        font.setColor(1f, 1f, 1f, alpha);
+        font.draw(batch, hpLayout, x, y);
+        font.setColor(prev);
     }
 }

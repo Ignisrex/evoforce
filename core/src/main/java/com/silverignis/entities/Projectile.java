@@ -24,15 +24,17 @@ public class Projectile implements Collider {
     private final Vector2 velocity;
     private final Sprite sprite;
     private final Team team;
+    private final int damage;
     /** Reused per call to avoid per-frame allocations. See {@link Collider#getBounds()}. */
     private final Rectangle bounds = new Rectangle();
     private boolean alive = true;
 
-    public Projectile(Vector2 position, Vector2 velocity, Sprite sprite, Team team){
+    public Projectile(Vector2 position, Vector2 velocity, Sprite sprite, Team team, int damage){
         this.position = position;
         this.velocity = velocity;
         this.sprite = sprite;
         this.team = team;
+        this.damage = damage;
         this.sprite.setPosition(position.x, position.y);
     }
 
@@ -75,4 +77,5 @@ public class Projectile implements Collider {
     public boolean isAlive()     { return alive; }
     public Vector2 getPosition() { return position; }
     public Sprite getSprite()    { return sprite; }
+    public int getDamage()       { return damage; }
 }

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(winget upgrade *)",
+      "Bash(python tools/generate_sprites_pixellab.py)",
+      "Bash(python tools/generate_dungeon_pixellab.py)",
+      "Bash(xargs grep -l \"ModelBatch\\\\|Environment\\\\|PerspectiveCamera\\\\|ModelBuilder\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\silverignis\\\\projects\\\\evoforce\\\\core\\\\src\\\\main\\\\java\\\\com\\\\silverignis\" -Recurse -Filter \"*.java\")",
+      "Bash(Select-Object FullName)",
+      "Bash(ConvertTo-Json)",
+      "Bash(./gradlew core:compileJava)",
+      "PowerShell(.\\\\gradlew.bat core:compileJava 2>&1 | Select-Object -Last 60)",
+      "PowerShell(.\\\\gradlew.bat core:compileJava; \"EXITCODE: $LASTEXITCODE\")",
+      "PowerShell(.\\\\gradlew.bat core:compileJava lwjgl3:compileJava; \"EXITCODE: $LASTEXITCODE\")",
+      "Bash(git -C \"C:/Users/silverignis/projects/evoforce\" status)",
+      "Bash(git -C \"C:/Users/silverignis/projects/evoforce\" log --oneline -10)",
+      "PowerShell(.\\\\gradlew.bat core:compileJava --console=plain 2>&1)",
+      "Bash(xargs -I {} echo \"{}\")"
+    ]
+  }
+}

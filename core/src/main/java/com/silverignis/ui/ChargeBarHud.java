@@ -8,14 +8,18 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.silverignis.skills.ChargeMeter;
 
 /**
- * A simple loading bar drawn at the top of the world. Uses a 1x1 white pixel
- * tinted with {@link SpriteBatch#setColor} so we don't need any art assets.
+ * A small loading bar drawn just above the {@link SlotsHud} in the bottom-left,
+ * gating access to the staging menu when full. Tinted via {@link SpriteBatch#setColor}
+ * on a 1x1 white pixel so we don't need any art assets.
  */
 public class ChargeBarHud {
 
-    private static final float MARGIN_X    = 1f;     // world units
-    private static final float MARGIN_TOP  = 0.4f;
-    private static final float BAR_HEIGHT  = 0.3f;
+    // Positioned to sit just above the SlotsHud column. Width matches the
+    // span of the three X/Y/B slot panels so the two HUDs read as one stack.
+    private static final float BAR_X      = 0.34f;   // world units (slot panel left edge)
+    private static final float BAR_Y      = 1.82f;   // world units (just above slot panel top)
+    private static final float BAR_WIDTH  = 2.62f;
+    private static final float BAR_HEIGHT = 0.18f;
 
     private static final Color BG    = new Color(0f, 0f, 0f, 0.6f);
     private static final Color FILL  = new Color(0.2f, 0.8f, 1f, 1f);
@@ -32,10 +36,10 @@ public class ChargeBarHud {
     }
 
     public void render(SpriteBatch batch, Viewport viewport, ChargeMeter meter) {
-        float w = viewport.getWorldWidth() - 2 * MARGIN_X;
+        float x = BAR_X;
+        float y = BAR_Y;
+        float w = BAR_WIDTH;
         float h = BAR_HEIGHT;
-        float x = MARGIN_X;
-        float y = viewport.getWorldHeight() - MARGIN_TOP - h;
 
         boolean wasDrawing = batch.isDrawing();
         if (!wasDrawing) {

@@ -12,6 +12,7 @@ import com.silverignis.state.PlayState;
 import com.silverignis.state.SkillSelectState;
 import com.silverignis.ui.ChargeBarHud;
 import com.silverignis.ui.FpsHud;
+import com.silverignis.ui.LifeBarHud;
 import com.silverignis.ui.SlotsHud;
 
 public class GameScreen implements Screen {
@@ -29,12 +30,13 @@ public class GameScreen implements Screen {
     public final SkillSlots slots = new SkillSlots();
     public final SkillCooldowns cooldowns = new SkillCooldowns();
 
-    public final ChargeMeter charge = new ChargeMeter(/* max */ 1f, /* fillRate */ 0.05f);
+    public final ChargeMeter charge = new ChargeMeter(/* max */ 1f, /* fillRate */ 0.20f);
 
     //HUDs
     private final ChargeBarHud chargeHud = new ChargeBarHud();
     private final SlotsHud slotsHud = new SlotsHud();
     private final FpsHud fpsHud = new FpsHud();
+    private final LifeBarHud lifeBarHud = new LifeBarHud();
 
     public GameScreen(Main game){
         this.game = game;
@@ -68,6 +70,7 @@ public class GameScreen implements Screen {
         game.batch.begin();
         chargeHud.render(game.batch, game.viewport, charge);
         slotsHud.render(game.batch, game.viewport, slots);
+        lifeBarHud.render(game.batch, game.viewport, playState.getPlayer());
         fpsHud.render(game.batch, game.viewport, game.font, delta);
         game.batch.end();
     }
@@ -100,6 +103,7 @@ public class GameScreen implements Screen {
         skillSelectState.dispose();
         chargeHud.dispose();
         slotsHud.dispose();
+        lifeBarHud.dispose();
         skills.dispose();
     }
 }
