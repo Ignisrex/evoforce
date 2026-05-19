@@ -93,5 +93,19 @@
     "element": "NONE",
     "cooldown": 4.0,
     "vfxTexture": "effects/aura.png"
+  },
+  {
+    "id": "wind_slash",
+    "displayName": "Wind Slash",
+    "description": "Quick wind slash. Always available.",
+    "icon": "attacks/wind_slash.png",
+    "shape": "PROJECTILE",
+    "element": "NONE",
+    "cooldown": 0.5,
+    "vfxTexture": "attacks/wind_slash.png",
+    "shapeConfig": { "movementType": "STRAIGHT", "speed": 12.0 },
+    "effects": [
+      { "type": "DAMAGE", "value": 5 }
+    ]
   }
 ]

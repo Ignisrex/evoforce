@@ -1,15 +1,15 @@
-package com.silverignis.components;
+package com.silverignis.util;
 
 /**
- * Tiny component that gates an entity's input. While locked by an "owner"
+ * Tiny helper that gates an entity's input. While locked by an "owner"
  * (typically a {@code SkillInstance} that's currently moving the entity
  * around the grid), the entity's normal input handlers should early-return
  * so they don't fight the skill for control.
  *
- * <p>The owner is stored as {@link Object} on purpose: components live in
- * the {@code components} package and shouldn't depend on
- * {@code skills.SkillInstance}. Identity comparison is the only thing
- * that matters here.
+ * <p>Lives in {@code util/} because it's a skill-agnostic leaf helper: the
+ * owner is stored as {@link Object} on purpose and identity comparison is
+ * the only thing that matters. Role components (which intentionally depend
+ * on {@code skills}) live in {@code components/} instead.
  */
 public class InputLock {
 

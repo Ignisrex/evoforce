@@ -3,6 +3,7 @@ package com.silverignis.state;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.silverignis.entities.Player;
 import com.silverignis.input.GameAction;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.skills.Skill;
@@ -34,9 +35,8 @@ public class SkillSelectState implements GameScreenState {
     @Override
     public void onEnter() {
         snapshotSlots();
-        hand = new ArrayList<>(
-            screen.skills.drawHand(HAND_SIZE, screen.cooldowns, screen.slots)
-        );
+        Player p = screen.playState.getPlayer();
+        hand = new ArrayList<>(p.getDeck().drawHand(HAND_SIZE, p.getSlots()));
         cursor = 0;
         overlay.show(hand);
     }
@@ -83,15 +83,17 @@ public class SkillSelectState implements GameScreenState {
     public void dispose() { overlay.dispose(); }
 
     private void snapshotSlots(){
+        var slots = screen.playState.getPlayer().getSlots();
         slotsSnapshot.clear();
         for(SlotKey key: SlotKey.values()){
-            slotsSnapshot.put(key, new ArrayList<>(screen.slots.get(key).view()));
+            slotsSnapshot.put(key, new ArrayList<>(slots.get(key).view()));
         }
     }
 
     private void restoreSnapshot() {
+        var slots = screen.playState.getPlayer().getSlots();
         for (SlotKey key: SlotKey.values()) {
-            ButtonSlot slot = screen.slots.get(key);
+            ButtonSlot slot = slots.get(key);
             slot.clear();
             for (Skill s : slotsSnapshot.get(key)){
                 slot.add(s);
@@ -104,7 +106,7 @@ public class SkillSelectState implements GameScreenState {
         // can't accept more. NOTE: do NOT bail when the slot is empty —
         // that's exactly when we most need to put a skill into it.
         if (hand.isEmpty()) return;
-        ButtonSlot slot = screen.slots.get(key);
+        ButtonSlot slot = screen.playState.getPlayer().getSlots().get(key);
         if (slot.isFull()) return;
 
         Skill picked = hand.remove(cursor);

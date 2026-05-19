@@ -5,104 +5,101 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-import com.silverignis.components.HitFlash;
-import com.silverignis.components.InputLock;
-import com.silverignis.util.PositionSmoother;
+import com.silverignis.components.Caster;
+import com.silverignis.components.GridPosition;
+import com.silverignis.components.Team;
+import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillDeck;
+import com.silverignis.skills.slots.SkillSlots;
+import com.silverignis.util.HitFlash;
+import com.silverignis.util.InputLock;
 
-public class Player implements Collider {
+public class Player {
 
-    private static final float BASIC_ATTACK_SPEED = 12f;
-    private static final float MOVE_SMOOTH_SPEED  = 18f;
-    private static final float HITBOX_INSET       = 0.25f;
+    private static final float MOVE_SMOOTH_SPEED = 18f;
 
-    private int col;
-    private int row;
     private final Sprite sprite;
     private final Battlefield battlefield;
     private int hp;
     private final int maxHp;
 
-    private final InputLock inputLock = new InputLock();
-    private final HitFlash  hitFlash  = new HitFlash();
+    private final HitFlash     hitFlash     = new HitFlash();
+    private final Caster       caster       = new Caster(Team.PLAYER);
+    private final GridPosition gridPosition;
 
     public float visualHeight = 0f;
 
-    /** Reused per call to avoid per-frame allocations. */
-    private final Rectangle bounds = new Rectangle();
-
-    private float timeSinceLastAttack;
-    private float basicAttackCooldown;
-    private Texture basicAttackTexture;
-
-    private final PositionSmoother smoother;
-
-    private float projectedTargetX = Float.NaN;
-    private float projectedTargetY = Float.NaN;
-    private float depthScale = 1f;
-
-    public Player(int col, int row, Sprite sprite, Battlefield battlefield, int hp,
-                  Texture basicAttackTexture) {
-        this.col = col;
-        this.row = row;
-        this.sprite = sprite;
-        this.battlefield = battlefield;
-        this.hp = hp;
-        this.maxHp = hp;
-        this.basicAttackCooldown = 0.5f;
-        this.timeSinceLastAttack = basicAttackCooldown; // ready to fire immediately
-        this.basicAttackTexture = basicAttackTexture;
-
-        this.smoother = new PositionSmoother(MOVE_SMOOTH_SPEED,
-                battlefield.tileCenterX(col), battlefield.tileCenterY(row));
+    public Player(int col, int row, Sprite sprite, Battlefield battlefield, int hp) {
+        this.sprite       = sprite;
+        this.battlefield  = battlefield;
+        this.hp           = hp;
+        this.maxHp        = hp;
+        this.gridPosition = new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED);
     }
 
-    // --- Getters / Setters ---
+    // --- Position (delegated to GridPosition) ---
 
-    public int getCol()             { return col; }
-    public int getRow()             { return row; }
-    public int getHp()              { return hp; }
-    public int getMaxHp()           { return maxHp; }
-    public void setHp(int hp)       { this.hp = hp; }
-    public Sprite getSprite()       { return sprite; }
-    public InputLock  getInputLock()  { return inputLock; }
-    public boolean    isInputLocked() { return inputLock.isLocked();}
-    public float      getVisualX()    { return smoother.getX(); }
-    public float      getVisualY()    { return smoother.getY(); }
+    public GridPosition getGridPosition() { return gridPosition; }
+    public int          getCol()          { return gridPosition.getCol(); }
+    public int          getRow()          { return gridPosition.getRow(); }
+    public float        getVisualX()      { return gridPosition.getVisualX(); }
+    public float        getVisualY()      { return gridPosition.getVisualY(); }
+    public float        getDepthScale()   { return gridPosition.getDepthScale(); }
 
-    public void setProjectedTarget(float x, float y) { projectedTargetX = x; projectedTargetY = y; }
-    public void setDepthScale(float s) { depthScale = s; }
+    public void setProjectedTarget(float x, float y) { gridPosition.setProjectedTarget(x, y); }
+    public void setDepthScale(float s)               { gridPosition.setDepthScale(s); }
 
-        public void moveUp() {
-        if(inputLock.isLocked()) return;
-        row = MathUtils.clamp(row + 1, 0, Battlefield.ROWS - 1);
+    // --- Caster role (delegated to Caster) ---
+
+    public Caster     getCaster()       { return caster; }
+    public InputLock  getInputLock()    { return caster.getInputLock(); }
+    public boolean    isInputLocked()   { return caster.getInputLock().isLocked(); }
+    public Team       getTeam()         { return caster.getTeam(); }
+    public SkillDeck  getDeck()         { return caster.getDeck(); }
+    public SkillSlots getSlots()        { return caster.getSlots(); }
+    public Skill      getBasicAttack()  { return caster.getBasicAttack(); }
+
+    // --- Entity-proper state ---
+
+    public int    getHp()         { return hp; }
+    public int    getMaxHp()      { return maxHp; }
+    public void   setHp(int hp)   { this.hp = hp; }
+    public Sprite getSprite()     { return sprite; }
+    public boolean isAlive()      { return hp > 0; }
+
+    public void moveUp() {
+        if (caster.getInputLock().isLocked()) return;
+        int newRow = MathUtils.clamp(gridPosition.getRow() + 1, 0, Battlefield.ROWS - 1);
+        gridPosition.setTile(gridPosition.getCol(), newRow);
     }
 
     public void moveDown() {
-        if(inputLock.isLocked()) return;
-        row = MathUtils.clamp(row - 1, 0, Battlefield.ROWS -1);
+        if (caster.getInputLock().isLocked()) return;
+        int newRow = MathUtils.clamp(gridPosition.getRow() - 1, 0, Battlefield.ROWS - 1);
+        gridPosition.setTile(gridPosition.getCol(), newRow);
     }
 
     public void moveLeft() {
-        if(inputLock.isLocked()) return;
-        col = MathUtils.clamp(col - 1, 0,Battlefield.COLS / 2 -1);
+        if (caster.getInputLock().isLocked()) return;
+        int newCol = MathUtils.clamp(gridPosition.getCol() - 1, 0, Battlefield.COLS / 2 - 1);
+        gridPosition.setTile(newCol, gridPosition.getRow());
     }
 
     public void moveRight() {
-        if(inputLock.isLocked()) return;
-        col = MathUtils.clamp(col + 1, 0, Battlefield.COLS / 2 - 1);
+        if (caster.getInputLock().isLocked()) return;
+        int newCol = MathUtils.clamp(gridPosition.getCol() + 1, 0, Battlefield.COLS / 2 - 1);
+        gridPosition.setTile(newCol, gridPosition.getRow());
     }
 
     /**
-     * Snap to an arbitrary grid cell, bypassing the half-grid clamp.
-     * Intended for skill instances that want to drive the body across the
-     * whole battlefield (e.g. a Strike's forward dash into enemy territory).
-     * The visual smoother still tweens, so the dash looks smooth.
+     * Snap to an arbitrary grid cell, bypassing the half-grid clamp. Used by
+     * {@code StrikeInstance} to drive the body across the whole battlefield
+     * during HIT phase. The visual smoother still tweens, so the dash looks smooth.
      */
     public void forceSetTile(int newCol, int newRow) {
-        this.col = MathUtils.clamp(newCol, 0, Battlefield.COLS - 1);
-        this.row = MathUtils.clamp(newRow, 0, Battlefield.ROWS - 1);
+        gridPosition.setTile(
+                MathUtils.clamp(newCol, 0, Battlefield.COLS - 1),
+                MathUtils.clamp(newRow, 0, Battlefield.ROWS - 1));
     }
 
     public void takeDamage(int amount) {
@@ -111,66 +108,38 @@ public class Player implements Collider {
         hitFlash.flash();
     }
 
+    /**
+     * No-op stub; the player has no freeze state yet. Mirrors {@code Enemy.applyFreeze}
+     * so {@code SkillInstance.applyEffectsTo(Player)} can call this uniformly.
+     */
+    public void applyFreeze(float duration) {
+        // Reserved: implement once a player status component exists.
+    }
+
+    public void flash() { hitFlash.flash(); }
+
+    public void update(float delta) {
+        caster.update(delta);
+        gridPosition.update(delta);
+        hitFlash.tick(delta);
+    }
+
     public void renderShadow(SpriteBatch batch, Texture shadowTex) {
         float pw = battlefield.getPanelWidth();
         float ph = battlefield.getPanelRenderHeight();
         float sw = pw * 0.75f;
         float sh = ph * 0.35f;
         batch.setColor(Color.WHITE);
-        batch.draw(shadowTex, smoother.getX() - sw * 0.5f, smoother.getY(), sw, sh);
+        batch.draw(shadowTex, gridPosition.getVisualX() - sw * 0.5f, gridPosition.getVisualY(), sw, sh);
     }
 
     public void render(SpriteBatch batch) {
         if (hitFlash.isHidden()) return;
-        float pw = battlefield.getPanelWidth() * depthScale;
-        sprite.setBounds(smoother.getX() - pw * 0.5f, smoother.getY() + visualHeight, pw, pw);
+        float pw = battlefield.getPanelWidth() * gridPosition.getDepthScale();
+        sprite.setBounds(
+                gridPosition.getVisualX() - pw * 0.5f,
+                gridPosition.getVisualY() + visualHeight,
+                pw, pw);
         sprite.draw(batch);
-    }
-
-    public void update(float delta) {
-        timeSinceLastAttack += delta;
-        hitFlash.tick(delta);
-        float targetX = Float.isNaN(projectedTargetX) ? battlefield.tileCenterX(col) : projectedTargetX;
-        float targetY = Float.isNaN(projectedTargetY) ? battlefield.tileCenterY(row) : projectedTargetY;
-        smoother.update(delta, targetX, targetY);
-    }
-
-    public boolean canBasicAttack(){
-        return !inputLock.isLocked() && timeSinceLastAttack >= basicAttackCooldown;
-    }
-
-    public void flash() { hitFlash.flash(); }
-
-    @Override
-    public Rectangle getBounds() {
-        float pw = battlefield.getPanelWidth() * depthScale;
-        float ph = battlefield.getPanelRenderHeight() * depthScale;
-        float ix = pw * HITBOX_INSET;
-        float iy = ph * HITBOX_INSET;
-        return bounds.set(smoother.getX() - pw * 0.5f + ix, smoother.getY() + iy, pw - 2f * ix, ph - 2f * iy);
-    }
-
-    @Override
-    public Team getTeam() { return Team.PLAYER; }
-
-    @Override
-    public boolean isAlive() { return hp > 0; }
-
-    public Projectile attack(){
-        timeSinceLastAttack = 0f;
-
-        float panelWidth  = battlefield.getPanelWidth() * depthScale;
-        float panelHeight = battlefield.getPanelRenderHeight() * depthScale;
-
-        float spawnX = smoother.getX() + panelWidth * 0.5f;
-        float spawnY = smoother.getY();
-
-        Sprite projectileSprite = new Sprite(basicAttackTexture);
-        projectileSprite.setSize(panelWidth, panelHeight);
-
-        Vector2 position = new Vector2(spawnX, spawnY);
-        Vector2 velocity = new Vector2(BASIC_ATTACK_SPEED, 0f);
-
-        return new Projectile(position, velocity, projectileSprite, Team.PLAYER, 5);
     }
 }

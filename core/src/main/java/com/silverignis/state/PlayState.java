@@ -12,12 +12,15 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.crashinvaders.vfx.effects.BloomEffect;
-import com.silverignis.entities.*;
+import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
+import com.silverignis.entities.Enemy;
+import com.silverignis.entities.Player;
 import com.silverignis.input.GameAction;
 import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.SkillFactory;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.slots.ButtonSlot;
@@ -34,25 +37,25 @@ import java.util.List;
 public class PlayState implements GameScreenState {
 
     private static final class Assets {
-        final Texture player, enemy, windSlash, clash, shadow;
+        final Texture player, enemy, clash, shadow;
         final Music music;
         final Sound drop;
 
         Assets() {
-            player         = new Texture("sprites/beastkin.png");
-            enemy          = new Texture("sprites/skeleton.png");
-            windSlash      = new Texture("attacks/wind_slash.png");
-            clash          = new Texture("effects/clash.png");
-            shadow         = buildShadowTexture();
-            drop           = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
-            music          = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
+            player = new Texture("sprites/beastkin.png");
+            enemy  = new Texture("sprites/skeleton.png");
+            clash  = new Texture("effects/clash.png");
+            shadow = buildShadowTexture();
+            drop   = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
+            music  = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
             music.setLooping(true);
             music.setVolume(0.5f);
         }
 
         void dispose() {
-            player.dispose(); enemy.dispose();   windSlash.dispose();
-            clash.dispose();  shadow.dispose();  drop.dispose(); music.dispose();
+            player.dispose(); enemy.dispose();
+            clash.dispose();  shadow.dispose();
+            drop.dispose();   music.dispose();
         }
     }
 
@@ -62,13 +65,10 @@ public class PlayState implements GameScreenState {
     private final Battlefield battlefield;
     private final Player player;
     private final Enemy enemy;
-    private final List<Projectile> projectiles = new ArrayList<>();
-    private final List<BattleVfx> effects      = new ArrayList<>();
+    private final List<BattleVfx> effects = new ArrayList<>();
 
     private final BattleContext battleContext;
     private final CombatSystem combatSystem;
-
-    private final List<Vector2> clashPositions = new ArrayList<>();
 
     private final GameEnvironment environment;
     private final VfxManager vfxManager;
@@ -86,8 +86,8 @@ public class PlayState implements GameScreenState {
 
         environment = new GameEnvironment(battlefield, screen.game.viewport);
 
-        player = new Player(1, 1, new Sprite(assets.player), battlefield, 100, assets.windSlash);
-        enemy  = new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, 100, assets.windSlash);
+        player = new Player(1, 1, new Sprite(assets.player), battlefield, 100);
+        enemy  = new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, 100);
 
         battleContext = new BattleContext(battlefield, player, enemy, effects, environment);
         combatSystem  = new CombatSystem(battleContext);
@@ -103,6 +103,7 @@ public class PlayState implements GameScreenState {
     }
 
     public Player getPlayer() { return player; }
+    public Enemy  getEnemy()  { return enemy; }
 
     @Override
     public void onEnter() {}
@@ -129,12 +130,9 @@ public class PlayState implements GameScreenState {
         tickEntities(delta);
         tickMeters(delta);
         enemyAi();
-        tickProjectiles(delta);
         combatSystem.update(delta);
         if (checkBattleOver()) return;
-        resolveCollisions();
         tickAndCullEffects(delta);
-        cullDeadProjectiles();
     }
 
     private boolean checkBattleOver() {
@@ -167,33 +165,13 @@ public class PlayState implements GameScreenState {
 
     private void tickMeters(float delta) {
         screen.charge.update(delta);
-        screen.cooldowns.update(delta);
-    }
-
-    private void tickProjectiles(float delta) {
-        float worldWidth = screen.game.viewport.getWorldWidth();
-        for (Projectile projectile : projectiles) {
-            projectile.update(delta, worldWidth);
-        }
-    }
-
-    private void resolveCollisions() {
-        clashPositions.clear();
-        CollisionResolver.resolve(projectiles, player, enemy, clashPositions);
-
-        float panelSize = Math.max(battlefield.getPanelWidth(), battlefield.getPanelHeight());
-        for (Vector2 pos : clashPositions) {
-            effects.add(new ClashEffect(assets.clash, pos.x, pos.y, panelSize));
-        }
+        // Per-caster cooldowns tick inside the deck, driven by Player.update / Enemy.update
+        // (see Caster.update). Nothing to do here for them anymore.
     }
 
     private void tickAndCullEffects(float delta) {
         for (BattleVfx e : effects) e.update(delta);
         effects.removeIf(e -> !e.isAlive());
-    }
-
-    private void cullDeadProjectiles() {
-        projectiles.removeIf(p -> !p.isAlive());
     }
 
     @Override
@@ -246,10 +224,9 @@ public class PlayState implements GameScreenState {
             player.render(batch);
         }
 
-        // ── Layer 5: Projectiles and skill VFX ───────────────────────────
-        for (Projectile p : projectiles) p.render(batch);
+        // ── Layer 5: Skill VFX (both casters' projectiles, beams, auras, etc.) ─
         combatSystem.render(batch);
-        for (BattleVfx e : effects)      e.render(batch);
+        for (BattleVfx e : effects) e.render(batch);
     }
 
     private static Texture buildShadowTexture() {
@@ -283,9 +260,14 @@ public class PlayState implements GameScreenState {
 
     private void handleAttack() {
         var input = screen.getInputManager();
-        if (input.isActionPressed(GameAction.ATTACK_BASIC) && player.canBasicAttack()) {
-            projectiles.add(player.attack());
-        }
+        if (!input.isActionJustPressed(GameAction.ATTACK_BASIC)) return;
+        if (player.isInputLocked()) return;
+        Skill skill = player.getBasicAttack();
+        if (skill == null) return;
+        SkillDeck deck = player.getDeck();
+        if (deck.isOnCooldown(skill)) return;
+        deck.onUsed(skill);
+        combatSystem.spawn(SkillFactory.create(skill, player.getCaster(), player.getGridPosition()));
     }
 
     private void handleSlotFire() {
@@ -298,14 +280,13 @@ public class PlayState implements GameScreenState {
     private void tryFireSlot(SlotKey key){
         if (player.isInputLocked()) return;
 
-        ButtonSlot slot = screen.slots.get(key);
+        ButtonSlot slot = player.getSlots().get(key);
         if (slot.isEmpty()) return;
 
         Skill skill = slot.pop();
-        screen.cooldowns.onUsed(skill);
-        SkillInstance instance = SkillFactory.create(skill, player);
+        player.getDeck().onUsed(skill);
+        SkillInstance instance = SkillFactory.create(skill, player.getCaster(), player.getGridPosition());
         combatSystem.spawn(instance);
-
     }
 
     private void handleSkillSelectOpen() {
@@ -320,8 +301,13 @@ public class PlayState implements GameScreenState {
     }
 
     private void enemyAi() {
-        if (enemy.canBasicAttack()) {
-            projectiles.add(enemy.attack());
-        }
+        if (!enemy.wantsToBasicAttack()) return;
+        Skill skill = enemy.getBasicAttack();
+        if (skill == null) return;
+        SkillDeck deck = enemy.getDeck();
+        if (deck.isOnCooldown(skill)) return;
+        deck.onUsed(skill);
+        enemy.onBasicAttackFired();
+        combatSystem.spawn(SkillFactory.create(skill, enemy.getCaster(), enemy.getGridPosition()));
     }
 }

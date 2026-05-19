@@ -3,17 +3,18 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.silverignis.components.Caster;
+import com.silverignis.components.GridPosition;
 import com.silverignis.entities.Enemy;
-import com.silverignis.entities.Player;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
 
 public class ZoneInstance extends SkillInstance {
 
-    private static final float APPEAR_TIME = 0.15f;
-    private static final float ACTIVE_TIME = 1.00f;
-    private static final float FADE_TIME   = 0.25f;
+    private static final float APPEAR_TIME   = 0.15f;
+    private static final float ACTIVE_TIME   = 1.00f;
+    private static final float FADE_TIME     = 0.25f;
     private static final float TICK_INTERVAL = 0.33f;
 
     private enum Phase { APPEAR, ACTIVE, FADE, DONE }
@@ -27,12 +28,12 @@ public class ZoneInstance extends SkillInstance {
     private final int targetRow;
     private boolean rendersUnder = true;
 
-    public ZoneInstance(Skill def, Player caster) {
-        this(def, caster, caster.getCol() + 1, caster.getRow());
+    public ZoneInstance(Skill def, Caster caster, GridPosition pos) {
+        this(def, caster, pos, pos.getCol() + 1, pos.getRow());
     }
 
-    public ZoneInstance(Skill def, Player caster, int targetCol, int targetRow) {
-        super(def, caster);
+    public ZoneInstance(Skill def, Caster caster, GridPosition pos, int targetCol, int targetRow) {
+        super(def, caster, pos);
         this.targetCol = targetCol;
         this.targetRow = targetRow;
 

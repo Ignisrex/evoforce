@@ -54,10 +54,10 @@ public class Battlefield {
     public boolean isPlayerSide(int col) { return col < COLS / 2; }
 
     /** World X at the center of the given column. */
-    public float tileCenterX(int col) { return x + (col + 0.5f) * panelWidth; }
+    public float tileCenterX(int col) { return x + (col + 0.3f) * panelWidth; }
 
     /** World Y at the center of the given row (uses the compressed render height). */
-    public float tileCenterY(int row) { return y + (row + 0.5f) * getPanelRenderHeight(); }
+    public float tileCenterY(int row) { return y + (row + 0.3f) * getPanelRenderHeight(); }
 
     public PanelType getPanel(int col, int row) {
         return panels[col][row];

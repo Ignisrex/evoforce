@@ -5,9 +5,10 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.silverignis.components.Caster;
+import com.silverignis.components.GridPosition;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.Enemy;
-import com.silverignis.entities.Player;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
@@ -29,13 +30,13 @@ public class BeamInstance extends SkillInstance {
     private float stateTime = 0f;
     private final int row;
 
-    public BeamInstance(Skill def, Player caster) {
-        super(def, caster);
+    public BeamInstance(Skill def, Caster caster, GridPosition pos) {
+        super(def, caster, pos);
         this.row = originRow;
         acquireInputLock();
 
         this.animation = def.getVfxAnimation(); // may be null
-        this.sprite = new Sprite(def.getVfxTexture());
+        this.sprite    = new Sprite(def.getVfxTexture());
     }
 
     @Override

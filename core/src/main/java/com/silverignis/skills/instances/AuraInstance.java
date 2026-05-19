@@ -2,10 +2,10 @@ package com.silverignis.skills.instances;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.silverignis.entities.Player;
+import com.silverignis.components.Caster;
+import com.silverignis.components.GridPosition;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
-import com.silverignis.skills.effects.Effect;
 import com.silverignis.systems.BattleContext;
 
 public class AuraInstance extends SkillInstance {
@@ -23,9 +23,8 @@ public class AuraInstance extends SkillInstance {
 
     private final Sprite sprite;
 
-    public AuraInstance(Skill def, Player caster) {
-        super(def, caster);
-
+    public AuraInstance(Skill def, Caster caster, GridPosition pos) {
+        super(def, caster, pos);
         this.sprite = new Sprite(def.getVfxTexture());
     }
 
@@ -79,8 +78,8 @@ public class AuraInstance extends SkillInstance {
         float panelW = ctx.battlefield.getPanelWidth();
         float panelH = ctx.battlefield.getPanelHeight();
 
-        float cx = caster.getVisualX();
-        float cy = caster.getVisualY() + panelH * 0.5f;
+        float cx = pos.getVisualX();
+        float cy = pos.getVisualY() + panelH * 0.5f;
 
         float scale;
         float alpha;

@@ -1,4 +1,4 @@
-package com.silverignis.components;
+package com.silverignis.util;
 
 public class HitFlash {
 
