@@ -64,7 +64,7 @@ public class PlayState implements GameScreenState {
 
     private final Battlefield battlefield;
     private final Player player;
-    private final Enemy enemy;
+    private final List<Enemy> enemies = new ArrayList<>();
     private final List<BattleVfx> effects = new ArrayList<>();
 
     private final BattleContext battleContext;
@@ -87,9 +87,10 @@ public class PlayState implements GameScreenState {
         environment = new GameEnvironment(battlefield, screen.game.viewport);
 
         player = new Player(1, 1, new Sprite(assets.player), battlefield, 100);
-        enemy  = new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, 100);
+        enemies.add(new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, 100));
+        enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(assets.enemy), battlefield, 100));
 
-        battleContext = new BattleContext(battlefield, player, enemy, effects, environment);
+        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash);
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
 
@@ -102,8 +103,8 @@ public class PlayState implements GameScreenState {
         vfxManager.addEffect(bloomEffect);
     }
 
-    public Player getPlayer() { return player; }
-    public Enemy  getEnemy()  { return enemy; }
+    public Player      getPlayer()  { return player; }
+    public List<Enemy> getEnemies() { return enemies; }
 
     @Override
     public void onEnter() {}
@@ -137,7 +138,7 @@ public class PlayState implements GameScreenState {
 
     private boolean checkBattleOver() {
         if (transitionScheduled) return true;
-        if (enemy.isDead()) {
+        if (allEnemiesDead()) {
             transitionScheduled = true;
             screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.WON));
             return true;
@@ -150,17 +151,24 @@ public class PlayState implements GameScreenState {
         return false;
     }
 
+    private boolean allEnemiesDead() {
+        for (Enemy e : enemies) if (!e.isDead()) return false;
+        return true;
+    }
+
     private void tickEntities(float delta) {
         player.update(delta);
-        enemy.update(delta);
+        for (Enemy e : enemies) e.update(delta);
 
         Vector2 pp = battleContext.projectedTileWorld(player.getCol(), player.getRow());
         player.setProjectedTarget(pp.x, pp.y);
         player.setDepthScale(battleContext.tileDepthScale(player.getRow()));
 
-        Vector2 ep = battleContext.projectedTileWorld(enemy.getCol(), enemy.getRow());
-        enemy.setProjectedTarget(ep.x, ep.y);
-        enemy.setDepthScale(battleContext.tileDepthScale(enemy.getRow()));
+        for (Enemy e : enemies) {
+            Vector2 ep = battleContext.projectedTileWorld(e.getCol(), e.getRow());
+            e.setProjectedTarget(ep.x, ep.y);
+            e.setDepthScale(battleContext.tileDepthScale(e.getRow()));
+        }
     }
 
     private void tickMeters(float delta) {
@@ -213,20 +221,31 @@ public class PlayState implements GameScreenState {
 
         // ── Layer 3: Shadows ──────────────────────────────────────────────
         if (player.isAlive()) player.renderShadow(batch, assets.shadow);
-        if (enemy.isAlive())  enemy.renderShadow(batch, assets.shadow);
+        for (Enemy e : enemies) if (e.isAlive()) e.renderShadow(batch, assets.shadow);
 
         // ── Layer 4: Entities — Y-sorted (higher Y = farther = drawn first) ─
-        if (player.getVisualY() >= enemy.getVisualY()) {
-            player.render(batch);
-            enemy.render(batch, screen.game.font);
-        } else {
-            enemy.render(batch, screen.game.font);
-            player.render(batch);
-        }
+        renderEntitiesYSorted(batch);
 
         // ── Layer 5: Skill VFX (both casters' projectiles, beams, auras, etc.) ─
         combatSystem.render(batch);
         for (BattleVfx e : effects) e.render(batch);
+    }
+
+    private void renderEntitiesYSorted(SpriteBatch batch) {
+
+        List<Object> drawList = new ArrayList<>(1 + enemies.size());
+        if (player.isAlive()) drawList.add(player);
+        for (Enemy e : enemies) if (!e.isDead()) drawList.add(e);
+        drawList.sort((a, b) -> Float.compare(visualY(b), visualY(a)));
+        for (Object o : drawList) {
+            if (o instanceof Player) ((Player) o).render(batch);
+            else                     ((Enemy) o).render(batch, screen.game.font);
+        }
+    }
+
+    private static float visualY(Object o) {
+        if (o instanceof Player) return ((Player) o).getVisualY();
+        return ((Enemy) o).getVisualY();
     }
 
     private static Texture buildShadowTexture() {
@@ -301,13 +320,15 @@ public class PlayState implements GameScreenState {
     }
 
     private void enemyAi() {
-        if (!enemy.wantsToBasicAttack()) return;
-        Skill skill = enemy.getBasicAttack();
-        if (skill == null) return;
-        SkillDeck deck = enemy.getDeck();
-        if (deck.isOnCooldown(skill)) return;
-        deck.onUsed(skill);
-        enemy.onBasicAttackFired();
-        combatSystem.spawn(SkillFactory.create(skill, enemy.getCaster(), enemy.getGridPosition()));
+        for (Enemy enemy : enemies) {
+            if (!enemy.wantsToBasicAttack()) continue;
+            Skill skill = enemy.getBasicAttack();
+            if (skill == null) continue;
+            SkillDeck deck = enemy.getDeck();
+            if (deck.isOnCooldown(skill)) continue;
+            deck.onUsed(skill);
+            enemy.onBasicAttackFired();
+            combatSystem.spawn(SkillFactory.create(skill, enemy.getCaster(), enemy.getGridPosition()));
+        }
     }
 }

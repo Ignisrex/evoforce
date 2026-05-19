@@ -78,12 +78,11 @@ public class BeamInstance extends SkillInstance {
         if (hitApplied) return;
         hitApplied = true;
 
-        Enemy target = ctx.enemy;
-        if (target == null || !target.isAlive()) return;
-        if (target.getRow() != row) return;
-
-        if (target.getCol() > originCol) {
-            applyEffectsTo(target);
+        // Beam pierces — every alive enemy on this row past the caster eats the hit.
+        for (Enemy target : ctx.enemiesOnRow(row)) {
+            if (target.getCol() > originCol) {
+                applyEffectsTo(target);
+            }
         }
     }
 

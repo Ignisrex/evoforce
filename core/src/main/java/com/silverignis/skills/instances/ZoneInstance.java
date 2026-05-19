@@ -80,9 +80,8 @@ public class ZoneInstance extends SkillInstance {
     }
 
     private void applyTick(BattleContext ctx) {
-        Enemy target = ctx.enemy;
-        if (target == null || !target.isAlive()) return;
-        if (target.getCol() != targetCol || target.getRow() != targetRow) return;
+        Enemy target = ctx.enemyAt(targetCol, targetRow);
+        if (target == null) return;
         applyEffectsTo(target);
     }
 

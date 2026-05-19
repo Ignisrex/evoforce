@@ -47,7 +47,7 @@ public abstract class SkillInstance {
         }
     }
 
-    protected final void finish() {
+    public final void finish() {
         if (finished) return;
         finished = true;
         releaseInputLock();

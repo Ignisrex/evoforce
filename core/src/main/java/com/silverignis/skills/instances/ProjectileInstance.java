@@ -127,18 +127,18 @@ public class ProjectileInstance extends SkillInstance {
     }
 
     private void checkHitStraight(BattleContext ctx) {
+        float halfW      = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
+        float projCenter = posX + sprite.getWidth() * 0.5f;
+
         if (caster.getTeam() == Team.PLAYER) {
-            Enemy target = ctx.enemy;
-            if (target == null || !target.isAlive()) return;
-            if (target.getRow() != row) return;
-
-            float targetX = ctx.projectedTileWorld(target.getCol(), row).x;
-            float halfW   = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
-            float projCenter = posX + sprite.getWidth() * 0.5f;
-
-            if (projCenter >= targetX - halfW && projCenter <= targetX + halfW) {
-                applyEffectsTo(target);
-                finish();
+            // Stop on the first alive enemy on this row whose tile-center overlaps.
+            for (Enemy target : ctx.enemiesOnRow(row)) {
+                float targetX = ctx.projectedTileWorld(target.getCol(), row).x;
+                if (projCenter >= targetX - halfW && projCenter <= targetX + halfW) {
+                    applyEffectsTo(target);
+                    finish();
+                    return;
+                }
             }
         } else {
             Player target = ctx.player;
@@ -146,9 +146,6 @@ public class ProjectileInstance extends SkillInstance {
             if (target.getRow() != row) return;
 
             float targetX = ctx.projectedTileWorld(target.getCol(), row).x;
-            float halfW   = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
-            float projCenter = posX + sprite.getWidth() * 0.5f;
-
             if (projCenter >= targetX - halfW && projCenter <= targetX + halfW) {
                 applyEffectsTo(target);
                 finish();
@@ -158,10 +155,9 @@ public class ProjectileInstance extends SkillInstance {
 
     private void applyLandingDamage(BattleContext ctx) {
         // LOB lands on a tile; currently only the player fires LOB skills, so target the enemy.
-        Enemy target = ctx.enemy;
-        if (target == null || !target.isAlive()) return;
         int landCol = originCol + config.getTargetRange() * dir;
-        if (target.getCol() != landCol || target.getRow() != row) return;
+        Enemy target = ctx.enemyAt(landCol, row);
+        if (target == null) return;
         applyEffectsTo(target);
     }
 
@@ -196,4 +192,8 @@ public class ProjectileInstance extends SkillInstance {
         sprite.setPosition(posX, posY);
         sprite.draw(batch);
     }
+
+    public int getRow()         { return row; }
+    public float getCenterX()   { return posX + sprite.getWidth() * 0.5f; }
+    public boolean isStraight() { return config.getMovementType() == MovementType.STRAIGHT; }
 }

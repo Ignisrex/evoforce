@@ -1,5 +1,6 @@
 package com.silverignis.skills.instances;
 
+import com.badlogic.gdx.math.Vector2;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
 import com.silverignis.entities.ClashEffect;
@@ -78,20 +79,21 @@ public class StrikeInstance extends SkillInstance {
     }
 
     private void spawnSlashVfx(BattleContext ctx) {
-        float panelW = ctx.battlefield.getPanelWidth() * ctx.enemy.getDepthScale();
-        float panelH = ctx.battlefield.getPanelRenderHeight() * ctx.enemy.getDepthScale();
-        // Use visual (projected) position so VFX lands on the enemy sprite
-        float cx = ctx.enemy.getVisualX();
-        float cy = ctx.enemy.getVisualY() + panelH * 0.5f;
+        // VFX lands on the target tile regardless of whether anyone's standing there.
+        float depth  = ctx.tileDepthScale(row);
+        float panelW = ctx.battlefield.getPanelWidth() * depth;
+        float panelH = ctx.battlefield.getPanelRenderHeight() * depth;
+        Vector2 tilePos = ctx.projectedTileWorld(targetCol, row);
+        float cx = tilePos.x;
+        float cy = tilePos.y + panelH * 0.5f;
         float size = Math.max(panelW, panelH);
 
         ctx.vfx.add(new ClashEffect(def.getVfxTexture(), cx, cy, size));
     }
 
     private void applyHit(BattleContext ctx) {
-        Enemy target = ctx.enemy;
-        if (target == null || !target.isAlive()) return;
-        if (target.getCol() != targetCol || target.getRow() != row) return;
+        Enemy target = ctx.enemyAt(targetCol, row);
+        if (target == null) return;
         applyEffectsTo(target);
     }
 }

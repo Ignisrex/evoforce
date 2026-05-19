@@ -49,16 +49,17 @@ public class GameScreen implements Screen {
         // slot and fired by the dedicated ATTACK_BASIC button, so it should
         // never appear in the staging hand.
         Player player = playState.getPlayer();
-        Enemy  enemy  = playState.getEnemy();
         Skill  windSlash = skills.get("wind_slash");
         for (Skill s : skills.all()) {
             if (s == windSlash) continue;
             player.getDeck().add(s);
         }
         player.getCaster().setBasicAttack(windSlash);
-        // Enemy fires the same wind_slash via the unified pipeline (team-flipped).
-        // No deck seeding for enemy — only its basic attack is used today.
-        enemy.getCaster().setBasicAttack(windSlash);
+        // Each enemy fires the same wind_slash via the unified pipeline (team-flipped).
+        // No deck seeding for enemies — only their basic attack is used today.
+        for (Enemy enemy : playState.getEnemies()) {
+            enemy.getCaster().setBasicAttack(windSlash);
+        }
 
         setState(playState);
     }

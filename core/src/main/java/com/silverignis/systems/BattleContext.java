@@ -1,11 +1,13 @@
 package com.silverignis.systems;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,7 +18,7 @@ public class BattleContext {
 
     public final Battlefield battlefield;
     public final Player player;
-    public final Enemy enemy;
+    public final List<Enemy> enemies;
     public final GameEnvironment environment;
 
     /**
@@ -24,6 +26,9 @@ public class BattleContext {
      * and culls finished entries each frame.
      */
     public final List<BattleVfx> vfx;
+
+    /** Shared starburst texture for projectile-clash flourishes. Owned by {@code PlayState}. */
+    public final Texture clashTexture;
 
     /** Post-set: CombatSystem constructor needs the context, so this is a cycle. */
     public CombatSystem combatSystem;
@@ -33,14 +38,16 @@ public class BattleContext {
 
     public BattleContext(Battlefield battlefield,
                          Player player,
-                         Enemy enemy,
+                         List<Enemy> enemies,
                          List<BattleVfx> vfx,
-                         GameEnvironment environment) {
-        this.battlefield = battlefield;
-        this.player      = player;
-        this.enemy       = enemy;
-        this.vfx         = vfx;
-        this.environment = environment;
+                         GameEnvironment environment,
+                         Texture clashTexture) {
+        this.battlefield  = battlefield;
+        this.player       = player;
+        this.enemies      = enemies;
+        this.vfx          = vfx;
+        this.environment  = environment;
+        this.clashTexture = clashTexture;
     }
 
     /** Call once after the viewport has been sized. Bakes all tile positions. */
@@ -65,5 +72,24 @@ public class BattleContext {
     public float tileDepthScale(int row) {
         if (depthCache != null) return depthCache[row];
         return environment.tileDepthScale(row);
+    }
+
+    /** First alive enemy standing exactly on (col,row), or null. */
+    public Enemy enemyAt(int col, int row) {
+        for (Enemy e : enemies) {
+            if (!e.isAlive()) continue;
+            if (e.getCol() == col && e.getRow() == row) return e;
+        }
+        return null;
+    }
+
+    /** Alive enemies on a row. Fresh list; callers may iterate freely. */
+    public List<Enemy> enemiesOnRow(int row) {
+        List<Enemy> out = new ArrayList<>(enemies.size());
+        for (Enemy e : enemies) {
+            if (!e.isAlive()) continue;
+            if (e.getRow() == row) out.add(e);
+        }
+        return out;
     }
 }
