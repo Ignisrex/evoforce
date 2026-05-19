@@ -15,7 +15,8 @@
       "Bash(git -C \"C:/Users/silverignis/projects/evoforce\" status)",
       "Bash(git -C \"C:/Users/silverignis/projects/evoforce\" log --oneline -10)",
       "PowerShell(.\\\\gradlew.bat core:compileJava --console=plain 2>&1)",
-      "Bash(xargs -I {} echo \"{}\")"
+      "Bash(xargs -I {} echo \"{}\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\silverignis\\\\projects\\\\evoforce\\\\assets\\\\skills\" -Recurse)"
     ]
   }
 }

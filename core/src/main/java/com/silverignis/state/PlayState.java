@@ -24,7 +24,7 @@ import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SlotKey;
 import com.badlogic.gdx.graphics.GL20;
 import com.silverignis.systems.BattleContext;
-import com.silverignis.systems.CaveEnvironment;
+import com.silverignis.systems.GameEnvironment;
 import com.silverignis.systems.CombatSystem;
 import com.silverignis.util.PanelGenerator;
 
@@ -70,7 +70,7 @@ public class PlayState implements GameScreenState {
 
     private final List<Vector2> clashPositions = new ArrayList<>();
 
-    private final CaveEnvironment cave3D;
+    private final GameEnvironment environment;
     private final VfxManager vfxManager;
     private final BloomEffect bloomEffect;
 
@@ -84,12 +84,12 @@ public class PlayState implements GameScreenState {
         float panelHeight = 4f  / Battlefield.ROWS;
         battlefield = new Battlefield(3f, 1f, panelWidth, panelHeight, PanelGenerator.generatePanels());
 
-        cave3D = new CaveEnvironment(battlefield, screen.game.viewport);
+        environment = new GameEnvironment(battlefield, screen.game.viewport);
 
         player = new Player(1, 1, new Sprite(assets.player), battlefield, 100, assets.windSlash);
         enemy  = new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, 100, assets.windSlash);
 
-        battleContext = new BattleContext(battlefield, player, enemy, effects, cave3D);
+        battleContext = new BattleContext(battlefield, player, enemy, effects, environment);
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
 
@@ -206,7 +206,7 @@ public class PlayState implements GameScreenState {
         ScreenUtils.clear(Color.BLACK);
 
         // ── 3D cave pass ──────────────────────────────────────────────────
-        cave3D.render(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        environment.render(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         // Clear depth so 2D sprites always draw on top regardless of 3D depth
         Gdx.gl.glClear(GL20.GL_DEPTH_BUFFER_BIT);
 
@@ -225,7 +225,7 @@ public class PlayState implements GameScreenState {
     @Override
     public void resize(int width, int height) {
         vfxManager.resize(width, height);
-        cave3D.resize(width, height);
+        environment.resize(width, height);
         battleContext.buildCache();
     }
 
@@ -276,8 +276,7 @@ public class PlayState implements GameScreenState {
 
     public void dispose() {
         assets.dispose();
-        battlefield.dispose();
-        cave3D.dispose();
+        environment.dispose();
         bloomEffect.dispose();
         vfxManager.dispose();
     }

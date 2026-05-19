@@ -87,9 +87,9 @@ components, util  →    (leaf)
 ## Recipes
 
 ### Add a new skill (existing shape)
-1. In `SkillLibrary.defaults()`, append a `new Skill(id, displayName, ..., shape, element, effects, cooldown, vfxTexture, shapeConfig)`.
+1. Append an entry to `assets/skills/skills.json`. Required fields: `id, displayName, description, icon, shape, element, cooldown, vfxTexture`. Optional: `effects` (array of `{type, value?, duration?, chance?}`), `vfxAnimation` (`{spritesheet, frameWidth, frameHeight, frameDuration}`), `shapeConfig` (`{movementType: STRAIGHT|LOB, ...}`).
 2. Drop the icon under `assets/skills/`, the VFX under `assets/effects/`. Re-run the game so `generateAssetList` picks them up.
-3. Done — no factory or instance changes needed if the shape already exists.
+3. Done — no Java changes needed if the shape already exists. `SkillLoader` constructs the `Skill` via `Skill.builder()` and adds it to the library.
 
 ### Add a new shape
 1. Add the value to `Skill.Shape`.

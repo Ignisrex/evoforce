@@ -23,7 +23,7 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.silverignis.entities.Battlefield;
 
-public class CaveEnvironment implements Disposable {
+public class GameEnvironment implements Disposable {
 
     // ── Camera ────────────────────────────────────────────────────────────
     private static final float CAM_X   =  0f;
@@ -67,7 +67,7 @@ public class CaveEnvironment implements Disposable {
     // Reused temp vector to avoid per-frame allocation in projection methods
     private final Vector3 tmpV3 = new Vector3();
 
-    public CaveEnvironment(Battlefield battlefield, Viewport viewport) {
+    public GameEnvironment(Battlefield battlefield, Viewport viewport) {
         this.battlefield = battlefield;
         this.viewport    = viewport;
         this.panelW3D    = GRID_WIDTH_3D / Battlefield.COLS;

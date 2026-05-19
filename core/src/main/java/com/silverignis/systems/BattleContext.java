@@ -17,7 +17,7 @@ public class BattleContext {
     public final Battlefield battlefield;
     public final Player player;
     public final Enemy enemy;
-    public final CaveEnvironment cave3D;
+    public final GameEnvironment environment;
 
     /**
      * Sink for short-lived visual effects. {@code PlayState} owns the list
@@ -35,12 +35,12 @@ public class BattleContext {
                          Player player,
                          Enemy enemy,
                          List<BattleVfx> vfx,
-                         CaveEnvironment cave3D) {
+                         GameEnvironment environment) {
         this.battlefield = battlefield;
         this.player      = player;
         this.enemy       = enemy;
         this.vfx         = vfx;
-        this.cave3D      = cave3D;
+        this.environment = environment;
     }
 
     /** Call once after the viewport has been sized. Bakes all tile positions. */
@@ -49,21 +49,21 @@ public class BattleContext {
         depthCache = new float[Battlefield.ROWS];
         for (int c = 0; c < Battlefield.COLS; c++) {
             for (int r = 0; r < Battlefield.ROWS; r++) {
-                tileCache[c][r] = cave3D.projectTile(c, r);
+                tileCache[c][r] = environment.projectTile(c, r);
             }
         }
         for (int r = 0; r < Battlefield.ROWS; r++) {
-            depthCache[r] = cave3D.tileDepthScale(r);
+            depthCache[r] = environment.tileDepthScale(r);
         }
     }
 
     public Vector2 projectedTileWorld(int col, int row) {
         if (tileCache != null) return tileCache[col][row];
-        return cave3D.projectTile(col, row);
+        return environment.projectTile(col, row);
     }
 
     public float tileDepthScale(int row) {
         if (depthCache != null) return depthCache[row];
-        return cave3D.tileDepthScale(row);
+        return environment.tileDepthScale(row);
     }
 }

@@ -1,0 +1,97 @@
+[
+  {
+    "id": "wind_strike",
+    "displayName": "Wind Strike",
+    "description": "Dash forward and slash the tile in front.",
+    "icon": "skills/wind_strike.png",
+    "shape": "STRIKE",
+    "element": "NONE",
+    "cooldown": 2.0,
+    "vfxTexture": "effects/slash.png",
+    "effects": [
+      { "type": "DAMAGE", "value": 15 }
+    ]
+  },
+  {
+    "id": "fire_blast",
+    "displayName": "Fire Blast",
+    "description": "Hurl a fireball down the row.",
+    "icon": "skills/fire_blast.png",
+    "shape": "PROJECTILE",
+    "element": "FIRE",
+    "cooldown": 3.0,
+    "vfxTexture": "effects/fireball.png",
+    "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
+    "effects": [
+      { "type": "DAMAGE", "value": 20 }
+    ]
+  },
+  {
+    "id": "venom_bomb",
+    "displayName": "Venom Bomb",
+    "description": "Lob a toxic glob two tiles forward.",
+    "icon": "skills/venom_bomb.png",
+    "shape": "PROJECTILE",
+    "element": "POISON",
+    "cooldown": 3.5,
+    "vfxTexture": "effects/venom_ball.png",
+    "shapeConfig": { "movementType": "LOB", "targetRange": 2, "arcHeight": 2.0 },
+    "effects": [
+      { "type": "DAMAGE", "value": 12 }
+    ]
+  },
+  {
+    "id": "ice_beam",
+    "displayName": "Ice Beam",
+    "description": "Fire a freezing beam across the row.",
+    "icon": "skills/ice_beam.png",
+    "shape": "BEAM",
+    "element": "ICE",
+    "cooldown": 4.0,
+    "vfxTexture": "effects/ice_beam_vfx.png",
+    "vfxAnimation": {
+      "spritesheet": "skills/animations/icebeam_spritesheet.png",
+      "frameWidth": 256,
+      "frameHeight": 128,
+      "frameDuration": 0.1
+    },
+    "effects": [
+      { "type": "DAMAGE", "value": 25 },
+      { "type": "FREEZE", "value": 0, "duration": 2, "chance": 100 }
+    ]
+  },
+  {
+    "id": "frost_trap",
+    "displayName": "Frost Trap",
+    "description": "Place a freezing zone on the tile ahead.",
+    "icon": "skills/frost_trap.png",
+    "shape": "ZONE",
+    "element": "ICE",
+    "cooldown": 3.5,
+    "vfxTexture": "effects/beam.png",
+    "effects": [
+      { "type": "DAMAGE", "value": 5 },
+      { "type": "FREEZE", "value": 0, "duration": 2, "chance": 100 }
+    ]
+  },
+  {
+    "id": "heal",
+    "displayName": "Heal",
+    "description": "Restore a small amount of HP.",
+    "icon": "skills/heal.png",
+    "shape": "AURA",
+    "element": "NONE",
+    "cooldown": 5.0,
+    "vfxTexture": "effects/aura.png"
+  },
+  {
+    "id": "shield",
+    "displayName": "Shield",
+    "description": "Block the next incoming hit.",
+    "icon": "skills/shield.png",
+    "shape": "AURA",
+    "element": "NONE",
+    "cooldown": 4.0,
+    "vfxTexture": "effects/aura.png"
+  }
+]

@@ -16,10 +16,6 @@ public class Effect {
         this.chance = chance;
     }
 
-    public static Effect damage(int amount){
-        return new Effect(Type.DAMAGE, amount, 0, 100);
-    }
-
     public Type getType() {
         return type;
     }

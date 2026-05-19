@@ -130,7 +130,7 @@ public class ProjectileInstance extends SkillInstance {
         if (target.getCol() != landCol || target.getRow() != row) return;
         applyDamage(target);
     }
-
+    
     private void spawnLandingEffect(BattleContext ctx) {
         if (config.getMovementType() != MovementType.LOB) return;
         if (ctx.combatSystem == null) return;
@@ -138,18 +138,20 @@ public class ProjectileInstance extends SkillInstance {
         int landCol = originCol + config.getTargetRange();
         landCol = Math.min(landCol, Battlefield.COLS - 1);
 
-        // Build a zone skill that lingers on the landing tile.
-        Skill zoneDef = new Skill(
-                def.getId() + "_cloud",
-                def.getDisplayName() + " Cloud",
-                "Lingering toxic cloud.",
-                null,
-                Skill.Shape.ZONE,
-                def.getElement(),
-                def.getEffects(),
-                0f,
-                def.getVfxTexture()
-        );
+        // Build a zone skill that lingers on the landing tile. This is a
+        // runtime-only synthetic — it never enters the library or the staging
+        // menu, so it borrows the parent's icon just to satisfy the builder.
+        Skill zoneDef = Skill.builder()
+                .id(def.getId() + "_cloud")
+                .displayName(def.getDisplayName() + " Cloud")
+                .description("Lingering toxic cloud.")
+                .icon(def.getIcon())
+                .shape(Skill.Shape.ZONE)
+                .element(def.getElement())
+                .effects(def.getEffects())
+                .cooldown(0f)
+                .vfxTexture(def.getVfxTexture())
+                .build();
         ZoneInstance cloud = new ZoneInstance(zoneDef, caster, landCol, row);
         ctx.combatSystem.spawn(cloud);
     }
