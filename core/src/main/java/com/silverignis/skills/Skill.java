@@ -46,6 +46,9 @@ public final class Skill {
 
     private final ShapeConfig shapeConfig;
 
+    private final float powerScale;
+    private final float magicScale;
+
     private Skill(Builder b) {
         this.id = b.id;
         this.displayName = b.displayName;
@@ -59,6 +62,8 @@ public final class Skill {
         this.vfxAnimation = b.vfxAnimation;
         this.vfxAnimationSheet = b.vfxAnimationSheet;
         this.shapeConfig = b.shapeConfig;
+        this.powerScale = b.powerScale;
+        this.magicScale = b.magicScale;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -75,6 +80,9 @@ public final class Skill {
     public Animation<TextureRegion> getVfxAnimation() { return vfxAnimation; }
     public Texture      getVfxAnimationSheet() { return vfxAnimationSheet; }
     public ShapeConfig  getShapeConfig() { return shapeConfig; }
+    public float        getPowerScale() {return powerScale; }
+    public float        getMagicScale() { return magicScale; }
+
 
     public static final class Builder {
         private String id;
@@ -90,6 +98,8 @@ public final class Skill {
         private Animation<TextureRegion> vfxAnimation;
         private Texture vfxAnimationSheet;
         private ShapeConfig shapeConfig;
+        private float powerScale = 0f;
+        private float magicScale = 0f;
 
         private Builder() {}
 
@@ -102,6 +112,8 @@ public final class Skill {
         public Builder cooldown(float v)                            { this.cooldown = v; this.cooldownSet = true; return this; }
         public Builder vfxTexture(Texture v)                        { this.vfxTexture = v; return this; }
         public Builder shapeConfig(ShapeConfig v)                   { this.shapeConfig = v; return this; }
+        public Builder powerScale(float v)                          { this.powerScale = v; return this; }
+        public Builder magicScale(float v)                          { this.magicScale = v; return this; }
 
         public Builder effect(Effect e)                             { this.effects.add(e); return this; }
         public Builder effects(List<Effect> e) {

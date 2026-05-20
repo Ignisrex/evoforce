@@ -51,6 +51,9 @@ public final class SkillLoader {
             .icon(loadTexture(requireString(node, id, "icon"), id, "icon"))
             .vfxTexture(loadTexture(requireString(node, id, "vfxTexture"), id, "vfxTexture"));
 
+        b.powerScale(node.getFloat("powerScale", 0f));
+        b.magicScale(node.getFloat("magicScale", 0f));
+
         JsonValue effects = node.get("effects");
         if (effects != null) {
             b.effects(parseEffects(effects, id));

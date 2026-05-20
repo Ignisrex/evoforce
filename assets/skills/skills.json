@@ -7,9 +7,10 @@
     "shape": "STRIKE",
     "element": "NONE",
     "cooldown": 2.0,
+    "powerScale": 0.5,
     "vfxTexture": "effects/slash.png",
     "effects": [
-      { "type": "DAMAGE", "value": 15 }
+      { "type": "DAMAGE", "value": 30 }
     ]
   },
   {

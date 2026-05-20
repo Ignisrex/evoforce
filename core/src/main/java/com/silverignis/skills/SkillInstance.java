@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
+import com.silverignis.components.Stats;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
@@ -66,7 +67,11 @@ public abstract class SkillInstance {
         for (Effect e : def.getEffects()) {
             switch (e.getType()) {
                 case DAMAGE:
-                    ctx.damageSystem.apply(new DamageEvent(combatant, target, e.getValue(), DamageEvent.Source.SKILL, def));
+                    Stats casterStats =  combatant.getStats();
+                    int scaledBase = e.getValue()
+                        + Math.round(casterStats.getPower() * def.getPowerScale())
+                        + Math.round(casterStats.getMagic() * def.getMagicScale());
+                    ctx.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
                     break;
                 case HEAL:
                     ctx.damageSystem.heal(new HealEvent(target, e.getValue()));
