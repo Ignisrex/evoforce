@@ -1,4 +1,4 @@
-package com.silverignis.state;
+package com.silverignis.screens.state;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 

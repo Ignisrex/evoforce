@@ -8,7 +8,9 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 import com.silverignis.skills.effects.Effect;
+import com.silverignis.skills.effects.EffectType;
 import com.silverignis.skills.elements.Element;
+import com.silverignis.systems.combat.StatusType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,11 +81,27 @@ public final class SkillLoader {
         }
         List<Effect> effects = new ArrayList<>();
         for (JsonValue e = arr.child; e != null; e = e.next) {
-            Effect.Type type = parseEnum(Effect.Type.class, requireString(e, skillId, "effects[].type"), skillId, "effects[].type");
-            int value    = e.getInt("value", 0);
-            int duration = e.getInt("duration", 0);
-            int chance   = e.getInt("chance", 100);
-            effects.add(new Effect(type, value, duration, chance));
+            EffectType type = parseEnum(EffectType.class, requireString(e, skillId, "effects[].type"), skillId, "effects[].type");
+
+            switch (type){
+                case DAMAGE:
+                    effects.add(Effect.damage(requireInt(e, skillId, "effects[].value")));
+                    break;
+                case HEAL:
+                    effects.add(Effect.heal(requireInt(e, skillId, "effects[].value")));
+                    break;
+                case APPLY_STATUS: {
+                    StatusType st = parseEnum(StatusType.class, requireString(e, skillId, "effects[].statusType"), skillId, "effects[].statusType");
+                    float duration = requireFloat(e, skillId, "effects[].duration");
+                    int chance = e.getInt("chance", 100);
+                    int dotMag = e.getInt("value", 0);
+                    effects.add(Effect.applyStatus(st, duration, chance, dotMag));
+                }break;
+                case KNOCKBACK:
+                    effects.add(Effect.knockback(requireInt(e, skillId, "effects[].value")));
+                    break;
+            }
+
         }
         return effects;
     }

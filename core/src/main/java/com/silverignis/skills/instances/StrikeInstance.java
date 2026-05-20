@@ -1,13 +1,11 @@
 package com.silverignis.skills.instances;
 
 import com.badlogic.gdx.math.Vector2;
-import com.silverignis.components.Caster;
-import com.silverignis.components.GridPosition;
 import com.silverignis.entities.ClashEffect;
-import com.silverignis.entities.Enemy;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.combat.Combatant;
 
 public class StrikeInstance extends SkillInstance {
 
@@ -24,8 +22,8 @@ public class StrikeInstance extends SkillInstance {
     private final int targetCol;
     private final int row;
 
-    public StrikeInstance(Skill def, Caster caster, GridPosition pos) {
-        super(def, caster, pos);
+    public StrikeInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         this.strikeFromCol = originCol + 1;
         this.targetCol     = originCol + 2;
         this.row           = originRow;
@@ -92,8 +90,9 @@ public class StrikeInstance extends SkillInstance {
     }
 
     private void applyHit(BattleContext ctx) {
-        Enemy target = ctx.enemyAt(targetCol, row);
+        Combatant target = ctx.combatantAt(targetCol, row);
         if (target == null) return;
-        applyEffectsTo(target);
+        if (target.getTeam() == combatant.getTeam()) return;
+        applyEffectsTo(target, ctx);
     }
 }

@@ -4,14 +4,17 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
-import com.silverignis.entities.Enemy;
-import com.silverignis.entities.Player;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.StatusFactory;
+import com.silverignis.systems.combat.event.DamageEvent;
+import com.silverignis.systems.combat.event.HealEvent;
 
 public abstract class SkillInstance {
 
     protected final Skill def;
+    protected final Combatant combatant;
     protected final Caster caster;
     protected final GridPosition pos;
 
@@ -22,15 +25,17 @@ public abstract class SkillInstance {
     private boolean finished  = false;
     private boolean lockTaken = false;
 
-    protected SkillInstance(Skill def, Caster caster, GridPosition pos) {
+    protected SkillInstance(Skill def, Combatant combatant) {
         this.def       = def;
-        this.caster    = caster;
-        this.pos       = pos;
+        this.combatant = combatant;
+        this.caster    = this.combatant.getCaster();
+        this.pos       = this.combatant.getGridPosition();
         this.originCol = pos.getCol();
         this.originRow = pos.getRow();
     }
 
     public Skill        getDef()    { return def; }
+    public Combatant    getCombatant() { return combatant; }
     public Caster       getCaster() { return caster; }
     public GridPosition getPos()    { return pos; }
 
@@ -55,35 +60,26 @@ public abstract class SkillInstance {
 
     public final boolean isFinished() { return finished; }
 
-    protected void applyEffectsTo(Enemy target) {
-        for (Effect e : def.getEffects()) {
-            switch (e.getType()) {
-                case DAMAGE:
-                    target.takeDamage(e.getValue());
-                    break;
-                case FREEZE:
-                    if (MathUtils.random(99) < e.getChance()) {
-                        target.applyFreeze(e.getDuration());
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
+    protected void applyEffectsTo(Combatant target, BattleContext ctx) {
+        if(target == null || !target.isAlive()) return;
 
-    protected void applyEffectsTo(Player target) {
         for (Effect e : def.getEffects()) {
             switch (e.getType()) {
                 case DAMAGE:
-                    target.takeDamage(e.getValue());
+                    ctx.damageSystem.apply(new DamageEvent(combatant, target, e.getValue(), DamageEvent.Source.SKILL, def));
                     break;
-                case FREEZE:
-                    if (MathUtils.random(99) < e.getChance()) {
-                        target.applyFreeze(e.getDuration());
+                case HEAL:
+                    ctx.damageSystem.heal(new HealEvent(target, e.getValue()));
+                    break;
+                case APPLY_STATUS:
+                    if(MathUtils.random(99) < e.getChance()){
+                        target.getStatusContainer().apply(
+                            StatusFactory.create(e.getStatusType(), e.getDuration(), e.getValue())
+                        );
                     }
                     break;
-                default:
+                case KNOCKBACK:
+                    //reserved
                     break;
             }
         }

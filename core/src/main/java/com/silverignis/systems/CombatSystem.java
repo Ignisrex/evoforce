@@ -36,6 +36,17 @@ public class CombatSystem {
         active.removeIf(SkillInstance::isFinished);
     }
 
+    public void tickStatuses(float delta){
+        if (ctx.player.isAlive()){
+            ctx.player.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
+        }
+
+        for (var enemy : ctx.enemies){
+            if(!enemy.isAlive()) continue;
+            enemy.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
+        }
+    }
+
     private void resolveProjectileClashes() {
         for (int i = 0; i < active.size(); i++) {
             SkillInstance ai = active.get(i);

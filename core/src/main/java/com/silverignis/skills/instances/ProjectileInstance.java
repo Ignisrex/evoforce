@@ -3,17 +3,14 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.silverignis.components.Caster;
-import com.silverignis.components.GridPosition;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.entities.Enemy;
-import com.silverignis.entities.Player;
 import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.ProjectileConfig.MovementType;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.combat.Combatant;
 
 public class ProjectileInstance extends SkillInstance {
 
@@ -39,10 +36,10 @@ public class ProjectileInstance extends SkillInstance {
     private float flightElapsed = 0f;
     private boolean landed = false;
 
-    public ProjectileInstance(Skill def, Caster caster, GridPosition pos) {
-        super(def, caster, pos);
+    public ProjectileInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         this.row = originRow;
-        this.dir = caster.getTeam() == Team.PLAYER ? 1 : -1;
+        this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
 
         this.config = def.getShapeConfig() instanceof ProjectileConfig
                 ? (ProjectileConfig) def.getShapeConfig()
@@ -130,35 +127,23 @@ public class ProjectileInstance extends SkillInstance {
         float halfW      = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
         float projCenter = posX + sprite.getWidth() * 0.5f;
 
-        if (caster.getTeam() == Team.PLAYER) {
-            // Stop on the first alive enemy on this row whose tile-center overlaps.
-            for (Enemy target : ctx.enemiesOnRow(row)) {
-                float targetX = ctx.projectedTileWorld(target.getCol(), row).x;
-                if (projCenter >= targetX - halfW && projCenter <= targetX + halfW) {
-                    applyEffectsTo(target);
-                    finish();
-                    return;
-                }
-            }
-        } else {
-            Player target = ctx.player;
-            if (target == null || !target.isAlive()) return;
-            if (target.getRow() != row) return;
-
-            float targetX = ctx.projectedTileWorld(target.getCol(), row).x;
-            if (projCenter >= targetX - halfW && projCenter <= targetX + halfW) {
-                applyEffectsTo(target);
+        for (Combatant target : ctx.opposingOnRow(combatant, row)){
+            float targetX =ctx.projectedTileWorld(target.getCol(), row).x;
+            if (projCenter >= targetX - halfW && projCenter<=targetX + halfW){
+                applyEffectsTo(target, ctx);
                 finish();
+                return;
             }
         }
     }
 
     private void applyLandingDamage(BattleContext ctx) {
-        // LOB lands on a tile; currently only the player fires LOB skills, so target the enemy.
         int landCol = originCol + config.getTargetRange() * dir;
-        Enemy target = ctx.enemyAt(landCol, row);
+        Combatant target = ctx .combatantAt(landCol, row);
+
         if (target == null) return;
-        applyEffectsTo(target);
+        if (target.getTeam() == combatant.getTeam()) return;
+        applyEffectsTo(target, ctx);
     }
 
     private void spawnLandingEffect(BattleContext ctx) {
@@ -183,7 +168,7 @@ public class ProjectileInstance extends SkillInstance {
                 .cooldown(0f)
                 .vfxTexture(def.getVfxTexture())
                 .build();
-        ZoneInstance cloud = new ZoneInstance(zoneDef, caster, pos, landCol, row);
+        ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row);
         ctx.combatSystem.spawn(cloud);
     }
 

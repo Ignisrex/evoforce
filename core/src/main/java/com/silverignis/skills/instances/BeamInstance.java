@@ -5,13 +5,11 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.silverignis.components.Caster;
-import com.silverignis.components.GridPosition;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.entities.Enemy;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.combat.Combatant;
 
 public class BeamInstance extends SkillInstance {
 
@@ -30,8 +28,8 @@ public class BeamInstance extends SkillInstance {
     private float stateTime = 0f;
     private final int row;
 
-    public BeamInstance(Skill def, Caster caster, GridPosition pos) {
-        super(def, caster, pos);
+    public BeamInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         this.row = originRow;
         acquireInputLock();
 
@@ -78,10 +76,9 @@ public class BeamInstance extends SkillInstance {
         if (hitApplied) return;
         hitApplied = true;
 
-        // Beam pierces — every alive enemy on this row past the caster eats the hit.
-        for (Enemy target : ctx.enemiesOnRow(row)) {
-            if (target.getCol() > originCol) {
-                applyEffectsTo(target);
+        for(Combatant target: ctx.opposingOnRow(combatant, row)){
+            if (target.getCol() > originCol){
+                applyEffectsTo(target, ctx);
             }
         }
     }

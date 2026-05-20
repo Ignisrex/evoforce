@@ -3,12 +3,10 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.silverignis.components.Caster;
-import com.silverignis.components.GridPosition;
-import com.silverignis.entities.Enemy;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.combat.Combatant;
 
 public class ZoneInstance extends SkillInstance {
 
@@ -28,12 +26,12 @@ public class ZoneInstance extends SkillInstance {
     private final int targetRow;
     private boolean rendersUnder = true;
 
-    public ZoneInstance(Skill def, Caster caster, GridPosition pos) {
-        this(def, caster, pos, pos.getCol() + 1, pos.getRow());
+    public ZoneInstance(Skill def, Combatant combatant) {
+        this(def, combatant, combatant.getCol() + 1, combatant.getRow());
     }
 
-    public ZoneInstance(Skill def, Caster caster, GridPosition pos, int targetCol, int targetRow) {
-        super(def, caster, pos);
+    public ZoneInstance(Skill def, Combatant combatant, int targetCol, int targetRow) {
+        super(def, combatant);
         this.targetCol = targetCol;
         this.targetRow = targetRow;
 
@@ -80,9 +78,10 @@ public class ZoneInstance extends SkillInstance {
     }
 
     private void applyTick(BattleContext ctx) {
-        Enemy target = ctx.enemyAt(targetCol, targetRow);
+        Combatant target = ctx.combatantAt(targetCol, targetRow);
         if (target == null) return;
-        applyEffectsTo(target);
+        if (target.getTeam() == combatant.getTeam()) return;
+        applyEffectsTo(target, ctx);
     }
 
     @Override

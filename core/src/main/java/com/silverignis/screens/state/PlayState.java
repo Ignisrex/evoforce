@@ -1,4 +1,4 @@
-package com.silverignis.state;
+package com.silverignis.screens.state;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.crashinvaders.vfx.effects.BloomEffect;
+import com.silverignis.components.Stats;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
@@ -29,6 +30,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.GameEnvironment;
 import com.silverignis.systems.CombatSystem;
+import com.silverignis.systems.combat.DamageSystem;
+import com.silverignis.systems.combat.TriggerBus;
 import com.silverignis.util.PanelGenerator;
 
 import java.util.ArrayList;
@@ -86,11 +89,15 @@ public class PlayState implements GameScreenState {
 
         environment = new GameEnvironment(battlefield, screen.game.viewport);
 
-        player = new Player(1, 1, new Sprite(assets.player), battlefield, 100);
-        enemies.add(new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, 100));
-        enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(assets.enemy), battlefield, 100));
+        player = new Player(1, 1, new Sprite(assets.player), battlefield,
+            new Stats(20, 10, 100, 10, 20));
+        enemies.add(new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, new Stats(20, 10, 100, 10, 20)));
+        enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(assets.enemy), battlefield, new Stats(20, 10, 100, 10, 20)));
 
-        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash);
+        TriggerBus triggerBus = new TriggerBus();
+        DamageSystem damageSystem = new DamageSystem(triggerBus);
+
+        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash, damageSystem, triggerBus);
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
 
@@ -131,6 +138,7 @@ public class PlayState implements GameScreenState {
         tickEntities(delta);
         tickMeters(delta);
         enemyAi();
+        combatSystem.tickStatuses(delta);
         combatSystem.update(delta);
         if (checkBattleOver()) return;
         tickAndCullEffects(delta);
@@ -278,6 +286,8 @@ public class PlayState implements GameScreenState {
     }
 
     private void handleAttack() {
+        if( player.isInputLocked() || player.getStatusContainer().blocksMovement()) return;
+        
         var input = screen.getInputManager();
         if (!input.isActionJustPressed(GameAction.ATTACK_BASIC)) return;
         if (player.isInputLocked()) return;
@@ -286,7 +296,7 @@ public class PlayState implements GameScreenState {
         SkillDeck deck = player.getDeck();
         if (deck.isOnCooldown(skill)) return;
         deck.onUsed(skill);
-        combatSystem.spawn(SkillFactory.create(skill, player.getCaster(), player.getGridPosition()));
+        combatSystem.spawn(SkillFactory.create(skill, player));
     }
 
     private void handleSlotFire() {
@@ -297,14 +307,14 @@ public class PlayState implements GameScreenState {
     }
 
     private void tryFireSlot(SlotKey key){
-        if (player.isInputLocked()) return;
+        if (player.isInputLocked() || player.getStatusContainer().blocksMovement()) return;
 
         ButtonSlot slot = player.getSlots().get(key);
         if (slot.isEmpty()) return;
 
         Skill skill = slot.pop();
         player.getDeck().onUsed(skill);
-        SkillInstance instance = SkillFactory.create(skill, player.getCaster(), player.getGridPosition());
+        SkillInstance instance = SkillFactory.create(skill, player);
         combatSystem.spawn(instance);
     }
 
@@ -328,7 +338,7 @@ public class PlayState implements GameScreenState {
             if (deck.isOnCooldown(skill)) continue;
             deck.onUsed(skill);
             enemy.onBasicAttackFired();
-            combatSystem.spawn(SkillFactory.create(skill, enemy.getCaster(), enemy.getGridPosition()));
+            combatSystem.spawn(SkillFactory.create(skill, enemy));
         }
     }
 }

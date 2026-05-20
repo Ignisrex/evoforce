@@ -2,11 +2,12 @@ package com.silverignis.skills.instances;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.silverignis.components.Caster;
-import com.silverignis.components.GridPosition;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.Trigger;
+import com.silverignis.systems.combat.event.TriggerEvent;
 
 public class AuraInstance extends SkillInstance {
 
@@ -23,13 +24,14 @@ public class AuraInstance extends SkillInstance {
 
     private final Sprite sprite;
 
-    public AuraInstance(Skill def, Caster caster, GridPosition pos) {
-        super(def, caster, pos);
+    public AuraInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         this.sprite = new Sprite(def.getVfxTexture());
     }
 
     @Override
     public void update(float delta, BattleContext ctx) {
+        if (!combatant.isAlive()) { finish(); return; }
         phaseTime += delta;
 
         switch (phase) {
@@ -66,9 +68,9 @@ public class AuraInstance extends SkillInstance {
     }
 
     private void applyTick(BattleContext ctx) {
-        // TODO: apply per-tick effect to caster (e.g. heal, regen, buff).
-        // Actual effect application deferred until the effect/status system
-        // supports self-targeted effects.
+        applyEffectsTo(combatant, ctx);//apply effects to caster {heal, regen  debuff}
+
+        ctx.triggerBus.fire( new TriggerEvent(Trigger.ON_TICK, combatant, null)); //Notify status/aura tick listeners
     }
 
     @Override

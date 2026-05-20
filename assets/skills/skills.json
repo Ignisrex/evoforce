@@ -57,7 +57,7 @@
     },
     "effects": [
       { "type": "DAMAGE", "value": 25 },
-      { "type": "FREEZE", "value": 0, "duration": 2, "chance": 100 }
+      { "type": "APPLY_STATUS",  "statusType":"FREEZE", "duration": 2, "chance": 100 }
     ]
   },
   {
@@ -71,7 +71,7 @@
     "vfxTexture": "effects/beam.png",
     "effects": [
       { "type": "DAMAGE", "value": 5 },
-      { "type": "FREEZE", "value": 0, "duration": 2, "chance": 100 }
+      { "type": "APPLY_STATUS",  "statusType":"FREEZE", "duration": 3, "chance": 100 }
     ]
   },
   {
@@ -82,7 +82,10 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 5.0,
-    "vfxTexture": "effects/aura.png"
+    "vfxTexture": "effects/aura.png",
+    "effects": [
+      {"type": "HEAL", "value": 5 }
+    ]
   },
   {
     "id": "shield",

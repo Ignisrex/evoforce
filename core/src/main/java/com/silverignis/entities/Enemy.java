@@ -7,16 +7,17 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
-import com.silverignis.components.Caster;
-import com.silverignis.components.GridPosition;
-import com.silverignis.components.Team;
+import com.silverignis.components.*;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
+import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.StatusContainer;
+import com.silverignis.systems.combat.StatusType;
 import com.silverignis.util.HitFlash;
 import com.silverignis.util.InputLock;
 
-public class Enemy {
+public class Enemy implements Combatant {
 
     private static final float MIN_MOVE_INTERVAL   = 0.5f;
     private static final float MAX_MOVE_INTERVAL   = 1.5f;
@@ -29,7 +30,9 @@ public class Enemy {
 
     private final Sprite sprite;
     private final Battlefield battlefield;
-    private int hp;
+    private final Health health;
+    private final Stats stats;
+    private final StatusContainer statusContainer;
 
     /** Visual height above the ground plane (world units). Non-zero for jumps/floats. */
     public float visualHeight = 0f;
@@ -39,7 +42,6 @@ public class Enemy {
     private final GridPosition gridPosition;
     private final GlyphLayout  hpLayout     = new GlyphLayout();
 
-    private float freezeTimer = 0f;
     private float deathTimer  = 0f;
 
     private float moveTimer;
@@ -47,16 +49,19 @@ public class Enemy {
     private float attackTimer;
     private float attackInterval;
 
-    public Enemy(int col, int row, Sprite sprite, Battlefield battlefield, int hp) {
+    public Enemy(int col, int row, Sprite sprite, Battlefield battlefield, Stats stats) {
         this.sprite       = sprite;
         this.battlefield  = battlefield;
-        this.hp           = hp;
+        this.stats = stats;
+        this.health = new Health(stats.getVitality());
         this.gridPosition = new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED);
 
         this.moveInterval   = MathUtils.random(MIN_MOVE_INTERVAL, MAX_MOVE_INTERVAL);
         this.moveTimer      = 0f;
         this.attackInterval = MathUtils.random(MIN_ATTACK_INTERVAL, MAX_ATTACK_INTERVAL);
         this.attackTimer    = 0f;
+
+        this.statusContainer = new StatusContainer(this);
     }
 
 
@@ -70,7 +75,7 @@ public class Enemy {
 
     public void setProjectedTarget(float x, float y) { gridPosition.setProjectedTarget(x, y); }
     public void setDepthScale(float s)               { gridPosition.setDepthScale(s); }
-    
+
 
     public Caster     getCaster()       { return caster; }
     public InputLock  getInputLock()    { return caster.getInputLock(); }
@@ -82,10 +87,9 @@ public class Enemy {
 
     // --- Entity-proper state ---
 
-    public int    getHp()       { return hp; }
-    public void   setHp(int hp) { this.hp = hp; }
+    public int    getHp()       { return this.health.getCurrent(); }
     public Sprite getSprite()   { return sprite; }
-    public boolean isAlive()    { return hp > 0; }
+    public boolean isAlive()    { return this.health.getCurrent() > 0; }
 
     public void moveUp() {
         int newRow = MathUtils.clamp(gridPosition.getRow() + 1, 0, Battlefield.ROWS - 1);
@@ -107,41 +111,32 @@ public class Enemy {
         gridPosition.setTile(newCol, gridPosition.getRow());
     }
 
-    public void takeDamage(int amount) {
-        if (amount <= 0 || hp <= 0) return;
-        hp = Math.max(0, hp - amount);
-        hitFlash.flash();
-        if (hp <= 0) deathTimer = DEATH_DURATION;
+    public boolean isDying() { return this.health.getCurrent() <= 0 && deathTimer > 0f; }
+
+    public boolean isDead() { return this.health.getCurrent() <= 0 && deathTimer <= 0f; }
+
+    public Health          getHealth()          { return health; }
+    public Stats           getStats()           { return stats; }
+    public StatusContainer getStatusContainer() { return statusContainer; }
+
+    public void onHitFlash(){ hitFlash.flash(); }
+
+    public void onDeath(){
+        if (deathTimer <= 0f) deathTimer = DEATH_DURATION;
     }
-
-    /** Freeze the enemy for the given duration (seconds). Stacks replace. */
-    public void applyFreeze(float duration) {
-        freezeTimer = Math.max(freezeTimer, duration);
-        hitFlash.flash();
-    }
-
-    public boolean isFrozen() { return freezeTimer > 0f; }
-
-    public boolean isDying() { return hp <= 0 && deathTimer > 0f; }
-
-    public boolean isDead() { return hp <= 0 && deathTimer <= 0f; }
-
-    public void flash() { hitFlash.flash(); }
 
     public void update(float delta) {
         caster.update(delta);
 
-        if (hp <= 0) {
+        if (this.health.getCurrent() <= 0) {
             deathTimer = Math.max(0f, deathTimer - delta);
             gridPosition.update(delta);
             return;
         }
 
         hitFlash.tick(delta);
-        freezeTimer = Math.max(0f, freezeTimer - delta);
 
-        if (freezeTimer > 0f) {
-            // Frozen: skip movement timer; still tick the smoother so any in-flight tween settles.
+        if (statusContainer.blocksMovement()) { //check if status blocks movement
             gridPosition.update(delta);
             return;
         }
@@ -166,7 +161,7 @@ public class Enemy {
      * tuned for player button-mashing.
      */
     public boolean wantsToBasicAttack() {
-        return isAlive() && !isFrozen() && attackTimer >= attackInterval;
+        return isAlive() && !statusContainer.blocksAttack() && attackTimer >= attackInterval;
     }
 
     /** Reset the AI attack throttle after a successful basic attack. */
@@ -212,16 +207,19 @@ public class Enemy {
             sprite.draw(batch);
             sprite.setColor(Color.WHITE);
         } else if (!hitFlash.isHidden()) {
-            if (freezeTimer > 0f) sprite.setColor(FREEZE_TINT);
+            boolean frozen = statusContainer.has(StatusType.FREEZE);
+            if (frozen) sprite.setColor(FREEZE_TINT);
             sprite.draw(batch);
-            if (freezeTimer > 0f) sprite.setColor(Color.WHITE);
+            if (frozen) sprite.setColor(Color.WHITE);
         }
+
+
 
         renderHpLabel(batch, font);
     }
 
     private void renderHpLabel(SpriteBatch batch, BitmapFont font) {
-        hpLayout.setText(font, Integer.toString(Math.max(0, hp)));
+        hpLayout.setText(font, Integer.toString(this.health.getCurrent()));
         float x = gridPosition.getVisualX() - hpLayout.width * 0.5f;
         float y = gridPosition.getVisualY() - 0.05f;
         float alpha = isDying() ? deathTimer / DEATH_DURATION : 1f;

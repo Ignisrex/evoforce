@@ -6,6 +6,9 @@ import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
+import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.DamageSystem;
+import com.silverignis.systems.combat.TriggerBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,9 @@ public class BattleContext {
     /** Shared starburst texture for projectile-clash flourishes. Owned by {@code PlayState}. */
     public final Texture clashTexture;
 
+    public final DamageSystem damageSystem;
+    public final TriggerBus triggerBus;
+
     /** Post-set: CombatSystem constructor needs the context, so this is a cycle. */
     public CombatSystem combatSystem;
 
@@ -41,13 +47,17 @@ public class BattleContext {
                          List<Enemy> enemies,
                          List<BattleVfx> vfx,
                          GameEnvironment environment,
-                         Texture clashTexture) {
+                         Texture clashTexture,
+                         DamageSystem damageSystem,
+                         TriggerBus triggerBus) {
         this.battlefield  = battlefield;
         this.player       = player;
         this.enemies      = enemies;
         this.vfx          = vfx;
         this.environment  = environment;
         this.clashTexture = clashTexture;
+        this.damageSystem = damageSystem;
+        this.triggerBus = triggerBus;
     }
 
     /** Call once after the viewport has been sized. Bakes all tile positions. */
@@ -90,6 +100,31 @@ public class BattleContext {
             if (!e.isAlive()) continue;
             if (e.getRow() == row) out.add(e);
         }
+        return out;
+    }
+
+    public Combatant combatantAt(int col, int  row){
+        if(player.isAlive() && player.getCol() == col && player.getRow() == row ) return player;
+        for(Enemy e:  enemies){
+            if (!e.isAlive()) continue;
+            if (e.getCol() == col && e.getRow() == row) return e;
+        }
+        return null;
+    }
+
+    public List<Combatant> opposingOnRow(Combatant attacker, int row){
+        List<Combatant> out = new ArrayList<>();
+        if (player.isAlive() && player.getRow() == row && player.getTeam() != attacker.getTeam()){
+            out.add(player);
+        }
+
+        for (Enemy e : enemies){
+            if(!e.isAlive()) continue;
+            if(e.getRow() != row) continue;
+            if(e.getTeam() == attacker.getTeam()) continue;
+            out.add(e);
+        }
+
         return out;
     }
 }
