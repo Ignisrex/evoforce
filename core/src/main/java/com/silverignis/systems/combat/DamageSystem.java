@@ -8,9 +8,8 @@ import com.silverignis.systems.combat.event.TriggerEvent;
  * Single entry point for HP mutation. No other code path touches Health
  * directly — Player and Enemy expose getHealth() for reads only.
  *
- * Defense mitigation is identity-passthrough in this commit. Adding the formula
- * here would change every existing skill's damage number; land it as a follow-up
- * balance commit so any regression bisects cleanly.
+ * Defense uses percent reduction: mitigated = raw * 100 / (100 + defense),
+ * floored at 1. See {@link #applyDefense} for the contract.
  */
 
 public class DamageSystem {
@@ -26,8 +25,10 @@ public class DamageSystem {
         if(ev.target == null || !ev.target.isAlive())  return;
         if(ev.amount <= 0) return;
 
-        // 1. Defense calc — identity for now. Future
-        //    ev.amount = Math.max(1, ev.amount - ev.target.getStats().getDefense() / 4);
+        // 1. Defense calc — percent reduction with diminishing returns.
+        //    mitigated = max(1, raw * 100 / (100 + defense))
+        int defense = ev.target.getStats().getDefense();
+        ev.amount = applyDefense(ev.amount, defense);
 
         // 2. Pre-damage hook. Shields/parries can zero ev.amount here.
         bus.fire(new TriggerEvent(Trigger.ON_DAMAGE_TAKEN_PRE, ev.target, ev));
@@ -60,5 +61,10 @@ public class DamageSystem {
 
         ev.target.getHealth().heal(ev.amount);
         bus.fire(new TriggerEvent(Trigger.ON_HEAL, ev.target, ev));
+    }
+
+    private static int applyDefense(int rawDamage, int defense){
+        if (defense <= 0) return rawDamage;
+        return Math.max(1, (rawDamage * 100) / (100 + defense));
     }
 }
