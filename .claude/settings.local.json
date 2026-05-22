@@ -19,7 +19,16 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\silverignis\\\\projects\\\\evoforce\\\\assets\\\\skills\" -Recurse)",
       "Bash(./gradlew core:compileJava --console=plain)",
       "Bash(git commit *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "mcp__pixellab__get_balance",
+      "mcp__pixellab__create_character",
+      "mcp__pixellab__get_character",
+      "Bash(curl -fsSL https://backblaze.pixellab.ai/file/pixellab-characters/c688be2f-c859-4ab6-8aee-da6f5fa4cabd/1bb00df2-81be-4a91-8701-1e3e97035479/rotations/south-east.png -o /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_se.png)",
+      "Bash(curl -fsSL https://backblaze.pixellab.ai/file/pixellab-characters/c688be2f-c859-4ab6-8aee-da6f5fa4cabd/1bb00df2-81be-4a91-8701-1e3e97035479/rotations/south-west.png -o /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_sw.png)",
+      "Bash(cp /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_sw.png /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king.png)",
+      "Bash(stat -c%s /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_se.png)",
+      "Bash(stat -c%s /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_sw.png)",
+      "Bash(python *)"
     ]
   }
 }

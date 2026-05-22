@@ -15,7 +15,7 @@ evoforce/
 ```
 
 All Java is under `core/src/main/java/com/silverignis/` and groups by concern:
-`Main` → `screens/` → `state/` → `systems/` + `entities/` + `skills/` (+ `ui/`, `input/`, `components/`, `util/`).
+`Main` → `screens/` → `state/` → `systems/` + `entities/` + `skills/` + `environment/` (rendering; **the directory is misspelled `evironment/`**) + `sessions/` (run-level state) (+ `ui/`, `input/`, `components/`, `util/`).
 
 ## Where things live (cheat sheet)
 
@@ -30,6 +30,11 @@ All Java is under `core/src/main/java/com/silverignis/` and groups by concern:
 | Add a HUD element | new class in `ui/`, draw in `GameScreen.render`'s HUD pass |
 | Add a panel type | `entities/Battlefield.PanelType` + matching `assets/panels/*.png` |
 | Tweak game feel (timings) | `private static final float`s at the top of the relevant `*Instance.java` |
+| Change the overworld scene | `screens/OverworldScreen.java` (free-roam, doors → battle) |
+| Change the HD-2D camera / projection | `evironment/SceneCamera.java` (camera + `project`/`depthScale`) |
+| Change cave room geometry | `evironment/GameEnvironment.java` (shared shell, grid-agnostic) |
+| Change battlefield floor panels | `evironment/BattlefieldDecor.java` |
+| Change run-persistent player state | `sessions/PlayerProfile.java` + `sessions/GameSession.java` (held on `Main.session`) |
 
 ## Per-frame loop (don't reorder casually)
 
@@ -45,6 +50,8 @@ GameScreen.render(delta)
 `PlayState.update` order matters:
 `player → enemy → charge → cooldowns → enemyAi → projectiles → combatSystem → CollisionResolver → vfx → cull dead`.
 Skill instances thus see the same `originCol/originRow` they captured at construction *and* tick before collision resolution.
+
+`OverworldScreen` is a top-level `Screen` (not a `GameScreenState`) with its own loop: `input → MovementSystem.applyFreeInput(avatar FreePosition) → render 3D room + avatar billboard`. No HUDs, no `BattleContext`. Walking into a door floor-rect calls `Main.setScreen(new GameScreen(...))`; battle win returns via `new OverworldScreen(...)`.
 
 ## Render layers (back → front, inside `PlayState.renderWorld`)
 
@@ -62,15 +69,20 @@ Skill instances thus see the same `originCol/originRow` they captured at constru
 ## Package dependency rules
 
 ```
-screens, state    →    systems, entities, ui, skills, input
+Main              →    screens, sessions
+screens, state    →    systems, environment, entities, components, sessions, ui, skills, input
 ui                →    skills (read-only)
 skills            →    entities, components, systems
-systems           →    entities
+systems           →    entities, components, environment   (BattleContext holds a GameEnvironment)
+environment       →    entities, components               (BattlefieldDecor reads Battlefield)
+sessions          →    skills, components                 (PlayerProfile owns Caster + Stats)
 entities          →    components, util
 components, util  →    (leaf)
 ```
 
 **`components` must not depend on `skills`.** That's why `InputLock.lock(Object)` takes `Object` — the back-edge would create a cycle. Don't "fix" the type to `SkillInstance`.
+
+**`SkillLibrary` is owned by `GameSession` (on `Main`), not `GameScreen`.** It outlives a single battle, so `GameScreen.dispose()` must **not** dispose it — disposing the library frees textures the next battle still needs. `Main.dispose()` disposes the session.
 
 ## Conventions worth not breaking
 

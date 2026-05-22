@@ -6,6 +6,7 @@ import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
+import com.silverignis.evironment.GameEnvironment;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
@@ -70,22 +71,22 @@ public class BattleContext {
         depthCache = new float[Battlefield.ROWS];
         for (int c = 0; c < Battlefield.COLS; c++) {
             for (int r = 0; r < Battlefield.ROWS; r++) {
-                tileCache[c][r] = environment.projectTile(c, r);
+                tileCache[c][r] = environment.project(battlefield.floorX(c), battlefield.floorZ(r));
             }
         }
         for (int r = 0; r < Battlefield.ROWS; r++) {
-            depthCache[r] = environment.tileDepthScale(r);
+            depthCache[r] = environment.depthScale(battlefield.floorZ(r));
         }
     }
 
     public Vector2 projectedTileWorld(int col, int row) {
         if (tileCache != null) return tileCache[col][row];
-        return environment.projectTile(col, row);
+        return environment.project(battlefield.floorX(col), battlefield.floorZ(row));
     }
 
     public float tileDepthScale(int row) {
         if (depthCache != null) return depthCache[row];
-        return environment.tileDepthScale(row);
+        return environment.depthScale(battlefield.floorZ(row));
     }
 
     /** First alive enemy standing exactly on (col,row), or null. */

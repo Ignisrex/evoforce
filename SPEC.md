@@ -18,15 +18,23 @@ evoforce/
 │       ├── components/                # ECS-style role components
 │       │   ├── Caster.java            # SkillDeck + SkillSlots + basicAttack + team + InputLock
 │       │   ├── GridPosition.java      # col/row + PositionSmoother + projected target/depth-scale
+│       │   ├── GridMovement.java      # bundles GridPosition + GridBounds (battle entity body)
+│       │   ├── GridBounds.java        # per-entity legal tile range (player 0-3, enemy 4-7)
+│       │   ├── Direction.java         # UP/DOWN/LEFT/RIGHT step vectors (dCol/dRow)
+│       │   ├── FreePosition.java      # continuous floor x/z + speed + room bounds (overworld avatar)
 │       │   ├── Health.java            # current/max HP (mutated only via DamageSystem)
 │       │   ├── Stats.java             # power/magic/vitality/defense/speed (caster stat block)
 │       │   └── Team.java              # PLAYER / ENEMY (read everywhere team matters)
 │       ├── entities/
-│       │   ├── Battlefield.java       # 8×4 panel grid
+│       │   ├── Battlefield.java       # 8×4 panel grid + 3D floor placement (floorX/floorZ)
 │       │   ├── BattleVfx.java         # short-lived VFX interface
 │       │   ├── ClashEffect.java       # short-lived VFX (also reused as skill VFX)
-│       │   ├── Player.java            # implements Combatant; composes Caster+GridPosition+Health+Stats+StatusContainer
+│       │   ├── Player.java            # implements Combatant; composes (injected) Caster + GridMovement + Health + Stats + StatusContainer
 │       │   └── Enemy.java             # implements Combatant; same composition + simple AI
+│       ├── environment/                # HD-2D rendering  (NOTE: directory is misspelled 'evironment/')
+│       │   ├── GameEnvironment.java    # 3D cave room (ModelBatch) + decoration list; grid-agnostic
+│       │   ├── SceneCamera.java        # perspective camera + continuous project(x,z) / depthScale(z)
+│       │   └── BattlefieldDecor.java   # builds the battle floor panels into a GameEnvironment
 │       ├── input/
 │       │   ├── GameAction.java
 │       │   ├── GamepadInputSource.java
@@ -34,12 +42,16 @@ evoforce/
 │       │   └── KeyboardInputSource.java
 │       ├── screens/
 │       │   ├── GameOverScreen.java
-│       │   ├── GameScreen.java
+│       │   ├── GameScreen.java         # battle screen; runs PlayState ↔ SkillSelectState
 │       │   ├── MainMenuScreen.java
+│       │   ├── OverworldScreen.java    # free-roam scene; door floor-rects launch battles
 │       │   └── state/
 │       │       ├── GameScreenState.java
 │       │       ├── PlayState.java
 │       │       └── SkillSelectState.java
+│       ├── sessions/                   # run-level state (held on Main, outlives a battle)
+│       │   ├── GameSession.java        # SkillLibrary + PlayerProfile
+│       │   └── PlayerProfile.java      # persistent player identity: Caster + Stats
 │       ├── skills/
 │       │   ├── ChargeMeter.java
 │       │   ├── Skill.java / SkillInstance.java
@@ -56,7 +68,7 @@ evoforce/
 │       ├── systems/
 │       │   ├── BattleContext.java     # references + tile-projection cache + combatant lookups
 │       │   ├── CombatSystem.java      # ticks SkillInstances + status containers, resolves clashes
-│       │   ├── GameEnvironment.java   # 3D scene backdrop + tile→screen projection
+│       │   ├── MovementSystem.java    # sole position writer: grid tryGridStep + free applyFreeInput
 │       │   └── combat/
 │       │       ├── Combatant.java     # interface; Player & Enemy implement it
 │       │       ├── DamageSystem.java  # single entry point for HP mutation (defense, triggers, death)
@@ -89,21 +101,25 @@ evoforce/
 - **`Combatant` interface is the skill-side handle on an entity.** Every `SkillInstance` operates on a `Combatant`, not on `Player`/`Enemy` directly — so the same skill code aims at either team. `Combatant` exposes the component getters (`getHealth`, `getStats`, `getCaster`, `getGridPosition`, `getGridMovement`, `getTeam`, `getStatusContainer`), the position shortcuts (`getCol/Row`, `getVisualX/Y`, `getDepthScale`), and lifecycle callbacks (`onHitFlash`, `onDeath`) the damage pipeline invokes.
 - **HP only mutates through `DamageSystem`.** Direct `Health.damage(...)`/`heal(...)` calls live only inside `DamageSystem`. Every skill, status DoT, and panel hazard fans through `DamageSystem.apply(DamageEvent)` / `.heal(HealEvent)`, which applies defense, fires the `ON_DAMAGE_TAKEN_PRE` trigger (shields zero damage here), mutates HP, then fires `ON_DAMAGE_TAKEN`/`ON_HIT_LAND`/`ON_DEATH`/`ON_KILL` in order.
 - **Status effects are uniform across player and enemy.** Each `Combatant` owns a `StatusContainer` keyed by `StatusType`. A skill applies `APPLY_STATUS` → the container holds a `Status` instance which ticks every frame (DoT/HoT via `onTick`), exposes `blocksMovement/Attack/Casting` flags consulted by movement input + AI, and can subscribe to the `TriggerBus` in `onApply` for reactive effects (`ShieldStatus` is the canonical example).
-- **State machine** at the `GameScreen` level: `PlayState` ↔ `SkillSelectState`, both implementing `GameScreenState` (under `screens/state/`). `GameScreen` owns the *global* per-battle data (`SkillLibrary skills`, `ChargeMeter charge`); per-caster state (`SkillDeck`, `SkillSlots`, `basicAttack`, position, HP, stats, statuses) lives on the entity's components. States own *transient* per-frame logic and assets they alone need.
-- **Top-level Screen flow** (peer to the in-battle state machine): `MainMenuScreen` → `GameScreen` → `GameOverScreen` → `GameScreen` (restart). `Main.setScreen` is overridden to dispose the predecessor via `Gdx.app.postRunnable` so any caller — including code running inside the predecessor's own `render` — can swap screens without freeing textures mid-frame.
+- **State machine** at the `GameScreen` level: `PlayState` ↔ `SkillSelectState`, both implementing `GameScreenState` (under `screens/state/`). `GameScreen` owns the per-battle `ChargeMeter charge` + HUDs and reads the run off `Main.session`; the `SkillLibrary` and persistent player loadout live on `GameSession` (in `sessions/`), not on `GameScreen`. Per-caster state (`SkillDeck`, `SkillSlots`, `basicAttack`, position, HP, stats, statuses) lives on the entity's components. States own *transient* per-frame logic and assets they alone need.
+- **Run-level state lives on `Main.session` (`GameSession`).** A run owns the `SkillLibrary` plus a persistent `PlayerProfile` (`Caster` + `Stats`) that survives across battles. The battle `Player` is built *from* the profile each battle (HP refills); the overworld avatar is a separate lightweight body sharing the same identity. This is why `Player`'s constructor takes a prebuilt `Caster`/`Stats` rather than minting its own.
+- **Top-level Screen flow** (peer to the in-battle state machine): `MainMenuScreen` → `OverworldScreen` → `GameScreen` (battle), then **win → `OverworldScreen`** / **loss → `GameOverScreen` → `OverworldScreen`** (restart). The overworld is a free-roam scene (no panels); walking the avatar into a door floor-rect launches a battle. `Main.setScreen` is overridden to dispose the predecessor via `Gdx.app.postRunnable` so any caller — including code running inside the predecessor's own `render` — can swap screens without freeing textures mid-frame.
 - **State machine inside each `SkillInstance`**: every shape uses an inner `Phase` enum + `phaseTime` accumulator (e.g. `DASH_FORWARD → HIT → DASH_BACK` for Strike, `CHARGE → FIRE → FADE` for Beam, `APPEAR → ACTIVE → FADE` for Zone/Aura, etc.). Phase durations are tunable `private static final float`s at the top of each instance file.
-- **3D-projected 2D rendering.** The battlefield is drawn inside a 3D scene (`GameEnvironment`, libGDX g3d `ModelBatch` + `Environment`) on the floor of which the panel grid lives. Each frame, entity/skill draws are placed using **tile→screen projections** the environment's camera supplies (`projectTile`, `tileDepthScale`); back-row sprites render smaller. The 2D pass is captured by a `gdx-vfx` `VfxManager` and run through `BloomEffect` before going to the framebuffer.
+- **3D-projected 2D (HD-2D) rendering, one environment for both scenes.** `GameEnvironment` (package `evironment/` — misspelled) renders a 3D cave shell via libGDX g3d `ModelBatch` + `Environment`; 2D sprites are billboards placed onto the floor. It is **grid-agnostic**: `SceneCamera` owns the camera + continuous `project(worldX, worldZ)` / `depthScale(worldZ)`; `Battlefield` owns the grid's floor placement (`floorX`/`floorZ`); battle panels are floor *decoration* added via `BattlefieldDecor`. `BattleContext` bakes a tile→screen cache (`projectedTileWorld`/`tileDepthScale`) from `battlefield.floor*` + `environment.project/depthScale`. The overworld uses the same `GameEnvironment` with no panels, projecting its avatar's continuous `FreePosition`. The battle 2D pass is captured by a `gdx-vfx` `VfxManager` and run through `BloomEffect`.
 - **No entity animation system yet.** Entity sprites are static PNGs; a frame-based controller is deferred. *Skill VFX* can be animated (`Skill.vfxAnimation` is an `Animation<TextureRegion>` — used by `ice_beam`'s sprite-sheet beam), but `Player`/`Enemy` themselves are still single sprites tweened by `PositionSmoother`.
 
 ### Package dependency rules
 The deliberate import direction, top to bottom:
 ```
-screens, screens.state  →  systems, systems.combat, entities, ui, skills, components, input
+Main                    →  screens, sessions
+screens, screens.state  →  systems, systems.combat, environment, entities, components, sessions, ui, skills, input
 ui                      →  skills, entities                (read-only, for HUD)
 skills                  →  entities, components, util, systems, systems.combat   (skills act on Combatants and route HP through DamageSystem)
 skills.effects          →  systems.combat                  (Effect carries a StatusType payload)
-systems                 →  entities, components, systems.combat   (BattleContext owns DamageSystem/TriggerBus; CombatSystem ticks status containers)
+systems                 →  entities, components, systems.combat, environment   (BattleContext holds a GameEnvironment; CombatSystem ticks status containers)
 systems.combat          →  components                      (Combatant exposes component getters; statuses fan out HealEvent/DamageEvent)
+environment             →  entities, components            (BattlefieldDecor reads Battlefield; SceneCamera/GameEnvironment are otherwise gdx-only)
+sessions                →  skills, components              (PlayerProfile owns Caster + Stats, seeds deck from SkillLibrary)
 entities                →  components, systems.combat, util  (Player/Enemy implement Combatant; compose StatusContainer)
 components              →  skills, util, entities          (Caster imports SkillDeck; GridPosition imports Battlefield)
 util                    →  (leaf — InputLock, HitFlash, PositionSmoother, PanelGenerator)
@@ -116,7 +132,7 @@ util                    →  (leaf — InputLock, HitFlash, PositionSmoother, Pa
 
 **`components/ → entities/`** still exists only because `GridPosition` needs `Battlefield` for tile-center lookups. Tolerable: `entities/Battlefield.java` is itself a leaf (pure geometry + panel state, no upward deps). If we tighten the cycle, move `Battlefield` somewhere neutral.
 
-**`components/` is the ECS-style role layer.** Skill-aware composable pieces live here and may freely import from `skills`. Today: `Caster`, `GridPosition`, `GridMovement`, `GridBounds`, `Direction`, `Health`, `Stats`, `Team`. `Health` and `Stats` are deliberately dumb data — all mutation logic lives in `systems/combat/DamageSystem`. Entities reach skill state through the composed `Caster`, not through a direct `entities → skills` import. `GridMovement` bundles a `GridPosition` with the entity's `GridBounds`; `Direction` is the shared step-vector enum read by `MovementSystem`.
+**`components/` is the ECS-style role layer.** Skill-aware composable pieces live here and may freely import from `skills`. Today: `Caster`, `GridPosition`, `GridMovement`, `GridBounds`, `Direction`, `FreePosition`, `Health`, `Stats`, `Team`. `Health` and `Stats` are deliberately dumb data — all mutation logic lives in `systems/combat/DamageSystem`. Entities reach skill state through the composed `Caster`, not through a direct `entities → skills` import. `GridMovement` bundles a `GridPosition` with the entity's `GridBounds`; `Direction` is the shared step-vector enum read by `MovementSystem`.
 
 ### Per-frame loop
 Every frame `GameScreen.render(delta)` runs:
@@ -355,7 +371,7 @@ The basic attack lives outside this flow: pressing **J** (or **A**) at any time 
 - **`InputLock` owner is `Object`** so `util/` stays a leaf package — a `SkillInstance` can hold the lock without `util` depending on `skills`. Identity comparison is all that matters.
 - **Per-caster state lives on `Caster`, not `GameScreen`.** `SkillDeck` (which owns its own `SkillCooldowns`) and `SkillSlots` are properties of *this* casting entity. Cooldowns are the player's, not the battle's; the same applies to the staged loadout. `GameScreen` keeps only what's truly battle-global: the skill catalogue, the charge meter, and the HUDs.
 - **`SkillDeck` has no caster back-reference.** Membership + cooldowns are intrinsic to the deck, but anything that needs to filter by slots (like `drawHand`) takes them as a parameter — keeps `SkillDeck` a standalone data structure and avoids the `Caster ↔ SkillDeck` loop.
-- **`MovementSystem` is the single owner of grid-position writes.** Three methods: `tryGridStep(Combatant, Direction)` (input/AI — honors input-lock + movement-blocking status, clamps to the entity's `GridBounds`), `forceGridTeleport(Combatant, col, row)` (skill dashes/teleports — clamps only to the global grid edge, which is how a Strike's HIT phase legally enters enemy territory), and `applyDisplacement(Combatant, tiles, Direction)` (the named home for knockback/pull). `GridPosition.setTile` stays public but is, by convention, called only from here.
+- **`MovementSystem` is the single owner of *all* position writes — grid and free.** Grid methods take a `Combatant`: `tryGridStep(Combatant, Direction)` (input/AI — honors input-lock + movement-blocking status, clamps to the entity's `GridBounds`), `forceGridTeleport(Combatant, col, row)` (skill dashes/teleports — clamps only to the global grid edge, which is how a Strike's HIT phase legally enters enemy territory), and `applyDisplacement(Combatant, tiles, Direction)` (the named home for knockback/pull). The free branch takes a `FreePosition`: `applyFreeInput(FreePosition, dx, dy, delta)` (overworld avatar — integrates by speed, clamps to room bounds). The *mode* lives in which method the scene calls, not in a flag — so the overworld is a localized addition, not a re-architecture. `GridPosition.setTile` / `FreePosition.set` stay public but are, by convention, called only from here.
 - **VFX reuses `ClashEffect`** because it already does scale+fade over a short lifetime — exactly the slash flourish we want. Per-skill VFX textures live on `Skill.vfxTexture` and are required non-null — every skill must supply one.
 - **Hit resolution lives inside each `SkillInstance`** (synchronous, fixed-timing). There's no separate collision system — every projectile, beam, strike, and zone does its own tile-center overlap test inside its `SkillInstance` subclass. Multi-target lookups go through `BattleContext.combatantAt` / `opposingOnRow` so the targeting semantics live in one place per shape rather than in a shared collision sweep.
 - **HP only mutates through `DamageSystem`.** A single chokepoint means defense, shields, hit-flash, death-fade trigger, and the `ON_DAMAGE_TAKEN_PRE/ON_DAMAGE_TAKEN/ON_HIT_LAND/ON_DEATH/ON_KILL` fan-out are written once and impossible to bypass. The cost is paying one virtual call per hit; the win is that adding the next reactive effect (parry, lifesteal, on-kill heal) is a `TriggerBus.subscribe(...)` call inside a new `Status` and nothing else.
@@ -385,6 +401,8 @@ An `assets.txt` manifest is auto-generated at build time by the `generateAssetLi
 # Output: lwjgl3/build/libs/evoforce-1.0.0.jar
 ```
 ## Known Gaps / Future Work
+- **Overworld is a thin slice.** `OverworldScreen` gives free-roam movement in the bare cave and two door floor-rects that launch a battle, with `GameSession`/`PlayerProfile` persisting the deck across the round-trip. What's missing: overworld *props* (the floor-decoration counterpart to battle panels — `GameEnvironment` is ready for them via `addDecor`), doors as actual wall openings rather than floor zones, varied/connected rooms, a seamless (non-hard-swap) transition, HP/position persistence, and a real per-room encounter/spawn definition (today every door spawns the same hardcoded battle).
+- **Package directory `evironment/` is misspelled** (should be `environment/`). Cosmetic but permanent in imports until renamed.
 - **No entity animation system.** `Skill.vfxAnimation` covers animated VFX (used by `ice_beam`), but `Player`/`Enemy` themselves are still single static sprites. Pattern when ready: `AnimController` component holding `Map<State, Animation<TextureRegion>>` + current state + elapsed time, ticked by an `AnimSystem`. `Player.render()` would read the current frame; `StrikeInstance` would set `ATTACKING` on entering `HIT`, `NEUTRAL` on entering `DASH_BACK`.
 - **Strike/Beam/Aura/Zone use team-aware target lookups but still bake player-side geometry.** Targets are looked up via `ctx.combatantAt` / `ctx.opposingOnRow` so the *who-gets-hit* question is correct for either team. What's not generalized: `StrikeInstance` snaps to `originCol+1` and aims at `originCol+2` regardless of team (an enemy-fired Strike would dash into its own territory rather than toward the player). When enemies need to fire those shapes, parameterize the "dash forward" direction the same way `ProjectileInstance.dir` already is.
 - **`KNOCKBACK` effect is parsed but unimplemented.** `Effect.knockback(tiles)` builds the right record and `EffectType.KNOCKBACK` ships through the loader, but `applyEffectsTo`'s switch leaves it as a no-op. Implementation hook: one line in `applyEffectsTo`'s `KNOCKBACK` case — `ctx.movementSystem.applyDisplacement(target, tiles, awayFromCaster)`, where direction is derived from `caster.getTeam()`.

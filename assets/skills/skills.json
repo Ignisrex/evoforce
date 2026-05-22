@@ -38,7 +38,8 @@
     "vfxTexture": "effects/venom_ball.png",
     "shapeConfig": { "movementType": "LOB", "targetRange": 2, "arcHeight": 2.0 },
     "effects": [
-      { "type": "DAMAGE", "value": 12 }
+      { "type": "DAMAGE", "value": 12 },
+      { "type": "APPLY_STATUS", "statusType":"POISON", "value":3, "duration": 6}
     ]
   },
   {

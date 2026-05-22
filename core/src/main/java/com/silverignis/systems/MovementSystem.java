@@ -1,10 +1,8 @@
 package com.silverignis.systems;
 
 import com.badlogic.gdx.math.MathUtils;
-import com.silverignis.components.Direction;
-import com.silverignis.components.GridBounds;
-import com.silverignis.components.GridMovement;
-import com.silverignis.components.GridPosition;
+import com.badlogic.gdx.math.Rectangle;
+import com.silverignis.components.*;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.systems.combat.Combatant;
 
@@ -37,5 +35,12 @@ public final class MovementSystem {
         int newRow = pos.getRow() + (dir.dRow * tiles);
         int newCol = pos.getCol() + (dir.dCol * tiles);
         forceGridTeleport(combatant, newCol, newRow);
+    }
+
+    public void applyFreeInput(FreePosition free, float dx, float dy, float delta) {
+        Rectangle b = free.getBounds();
+        float nx = MathUtils.clamp(free.getX() + dx * free.getSpeed() * delta, b.x, b.x + b.width);
+        float ny = MathUtils.clamp(free.getY() + dy * free.getSpeed() * delta, b.y, b.y + b.height);
+        free.set(nx, ny);
     }
 }

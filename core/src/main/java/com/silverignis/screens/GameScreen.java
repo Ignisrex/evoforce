@@ -3,11 +3,9 @@ package com.silverignis.screens;
 import com.badlogic.gdx.Screen;
 import com.silverignis.Main;
 import com.silverignis.entities.Enemy;
-import com.silverignis.entities.Player;
 import com.silverignis.input.InputManager;
 import com.silverignis.skills.ChargeMeter;
 import com.silverignis.skills.Skill;
-import com.silverignis.skills.SkillLibrary;
 import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
 import com.silverignis.screens.state.SkillSelectState;
@@ -27,9 +25,6 @@ public class GameScreen implements Screen {
     public final SkillSelectState skillSelectState;
     private GameScreenState currentState;
 
-
-    public final SkillLibrary skills = SkillLibrary.defaults();
-
     public final ChargeMeter charge = new ChargeMeter(/* max */ 1f, /* fillRate */ 0.20f);
 
     //HUDs
@@ -48,18 +43,11 @@ public class GameScreen implements Screen {
         // basic-attack skill — that one is held in the Caster's basic-attack
         // slot and fired by the dedicated ATTACK_BASIC button, so it should
         // never appear in the staging hand.
-        Player player = playState.getPlayer();
-        Skill  windSlash = skills.get("wind_slash");
-        for (Skill s : skills.all()) {
-            if (s == windSlash) continue;
-            player.getDeck().add(s);
-        }
-        player.getCaster().setBasicAttack(windSlash);
-        // Each enemy fires the same wind_slash via the unified pipeline (team-flipped).
-        // No deck seeding for enemies — only their basic attack is used today.
-        for (Enemy enemy : playState.getEnemies()) {
-            enemy.getCaster().setBasicAttack(windSlash);
-        }
+
+        Skill  windSlash = game.session.skills.get("wind_slash");
+        playState.getEnemies().get(1).getCaster().setBasicAttack(windSlash);
+        Skill  iceBeam = game.session.skills.get("fire_blast");
+        playState.getEnemies().get(0).getCaster().setBasicAttack(iceBeam);
 
         setState(playState);
     }
@@ -125,6 +113,5 @@ public class GameScreen implements Screen {
         slotsHud.dispose();
         basicAttackHud.dispose();
         lifeBarHud.dispose();
-        skills.dispose();
     }
 }

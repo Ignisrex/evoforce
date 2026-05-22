@@ -15,12 +15,15 @@ import com.crashinvaders.vfx.effects.BloomEffect;
 import com.silverignis.components.Direction;
 import com.silverignis.components.Stats;
 import com.silverignis.entities.Battlefield;
+import com.silverignis.entities.DirectionalSprite;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
+import com.silverignis.evironment.BattlefieldDecor;
 import com.silverignis.input.GameAction;
 import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
+import com.silverignis.screens.OverworldScreen;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.SkillFactory;
@@ -29,7 +32,7 @@ import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SlotKey;
 import com.badlogic.gdx.graphics.GL20;
 import com.silverignis.systems.BattleContext;
-import com.silverignis.systems.GameEnvironment;
+import com.silverignis.evironment.GameEnvironment;
 import com.silverignis.systems.CombatSystem;
 import com.silverignis.systems.MovementSystem;
 import com.silverignis.systems.combat.DamageSystem;
@@ -42,13 +45,20 @@ import java.util.List;
 public class PlayState implements GameScreenState {
 
     private static final class Assets {
-        final Texture player, enemy, clash, shadow;
+        // Each combatant sprite ships two facings (_se = faces east / player-side,
+        // _sw = faces west / enemy-side); the renderer picks per team so the two
+        // sides square off. See DirectionalSprite.
+        final Texture playerSe, playerSw, enemySe, enemySw, enemy1Se, enemy1Sw, clash, shadow;
         final Music music;
         final Sound drop;
 
         Assets() {
-            player = new Texture("sprites/beastkin.png");
-            enemy  = new Texture("sprites/skeleton.png");
+            playerSe = new Texture("sprites/beastkin_se.png");
+            playerSw = new Texture("sprites/beastkin_sw.png");
+            enemySe  = new Texture("sprites/skeleton_se.png");
+            enemySw  = new Texture("sprites/skeleton_sw.png");
+            enemy1Se  = new Texture("sprites/elder_lich_se.png");
+            enemy1Sw  = new Texture("sprites/elder_lich_sw.png");
             clash  = new Texture("effects/clash.png");
             shadow = buildShadowTexture();
             drop   = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
@@ -57,10 +67,22 @@ public class PlayState implements GameScreenState {
             music.setVolume(0.5f);
         }
 
+        DirectionalSprite newPlayerSprite() {
+            return new DirectionalSprite(new Sprite(playerSe), new Sprite(playerSw));
+        }
+
+        DirectionalSprite newEnemy1Sprite() {
+            return new DirectionalSprite(new Sprite(enemySe), new Sprite(enemySw));
+        }
+        DirectionalSprite newEnemySprite() {
+            return new DirectionalSprite(new Sprite(enemy1Se), new Sprite(enemy1Sw));
+        }
+
         void dispose() {
-            player.dispose(); enemy.dispose();
-            clash.dispose();  shadow.dispose();
-            drop.dispose();   music.dispose();
+            playerSe.dispose(); playerSw.dispose();
+            enemySe.dispose();  enemySw.dispose();
+            clash.dispose();    shadow.dispose();
+            drop.dispose();     music.dispose();
         }
     }
 
@@ -89,12 +111,12 @@ public class PlayState implements GameScreenState {
         float panelHeight = 4f  / Battlefield.ROWS;
         battlefield = new Battlefield(3f, 1f, panelWidth, panelHeight, PanelGenerator.generatePanels());
 
-        environment = new GameEnvironment(battlefield, screen.game.viewport);
+        environment = new GameEnvironment(screen.game.viewport);
+        BattlefieldDecor.apply(environment, battlefield);
 
-        player = new Player(1, 1, new Sprite(assets.player), battlefield,
-            new Stats(20, 10, 100, 10, 20));
-        enemies.add(new Enemy(Battlefield.COLS - 2, 1, new Sprite(assets.enemy), battlefield, new Stats(20, 10, 100, 10, 20)));
-        enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(assets.enemy), battlefield, new Stats(20, 10, 100, 10, 20)));
+        player = new Player(1, 1, assets.newPlayerSprite(), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
+        enemies.add(new Enemy(Battlefield.COLS - 2, 1, assets.newEnemySprite(), battlefield, new Stats(20, 10, 100, 10, 20)));
+        enemies.add(new Enemy(Battlefield.COLS - 1, 2, assets.newEnemy1Sprite(), battlefield, new Stats(20, 10, 100, 10, 20)));
 
         TriggerBus triggerBus = new TriggerBus();
         DamageSystem damageSystem = new DamageSystem(triggerBus);
@@ -151,7 +173,7 @@ public class PlayState implements GameScreenState {
         if (transitionScheduled) return true;
         if (allEnemiesDead()) {
             transitionScheduled = true;
-            screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.WON));
+            screen.game.setScreen(new OverworldScreen(screen.game));
             return true;
         }
         if (!player.isAlive()) {

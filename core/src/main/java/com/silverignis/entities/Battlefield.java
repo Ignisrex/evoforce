@@ -10,6 +10,16 @@ public class Battlefield {
     public static final int COLS = 8;
     public static final int ROWS = 4;
 
+
+    // ── 3D grid layout on the floor (y = 0) ──────────────────────────────
+    // Where the battlefield grid sits in 3D space. Intentionally wider/deeper
+    // than the 2D logical bounds for perspective fit — tune visually.
+    private static final float GRID_LEFT_3D  = -5.5f;  // x of col-0 left edge
+    private static final float GRID_WIDTH_3D = 11f;    // total width across all cols
+    private static final float GRID_NEAR_3D  =  2.0f;  // z of row-0 front edge (closest to cam)
+    private static final float GRID_DEPTH_3D =  5.0f;  // total depth across all rows
+
+
     public enum PanelType {
         NORMAL_BLUE,
         NORMAL_RED,
@@ -58,6 +68,15 @@ public class Battlefield {
 
     /** World Y at the center of the given row (uses the compressed render height). */
     public float tileCenterY(int row) { return y + (row + 0.3f) * getPanelRenderHeight(); }
+
+    public float panelFloorWidth() { return GRID_WIDTH_3D / COLS; }
+    public float panelFloorDepth() { return GRID_DEPTH_3D / ROWS; }
+
+    /** Floor-space X of a column center (world X for SceneCamera.project). */
+    public float floorX(int col) { return GRID_LEFT_3D + (col + 0.5f) * panelFloorWidth(); }
+
+    /** Floor-space Z of a row center (world Z; nearer rows have larger z). */
+    public float floorZ(int row) { return GRID_NEAR_3D - (row + 0.5f) * panelFloorDepth(); }
 
     public PanelType getPanel(int col, int row) {
         return panels[col][row];

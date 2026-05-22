@@ -18,6 +18,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.silverignis.screens.MainMenuScreen;
+import com.silverignis.sessions.GameSession;
 
 import java.util.ArrayList;
 
@@ -29,6 +30,8 @@ public class Main extends Game {
     public BitmapFont font;
     public FitViewport viewport;
 
+    public GameSession session;
+
     public void create(){
         batch = new SpriteBatch();
         font = new BitmapFont();
@@ -36,6 +39,8 @@ public class Main extends Game {
 
         font.setUseIntegerPositions(false);
         font.getData().setScale(viewport.getWorldHeight()/ Gdx.graphics.getHeight());
+
+        this.session = new GameSession();
 
         this.setScreen(new MainMenuScreen(this));
     }
@@ -52,6 +57,7 @@ public class Main extends Game {
     }
 
     public void dispose(){
+        if(session != null) session.dispose();
         batch.dispose();
         font.dispose();
         screen.dispose();

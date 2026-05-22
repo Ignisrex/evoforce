@@ -29,7 +29,7 @@ public class Enemy implements Combatant {
     private static final Color FREEZE_TINT    = new Color(0.5f, 0.7f, 1f, 1f);
     private static final float DEATH_DURATION = 0.5f;
 
-    private final Sprite sprite;
+    private final DirectionalSprite sprites;
     private final Battlefield battlefield;
     private final Health health;
     private final Stats stats;
@@ -50,8 +50,8 @@ public class Enemy implements Combatant {
     private float attackTimer;
     private float attackInterval;
 
-    public Enemy(int col, int row, Sprite sprite, Battlefield battlefield, Stats stats) {
-        this.sprite       = sprite;
+    public Enemy(int col, int row, DirectionalSprite sprites, Battlefield battlefield, Stats stats) {
+        this.sprites      = sprites;
         this.battlefield  = battlefield;
         this.stats = stats;
         this.health = new Health(stats.getVitality());
@@ -90,7 +90,7 @@ public class Enemy implements Combatant {
     // --- Entity-proper state ---
 
     public int    getHp()       { return this.health.getCurrent(); }
-    public Sprite getSprite()   { return sprite; }
+    public Sprite getSprite()   { return sprites.forTeam(getTeam()); }
     public boolean isAlive()    { return this.health.getCurrent() > 0; }
 
     public boolean isDying() { return this.health.getCurrent() <= 0 && deathTimer > 0f; }
@@ -172,6 +172,7 @@ public class Enemy implements Combatant {
     public void render(SpriteBatch batch, BitmapFont font) {
         if (isDead()) return;
 
+        Sprite sprite = sprites.forTeam(getTeam());
         float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
         sprite.setBounds(
             gridMovement.getPosition().getVisualX() - pw * 0.5f,

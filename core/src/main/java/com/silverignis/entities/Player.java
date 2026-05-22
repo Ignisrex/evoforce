@@ -17,10 +17,10 @@ public class Player implements Combatant {
 
     private static final float MOVE_SMOOTH_SPEED = 18f;
 
-    private final Sprite sprite;
+    private final DirectionalSprite sprites;
     private final Battlefield battlefield;
     private final HitFlash     hitFlash     = new HitFlash();
-    private final Caster       caster       = new Caster(Team.PLAYER);
+    private final Caster       caster;
     private final Health health;
     private final Stats stats;
     private final StatusContainer statusContainer;
@@ -29,12 +29,13 @@ public class Player implements Combatant {
 
     public float visualHeight = 0f;
 
-    public Player(int col, int row, Sprite sprite, Battlefield battlefield, Stats stats) {
-        this.sprite       = sprite;
+    public Player(int col, int row, DirectionalSprite sprites, Battlefield battlefield, Caster caster, Stats stats) {
+        this.sprites      = sprites;
         this.battlefield  = battlefield;
         this.gridMovement = new GridMovement(
             new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED),
             new GridBounds(0, Battlefield.COLS / 2 - 1, 0, Battlefield.ROWS - 1));
+        this.caster = caster;
         this.stats = stats;
         this.health = new Health(this.stats.getVitality());
         this.statusContainer = new StatusContainer(this);
@@ -71,7 +72,7 @@ public class Player implements Combatant {
 
     public int    getHp()         { return this.health.getCurrent(); }
     public int    getMaxHp()      { return this.health.getMax(); }
-    public Sprite getSprite()     { return sprite; }
+    public Sprite getSprite()     { return sprites.forTeam(getTeam()); }
     public boolean isAlive()      { return this.health.getCurrent() > 0; }
 
     public void update(float delta) {
@@ -91,6 +92,7 @@ public class Player implements Combatant {
 
     public void render(SpriteBatch batch) {
         if (hitFlash.isHidden()) return;
+        Sprite sprite = sprites.forTeam(getTeam());
         float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
         sprite.setBounds(
             gridMovement.getPosition().getVisualX() - pw * 0.5f,

@@ -2,6 +2,12 @@ evoforce idea board
 
 
 
+Bugs list:
+
+&#x20;- attacks need to be rendered based on z index they aren't currently so it can look like attacks are hitting you when they are behind you. might be resolves in render/animation refactor.
+
+
+
 Combat Mechanics
 
 \- life steal?
@@ -35,6 +41,10 @@ Todo list:
 
 
 
+* ***Animation System***
+
+&#x09;- should be able to handle skill animations as well as player movement animations
+
 
 
 * ***Enemy creation and spawn system***
@@ -44,10 +54,6 @@ Todo list:
 &#x09;- not sure if i want enemies to be created with just random variables with constraints or if i want there to be specific profiles so i can control the growth progression 
 
 &#x09;	- maybe even give users hints on builds(this will be much later for now getting the system right is more important than balance and feel)
-
-* ***Animation System***
-
-&#x09;- should be able to handle skill animations as well as player movement animations
 
 
 
