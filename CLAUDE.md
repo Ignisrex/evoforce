@@ -26,7 +26,7 @@ This is a Gradle multi-project build (`core`, `lwjgl3`) using the Gradle wrapper
 - **Two coexisting timers, distinct jobs.** `ChargeMeter` (≈20s fill) gates *opening the staging menu*; per-skill `SkillCooldowns` gates *which cards appear in the hand and which slots can fire*. Don't conflate them.
 - **Slots persist across menu opens.** `SkillSelectState.enter()` snapshots `SkillSlots`; cancel restores the snapshot, confirm drains charge. Hand is filtered against both `cooldowns` and currently-loaded slots.
 - **`InputLock` owner is `Object` by design** so the `components` package doesn't depend on `skills`. Identity comparison is the contract.
-- **`Player.forceSetTile` bypasses the half-grid clamp** specifically so a Strike's HIT phase can drive the player into enemy territory. Don't "fix" the clamp asymmetry — it's load-bearing.
+- **`MovementSystem` is the sole owner of entity position writes.** Input steps go through `tryGridStep` (honors input-lock, movement-blocking status, and per-entity `GridBounds`); skill-driven dashes/teleports go through `forceGridTeleport`, which clamps only to the global grid edge so a Strike's HIT phase can drive the player into enemy territory. Nothing else calls `GridPosition.setTile` directly — that's a convention, enforced by review.
 
 ## Conventions worth knowing
 

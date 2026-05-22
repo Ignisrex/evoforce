@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.crashinvaders.vfx.effects.BloomEffect;
+import com.silverignis.components.Direction;
 import com.silverignis.components.Stats;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
@@ -30,6 +31,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.GameEnvironment;
 import com.silverignis.systems.CombatSystem;
+import com.silverignis.systems.MovementSystem;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
 import com.silverignis.util.PanelGenerator;
@@ -96,8 +98,9 @@ public class PlayState implements GameScreenState {
 
         TriggerBus triggerBus = new TriggerBus();
         DamageSystem damageSystem = new DamageSystem(triggerBus);
+        MovementSystem movementSystem = new MovementSystem();
 
-        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash, damageSystem, triggerBus);
+        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash, damageSystem, triggerBus, movementSystem);
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
 
@@ -123,10 +126,10 @@ public class PlayState implements GameScreenState {
     @Override
     public void input() {
         var input = screen.getInputManager();
-        if (input.isActionJustPressed(GameAction.MOVE_UP))    player.moveUp();
-        if (input.isActionJustPressed(GameAction.MOVE_DOWN))  player.moveDown();
-        if (input.isActionJustPressed(GameAction.MOVE_LEFT))  player.moveLeft();
-        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) player.moveRight();
+        if (input.isActionJustPressed(GameAction.MOVE_UP))    battleContext.movementSystem.tryGridStep(player, Direction.UP);
+        if (input.isActionJustPressed(GameAction.MOVE_DOWN))  battleContext.movementSystem.tryGridStep(player, Direction.DOWN);
+        if (input.isActionJustPressed(GameAction.MOVE_LEFT))  battleContext.movementSystem.tryGridStep(player, Direction.LEFT);
+        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) battleContext.movementSystem.tryGridStep(player, Direction.RIGHT);
 
         handleAttack();
         handleSlotFire();
@@ -166,7 +169,7 @@ public class PlayState implements GameScreenState {
 
     private void tickEntities(float delta) {
         player.update(delta);
-        for (Enemy e : enemies) e.update(delta);
+        for (Enemy e : enemies) e.update(delta, battleContext);
 
         Vector2 pp = battleContext.projectedTileWorld(player.getCol(), player.getRow());
         player.setProjectedTarget(pp.x, pp.y);
@@ -287,7 +290,7 @@ public class PlayState implements GameScreenState {
 
     private void handleAttack() {
         if( player.isInputLocked() || player.getStatusContainer().blocksMovement()) return;
-        
+
         var input = screen.getInputManager();
         if (!input.isActionJustPressed(GameAction.ATTACK_BASIC)) return;
         if (player.isInputLocked()) return;

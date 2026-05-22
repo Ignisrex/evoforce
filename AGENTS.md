@@ -78,7 +78,7 @@ components, util  →    (leaf)
 - **One `SkillInstance` subclass per `Shape`.** The `SkillFactory` switch is meant to be exhaustive — keep it that way.
 - **Phase enums + `phaseTime` accumulator** is the standard `SkillInstance` shape. Mirror the pattern when adding shapes.
 - **Acquire `InputLock` only when you're driving the caster's body.** Strike does (whole life), Beam does (only during `CHARGE`/`FIRE`). Projectile/Aura/Zone do not.
-- **Logical position snaps; visual position smooths.** `Player.col/row` is authoritative; `PositionSmoother` is presentation-only. `forceSetTile` exists specifically to bypass the half-grid clamp from inside a skill — use it instead of touching `col/row` directly.
+- **Logical position snaps; visual position smooths.** `col/row` is authoritative; `PositionSmoother` is presentation-only. All writes go through `MovementSystem` — `tryGridStep` for input/AI (clamps to the entity's `GridBounds`), `forceGridTeleport` / `applyDisplacement` for skill-driven dashes/knockback (clamp only to the grid edge). Don't call `GridPosition.setTile` from outside the system.
 - **Effects loop iterates `def.getEffects()` and only honors `Effect.Type.DAMAGE` today.** Other types (`APPLY_POISON`, `STUN`, …) are reserved — adding cases to existing instances is the right place when status effects land.
 - **Spawn child instances via `ctx.combatSystem.spawn(...)`**, never by holding direct references between instances.
 - **One-shot visuals → `ctx.vfx.add(new ClashEffect(...))`.** Persistent visuals → instance `render(batch, ctx)`. Don't draw outside the combat system's two passes if you want layering to behave.
@@ -125,7 +125,7 @@ POSIX equivalents are `./gradlew ...`. Java toolchain is **25**; libGDX **1.14.0
 ## Common pitfalls
 
 - **Don't hold a stale `Skill` reference in a slot expecting it to survive a `SkillLibrary.dispose()`.** Disposing the library disposes its textures; the `Skill` object itself is still in memory but its icon texture is gone.
-- **Don't forget the half-grid clamp** when adding new movement code on the player. `Battlefield.COLS / 2 - 1` is the right edge; cross it only via `forceSetTile`.
+- **Bounds-clamping is centralized in `MovementSystem.tryGridStep`**, which reads each entity's `GridBounds` (player = cols 0–3, enemy = 4–7). Don't re-derive the half-grid edge in new movement code; for skill-driven displacements that must cross it, use `forceGridTeleport` / `applyDisplacement`.
 - **`SKILL_X/Y/B` is dual-purpose by state.** In `PlayState` it fires; in `SkillSelectState` it assigns. Keep both meanings consistent if you rebind.
 - **Gamepad cancel is on `Back`, not `B`,** specifically so pressing `B` in the menu doesn't double-fire (assign-to-slot-B + cancel). Don't "simplify" by collapsing them.
 - **`InputManager` and `GamepadInputSource` both keep current/previous maps.** That's intentional — see `SPEC.md` "Input pipeline". Removing either layer's edge detection will reintroduce double-fires.

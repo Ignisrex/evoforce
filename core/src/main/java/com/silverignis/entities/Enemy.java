@@ -11,6 +11,7 @@ import com.silverignis.components.*;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
+import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
 import com.silverignis.systems.combat.StatusType;
@@ -33,13 +34,13 @@ public class Enemy implements Combatant {
     private final Health health;
     private final Stats stats;
     private final StatusContainer statusContainer;
+    private final GridMovement gridMovement;
 
     /** Visual height above the ground plane (world units). Non-zero for jumps/floats. */
     public float visualHeight = 0f;
 
     private final HitFlash     hitFlash     = new HitFlash();
     private final Caster       caster       = new Caster(Team.ENEMY);
-    private final GridPosition gridPosition;
     private final GlyphLayout  hpLayout     = new GlyphLayout();
 
     private float deathTimer  = 0f;
@@ -54,27 +55,28 @@ public class Enemy implements Combatant {
         this.battlefield  = battlefield;
         this.stats = stats;
         this.health = new Health(stats.getVitality());
-        this.gridPosition = new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED);
-
+        this.gridMovement = new GridMovement(
+            new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED),
+            new GridBounds(Battlefield.COLS / 2, Battlefield.COLS - 1, 0, Battlefield.ROWS - 1));
         this.moveInterval   = MathUtils.random(MIN_MOVE_INTERVAL, MAX_MOVE_INTERVAL);
         this.moveTimer      = 0f;
         this.attackInterval = MathUtils.random(MIN_ATTACK_INTERVAL, MAX_ATTACK_INTERVAL);
         this.attackTimer    = 0f;
-
         this.statusContainer = new StatusContainer(this);
     }
 
 
+    @Override
+    public GridMovement getGridMovement() { return gridMovement; }
+    public GridPosition getGridPosition() { return gridMovement.getPosition(); }
+    public int          getCol()          { return gridMovement.getPosition().getCol(); }
+    public int          getRow()          { return gridMovement.getPosition().getRow(); }
+    public float        getVisualX()      { return gridMovement.getPosition().getVisualX(); }
+    public float        getVisualY()      { return gridMovement.getPosition().getVisualY(); }
+    public float        getDepthScale()   { return gridMovement.getPosition().getDepthScale(); }
 
-    public GridPosition getGridPosition() { return gridPosition; }
-    public int          getCol()          { return gridPosition.getCol(); }
-    public int          getRow()          { return gridPosition.getRow(); }
-    public float        getVisualX()      { return gridPosition.getVisualX(); }
-    public float        getVisualY()      { return gridPosition.getVisualY(); }
-    public float        getDepthScale()   { return gridPosition.getDepthScale(); }
-
-    public void setProjectedTarget(float x, float y) { gridPosition.setProjectedTarget(x, y); }
-    public void setDepthScale(float s)               { gridPosition.setDepthScale(s); }
+    public void setProjectedTarget(float x, float y) { gridMovement.getPosition().setProjectedTarget(x, y); }
+    public void setDepthScale(float s)               { gridMovement.getPosition().setDepthScale(s); }
 
 
     public Caster     getCaster()       { return caster; }
@@ -91,26 +93,6 @@ public class Enemy implements Combatant {
     public Sprite getSprite()   { return sprite; }
     public boolean isAlive()    { return this.health.getCurrent() > 0; }
 
-    public void moveUp() {
-        int newRow = MathUtils.clamp(gridPosition.getRow() + 1, 0, Battlefield.ROWS - 1);
-        gridPosition.setTile(gridPosition.getCol(), newRow);
-    }
-
-    public void moveDown() {
-        int newRow = MathUtils.clamp(gridPosition.getRow() - 1, 0, Battlefield.ROWS - 1);
-        gridPosition.setTile(gridPosition.getCol(), newRow);
-    }
-
-    public void moveLeft() {
-        int newCol = MathUtils.clamp(gridPosition.getCol() - 1, Battlefield.COLS / 2, Battlefield.COLS - 1);
-        gridPosition.setTile(newCol, gridPosition.getRow());
-    }
-
-    public void moveRight() {
-        int newCol = MathUtils.clamp(gridPosition.getCol() + 1, Battlefield.COLS / 2, Battlefield.COLS - 1);
-        gridPosition.setTile(newCol, gridPosition.getRow());
-    }
-
     public boolean isDying() { return this.health.getCurrent() <= 0 && deathTimer > 0f; }
 
     public boolean isDead() { return this.health.getCurrent() <= 0 && deathTimer <= 0f; }
@@ -125,19 +107,19 @@ public class Enemy implements Combatant {
         if (deathTimer <= 0f) deathTimer = DEATH_DURATION;
     }
 
-    public void update(float delta) {
+    public void update(float delta, BattleContext ctx) {
         caster.update(delta);
 
         if (this.health.getCurrent() <= 0) {
             deathTimer = Math.max(0f, deathTimer - delta);
-            gridPosition.update(delta);
+            gridMovement.getPosition().update(delta);
             return;
         }
 
         hitFlash.tick(delta);
 
         if (statusContainer.blocksMovement()) { //check if status blocks movement
-            gridPosition.update(delta);
+            gridMovement.getPosition().update(delta);
             return;
         }
 
@@ -145,12 +127,12 @@ public class Enemy implements Combatant {
         if (moveTimer >= moveInterval) {
             moveTimer = 0f;
             moveInterval = MathUtils.random(MIN_MOVE_INTERVAL, MAX_MOVE_INTERVAL);
-            stepRandomly();
+            stepRandomly(ctx);
         }
 
         attackTimer += delta;
 
-        gridPosition.update(delta);
+        gridMovement.getPosition().update(delta);
     }
 
     /**
@@ -170,13 +152,8 @@ public class Enemy implements Combatant {
         attackInterval = MathUtils.random(MIN_ATTACK_INTERVAL, MAX_ATTACK_INTERVAL);
     }
 
-    private void stepRandomly() {
-        switch (MathUtils.random(3)) {
-            case 0: moveUp();    break;
-            case 1: moveDown();  break;
-            case 2: moveLeft();  break;
-            case 3: moveRight(); break;
-        }
+    private void stepRandomly(BattleContext ctx) {
+        ctx.movementSystem.tryGridStep(this, Direction.values()[MathUtils.random(3)]);
     }
 
     /** Shadow ellipse drawn at ground position before the sprite pass. */
@@ -188,17 +165,17 @@ public class Enemy implements Combatant {
         float sh = ph * 0.35f;
         float alpha = isDying() ? (deathTimer / DEATH_DURATION) * 0.5f : 0.5f;
         batch.setColor(1f, 1f, 1f, alpha);
-        batch.draw(shadowTex, gridPosition.getVisualX() - sw * 0.5f, gridPosition.getVisualY(), sw, sh);
+        batch.draw(shadowTex, gridMovement.getPosition().getVisualX() - sw * 0.5f, gridMovement.getPosition().getVisualY(), sw, sh);
         batch.setColor(Color.WHITE);
     }
 
     public void render(SpriteBatch batch, BitmapFont font) {
         if (isDead()) return;
 
-        float pw = battlefield.getPanelWidth() * gridPosition.getDepthScale();
+        float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
         sprite.setBounds(
-                gridPosition.getVisualX() - pw * 0.5f,
-                gridPosition.getVisualY() + visualHeight,
+            gridMovement.getPosition().getVisualX() - pw * 0.5f,
+            gridMovement.getPosition().getVisualY() + visualHeight,
                 pw, pw);
 
         if (isDying()) {
@@ -220,8 +197,8 @@ public class Enemy implements Combatant {
 
     private void renderHpLabel(SpriteBatch batch, BitmapFont font) {
         hpLayout.setText(font, Integer.toString(this.health.getCurrent()));
-        float x = gridPosition.getVisualX() - hpLayout.width * 0.5f;
-        float y = gridPosition.getVisualY() - 0.05f;
+        float x = gridMovement.getPosition().getVisualX() - hpLayout.width * 0.5f;
+        float y = gridMovement.getPosition().getVisualY() - 0.05f;
         float alpha = isDying() ? deathTimer / DEATH_DURATION : 1f;
         Color prev = font.getColor().cpy();
         font.setColor(1f, 1f, 1f, alpha);

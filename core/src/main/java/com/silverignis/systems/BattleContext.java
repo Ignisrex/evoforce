@@ -39,6 +39,8 @@ public class BattleContext {
     /** Post-set: CombatSystem constructor needs the context, so this is a cycle. */
     public CombatSystem combatSystem;
 
+    public final MovementSystem movementSystem;
+
     private Vector2[][] tileCache;
     private float[]     depthCache;
 
@@ -49,7 +51,8 @@ public class BattleContext {
                          GameEnvironment environment,
                          Texture clashTexture,
                          DamageSystem damageSystem,
-                         TriggerBus triggerBus) {
+                         TriggerBus triggerBus,
+                         MovementSystem movementSystem) {
         this.battlefield  = battlefield;
         this.player       = player;
         this.enemies      = enemies;
@@ -58,6 +61,7 @@ public class BattleContext {
         this.clashTexture = clashTexture;
         this.damageSystem = damageSystem;
         this.triggerBus = triggerBus;
+        this.movementSystem = movementSystem;
     }
 
     /** Call once after the viewport has been sized. Bakes all tile positions. */

@@ -4,7 +4,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 import com.silverignis.components.*;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
@@ -20,13 +19,12 @@ public class Player implements Combatant {
 
     private final Sprite sprite;
     private final Battlefield battlefield;
-
     private final HitFlash     hitFlash     = new HitFlash();
     private final Caster       caster       = new Caster(Team.PLAYER);
-    private final GridPosition gridPosition;
     private final Health health;
     private final Stats stats;
     private final StatusContainer statusContainer;
+    private final GridMovement gridMovement;
 
 
     public float visualHeight = 0f;
@@ -34,7 +32,9 @@ public class Player implements Combatant {
     public Player(int col, int row, Sprite sprite, Battlefield battlefield, Stats stats) {
         this.sprite       = sprite;
         this.battlefield  = battlefield;
-        this.gridPosition = new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED);
+        this.gridMovement = new GridMovement(
+            new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED),
+            new GridBounds(0, Battlefield.COLS / 2 - 1, 0, Battlefield.ROWS - 1));
         this.stats = stats;
         this.health = new Health(this.stats.getVitality());
         this.statusContainer = new StatusContainer(this);
@@ -43,15 +43,19 @@ public class Player implements Combatant {
 
     // --- Position (delegated to GridPosition) ---
 
-    public GridPosition getGridPosition() { return gridPosition; }
-    public int          getCol()          { return gridPosition.getCol(); }
-    public int          getRow()          { return gridPosition.getRow(); }
-    public float        getVisualX()      { return gridPosition.getVisualX(); }
-    public float        getVisualY()      { return gridPosition.getVisualY(); }
-    public float        getDepthScale()   { return gridPosition.getDepthScale(); }
+    public GridPosition getGridPosition() { return gridMovement.getPosition(); }
 
-    public void setProjectedTarget(float x, float y) { gridPosition.setProjectedTarget(x, y); }
-    public void setDepthScale(float s)               { gridPosition.setDepthScale(s); }
+    @Override
+    public GridMovement getGridMovement() { return gridMovement; }
+
+    public int          getCol()          { return gridMovement.getPosition().getCol(); }
+    public int          getRow()          { return gridMovement.getPosition().getRow(); }
+    public float        getVisualX()      { return gridMovement.getPosition().getVisualX(); }
+    public float        getVisualY()      { return gridMovement.getPosition().getVisualY(); }
+    public float        getDepthScale()   { return gridMovement.getPosition().getDepthScale(); }
+
+    public void setProjectedTarget(float x, float y) { gridMovement.getPosition().setProjectedTarget(x, y); }
+    public void setDepthScale(float s)               { gridMovement.getPosition().setDepthScale(s); }
 
     // --- Caster role (delegated to Caster) ---
 
@@ -70,44 +74,9 @@ public class Player implements Combatant {
     public Sprite getSprite()     { return sprite; }
     public boolean isAlive()      { return this.health.getCurrent() > 0; }
 
-    public void moveUp() {
-        if (caster.getInputLock().isLocked() || statusContainer.blocksMovement()) return;
-        int newRow = MathUtils.clamp(gridPosition.getRow() + 1, 0, Battlefield.ROWS - 1);
-        gridPosition.setTile(gridPosition.getCol(), newRow);
-    }
-
-    public void moveDown() {
-        if (caster.getInputLock().isLocked() || statusContainer.blocksMovement()) return;
-        int newRow = MathUtils.clamp(gridPosition.getRow() - 1, 0, Battlefield.ROWS - 1);
-        gridPosition.setTile(gridPosition.getCol(), newRow);
-    }
-
-    public void moveLeft() {
-        if (caster.getInputLock().isLocked() || statusContainer.blocksMovement()) return;
-        int newCol = MathUtils.clamp(gridPosition.getCol() - 1, 0, Battlefield.COLS / 2 - 1);
-        gridPosition.setTile(newCol, gridPosition.getRow());
-    }
-
-    public void moveRight() {
-        if (caster.getInputLock().isLocked() || statusContainer.blocksMovement()) return;
-        int newCol = MathUtils.clamp(gridPosition.getCol() + 1, 0, Battlefield.COLS / 2 - 1);
-        gridPosition.setTile(newCol, gridPosition.getRow());
-    }
-
-    /**
-     * Snap to an arbitrary grid cell, bypassing the half-grid clamp. Used by
-     * {@code StrikeInstance} to drive the body across the whole battlefield
-     * during HIT phase. The visual smoother still tweens, so the dash looks smooth.
-     */
-    public void forceSetTile(int newCol, int newRow) {
-        gridPosition.setTile(
-                MathUtils.clamp(newCol, 0, Battlefield.COLS - 1),
-                MathUtils.clamp(newRow, 0, Battlefield.ROWS - 1));
-    }
-
     public void update(float delta) {
         caster.update(delta);
-        gridPosition.update(delta);
+        gridMovement.getPosition().update(delta);
         hitFlash.tick(delta);
     }
 
@@ -117,15 +86,15 @@ public class Player implements Combatant {
         float sw = pw * 0.75f;
         float sh = ph * 0.35f;
         batch.setColor(Color.WHITE);
-        batch.draw(shadowTex, gridPosition.getVisualX() - sw * 0.5f, gridPosition.getVisualY(), sw, sh);
+        batch.draw(shadowTex, gridMovement.getPosition().getVisualX() - sw * 0.5f, gridMovement.getPosition().getVisualY(), sw, sh);
     }
 
     public void render(SpriteBatch batch) {
         if (hitFlash.isHidden()) return;
-        float pw = battlefield.getPanelWidth() * gridPosition.getDepthScale();
+        float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
         sprite.setBounds(
-                gridPosition.getVisualX() - pw * 0.5f,
-                gridPosition.getVisualY() + visualHeight,
+            gridMovement.getPosition().getVisualX() - pw * 0.5f,
+            gridMovement.getPosition().getVisualY() + visualHeight,
                 pw, pw);
         sprite.draw(batch);
     }

@@ -7,6 +7,7 @@ public interface Combatant {
     Stats getStats();
     Caster getCaster();
     GridPosition getGridPosition();
+    GridMovement getGridMovement();
     Team getTeam();
     StatusContainer getStatusContainer();
 

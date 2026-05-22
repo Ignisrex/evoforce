@@ -17,6 +17,7 @@ public class StrikeInstance extends SkillInstance {
 
     private Phase phase = Phase.DASH_FORWARD;
     private float phaseTime = 0f;
+    private boolean primed = false;
 
     private final int strikeFromCol;
     private final int targetCol;
@@ -29,11 +30,14 @@ public class StrikeInstance extends SkillInstance {
         this.row           = originRow;
 
         acquireInputLock();
-        pos.setTile(strikeFromCol, row);
     }
 
     @Override
     public void update(float delta, BattleContext ctx) {
+        if (!primed) {
+            ctx.movementSystem.forceGridTeleport(combatant, strikeFromCol, row);
+            primed = true;
+        }
         phaseTime += delta;
 
         switch (phase) {
@@ -45,7 +49,7 @@ public class StrikeInstance extends SkillInstance {
 
             case HIT:
                 if (phaseTime >= HIT_TIME) {
-                    enterDashBack();
+                    enterDashBack(ctx);
                 }
                 break;
 
@@ -70,10 +74,10 @@ public class StrikeInstance extends SkillInstance {
         applyHit(ctx);
     }
 
-    private void enterDashBack() {
+    private void enterDashBack(BattleContext ctx) {
         phase = Phase.DASH_BACK;
         phaseTime = 0f;
-        pos.setTile(originCol, originRow);
+        ctx.movementSystem.forceGridTeleport(combatant, originCol, originRow);
     }
 
     private void spawnSlashVfx(BattleContext ctx) {
