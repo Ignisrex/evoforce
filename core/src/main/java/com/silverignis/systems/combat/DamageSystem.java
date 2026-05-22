@@ -26,7 +26,7 @@ public class DamageSystem {
         if(ev.amount <= 0) return;
 
         // 1. Defense calc — percent reduction with diminishing returns.
-        //    mitigated = max(1, raw * 100 / (100 + defense))
+        //    mitigated = max (1, raw * 100 / (100 + defense))
         int defense = ev.target.getStats().getDefense();
         ev.amount = applyDefense(ev.amount, defense);
 

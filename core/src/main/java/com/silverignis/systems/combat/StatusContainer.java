@@ -16,7 +16,7 @@ public class StatusContainer {
 
     public Combatant getOwner(){ return owner; }
 
-    public Status apply(Status s) {
+    public Status apply(Status s, TriggerBus bus) {
         Status existing = byType.get(s.getType());
         if(existing != null){
             existing.refresh(s.getRemaining());
@@ -24,6 +24,7 @@ public class StatusContainer {
         }
 
         byType.put(s.getType(), s);
+        s.onApply(owner, bus);
         return s;
     }
 

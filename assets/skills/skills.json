@@ -78,14 +78,27 @@
   {
     "id": "heal",
     "displayName": "Heal",
-    "description": "Restore a small amount of HP.",
+    "description": "Restore a small amount of HP at once.",
     "icon": "skills/heal.png",
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 5.0,
     "vfxTexture": "effects/aura.png",
     "effects": [
-      {"type": "HEAL", "value": 5 }
+      {"type": "HEAL", "value": 15 }
+    ]
+  },
+  {
+    "id": "regen",
+    "displayName": "Regen",
+    "description": "Restore a small amount of HP over time.",
+    "icon": "skills/regen.png",
+    "shape": "AURA",
+    "element": "NONE",
+    "cooldown": 5.0,
+    "vfxTexture": "effects/aura.png",
+    "effects": [
+      {"type": "APPLY_STATUS", "statusType":"REGEN", "duration": 4, "value": 6 }
     ]
   },
   {
@@ -96,7 +109,10 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 4.0,
-    "vfxTexture": "effects/aura.png"
+    "vfxTexture": "effects/aura.png",
+    "effects": [
+      {"type":"APPLY_STATUS", "statusType":"SHIELD", "duration": 6}
+    ]
   },
   {
     "id": "wind_slash",

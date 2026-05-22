@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
+import com.silverignis.skills.effects.Effect;
+import com.silverignis.skills.effects.EffectType;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.Trigger;
@@ -14,15 +16,14 @@ public class AuraInstance extends SkillInstance {
     private static final float EXPAND_TIME    = 0.20f;
     private static final float ACTIVE_TIME    = 3.00f;
     private static final float FADE_TIME      = 0.20f;
-    private static final float TICK_INTERVAL  = 0.50f;
 
     private enum Phase { EXPAND, ACTIVE, FADE, DONE }
 
     private Phase phase = Phase.EXPAND;
     private float phaseTime = 0f;
-    private float tickTimer = 0f;
 
     private final Sprite sprite;
+    private float activeDuration;
 
     public AuraInstance(Skill def, Combatant combatant) {
         super(def, combatant);
@@ -36,15 +37,10 @@ public class AuraInstance extends SkillInstance {
 
         switch (phase) {
             case EXPAND:
-                if (phaseTime >= EXPAND_TIME) enterActive();
+                if (phaseTime >= EXPAND_TIME) enterActive(ctx);
                 break;
             case ACTIVE:
-                tickTimer += delta;
-                if (tickTimer >= TICK_INTERVAL) {
-                    tickTimer -= TICK_INTERVAL;
-                    applyTick(ctx);
-                }
-                if (phaseTime >= ACTIVE_TIME) enterFade();
+                if (shouldFade()) enterFade();
                 break;
             case FADE:
                 if (phaseTime >= FADE_TIME) {
@@ -57,9 +53,14 @@ public class AuraInstance extends SkillInstance {
         }
     }
 
-    private void enterActive() {
+    private void enterActive(BattleContext ctx) {
         phase = Phase.ACTIVE;
         phaseTime = 0f;
+        activeDuration = computeActiveDuration();
+        if (combatant.isAlive()){
+            applyEffectsTo(combatant, ctx);
+            ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_TICK, combatant, null)); //might need move to status onTick??
+        }
     }
 
     private void enterFade() {
@@ -67,10 +68,29 @@ public class AuraInstance extends SkillInstance {
         phaseTime = 0f;
     }
 
-    private void applyTick(BattleContext ctx) {
-        applyEffectsTo(combatant, ctx);//apply effects to caster {heal, regen  debuff}
+    private float computeActiveDuration() {
+        float max = 0f;
+        boolean hasStatusEffect = false;
+        for (Effect e : def.getEffects()){
+            if (e.getType() == EffectType.APPLY_STATUS){
+                hasStatusEffect = true;
+                max = Math.max(e.getDuration(), max);
+            }
+        }
+        return hasStatusEffect ? max : ACTIVE_TIME;
+    }
 
-        ctx.triggerBus.fire( new TriggerEvent(Trigger.ON_TICK, combatant, null)); //Notify status/aura tick listeners
+    public boolean shouldFade(){
+        if (phaseTime >= activeDuration) return true;
+
+        boolean hasStatusEffect = false;
+        for(Effect effect : def.getEffects()){
+            hasStatusEffect = true;
+            if(combatant.getStatusContainer().has(effect.getStatusType())){
+                return false;
+            }
+        }
+        return hasStatusEffect;
     }
 
     @Override

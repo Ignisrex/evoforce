@@ -7,6 +7,7 @@ import com.silverignis.components.GridPosition;
 import com.silverignis.components.Stats;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.systems.BattleContext;
+import com.silverignis.systems.CombatSystem;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusFactory;
 import com.silverignis.systems.combat.event.DamageEvent;
@@ -79,7 +80,8 @@ public abstract class SkillInstance {
                 case APPLY_STATUS:
                     if(MathUtils.random(99) < e.getChance()){
                         target.getStatusContainer().apply(
-                            StatusFactory.create(e.getStatusType(), e.getDuration(), e.getValue())
+                            StatusFactory.create(e.getStatusType(), e.getDuration(), e.getValue()),
+                            ctx.triggerBus
                         );
                     }
                     break;

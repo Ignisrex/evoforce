@@ -30,8 +30,11 @@ public abstract class Status {
                 onTick(owner, dmg, bus);
             }
         }
+        if(isExpired()) onExpire(owner, bus);
     }
 
+    /*called when a status is first applied, not when the same type is refreshed*/
+    protected void onApply(Combatant owner, TriggerBus bus){}
     protected void onTick(Combatant owner, DamageSystem dmg, TriggerBus bus){}
     protected void onExpire(Combatant owner, TriggerBus bus){};
 

@@ -1,9 +1,6 @@
 package com.silverignis.systems.combat;
 
-import com.silverignis.systems.combat.status.BurnStatus;
-import com.silverignis.systems.combat.status.FreezeStatus;
-import com.silverignis.systems.combat.status.PoisonStatus;
-import com.silverignis.systems.combat.status.StunStatus;
+import com.silverignis.systems.combat.status.*;
 
 public class StatusFactory {
 
@@ -15,7 +12,8 @@ public class StatusFactory {
             case BURN -> new BurnStatus(duration, dotMag);
             case POISON -> new PoisonStatus(duration, dotMag);
             case STUN -> new StunStatus(duration);
-            case REGEN, SHIELD -> throw new IllegalArgumentException("StatusType " + type + " has no concrete implementation yet");
+            case SHIELD -> new ShieldStatus(duration);
+            case REGEN -> new RegenStatus(duration, dotMag);
         };
     }
 }
