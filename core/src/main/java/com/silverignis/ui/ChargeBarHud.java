@@ -1,7 +1,6 @@
 package com.silverignis.ui;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -27,12 +26,8 @@ public class ChargeBarHud {
 
     private final Texture pixel;
 
-    public ChargeBarHud() {
-        Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        p.setColor(Color.WHITE);
-        p.fill();
-        this.pixel = new Texture(p);
-        p.dispose();
+    public ChargeBarHud(Texture pixel) {
+        this.pixel = pixel;
     }
 
     public void render(SpriteBatch batch, Viewport viewport, ChargeMeter meter) {
@@ -63,7 +58,4 @@ public class ChargeBarHud {
         if (!wasDrawing) batch.end();
     }
 
-    public void dispose() {
-        pixel.dispose();
-    }
 }

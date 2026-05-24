@@ -1,7 +1,6 @@
 package com.silverignis.ui;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -34,12 +33,8 @@ public class SkillSelectOverlay {
     private int cursor;
     private float pulse; // 0..1 cosine pulse for cursor highlight
 
-    public SkillSelectOverlay() {
-        Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        p.setColor(Color.WHITE);
-        p.fill();
-        this.pixel = new Texture(p);
-        p.dispose();
+    public SkillSelectOverlay(Texture pixel) {
+        this.pixel = pixel;
     }
 
     public void show(List<Skill> options) {
@@ -115,10 +110,6 @@ public class SkillSelectOverlay {
         }
 
         batch.setColor(prev);
-    }
-
-    public void dispose() {
-        pixel.dispose();
     }
 
     /**

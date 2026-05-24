@@ -39,11 +39,11 @@ public class GameEnvironment implements Disposable {
     private final SceneCamera sceneCamera;
     private final ModelBuilder modelBuilder = new ModelBuilder();
 
-    public GameEnvironment(Viewport viewport) {
-        wallTex  = new Texture(Gdx.files.internal("cave_wall.png"));
-        floorTex = new Texture(Gdx.files.internal("cave_floor.png"));
-        wallTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        floorTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    public GameEnvironment(Viewport viewport, Texture wallTex, Texture floorTex) {
+        // Cave textures are borrowed from GameAssets (loaded + Linear-filtered
+        // centrally); this class neither owns nor disposes them.
+        this.wallTex  = wallTex;
+        this.floorTex = floorTex;
 
         modelBatch = new ModelBatch();
 
@@ -136,8 +136,6 @@ public class GameEnvironment implements Disposable {
     @Override
     public void dispose() {
         modelBatch.dispose();
-        wallTex.dispose();
-        floorTex.dispose();
         for (Model m : models) m.dispose();
     }
 }

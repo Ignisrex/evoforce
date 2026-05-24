@@ -17,6 +17,9 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.silverignis.assets.GameAssets;
+import com.silverignis.assets.GeneratedAssets;
+import com.silverignis.registry.MonsterRegistry;
 import com.silverignis.screens.MainMenuScreen;
 import com.silverignis.sessions.GameSession;
 
@@ -29,6 +32,9 @@ public class Main extends Game {
     public SpriteBatch batch;
     public BitmapFont font;
     public FitViewport viewport;
+    public final GameAssets assets = new GameAssets();
+    public final MonsterRegistry monsterRegistry = new MonsterRegistry(assets);
+    public GeneratedAssets generated;
 
     public GameSession session;
 
@@ -40,9 +46,17 @@ public class Main extends Game {
         font.setUseIntegerPositions(false);
         font.getData().setScale(viewport.getWorldHeight()/ Gdx.graphics.getHeight());
 
+        loadAssets();
+        this.generated = new GeneratedAssets();
+
         this.session = new GameSession();
 
         this.setScreen(new MainMenuScreen(this));
+    }
+
+    private void loadAssets(){
+        this.assets.queueLoad();
+        this.assets.finishLoading();
     }
 
     public void render(){
@@ -61,6 +75,8 @@ public class Main extends Game {
         batch.dispose();
         font.dispose();
         screen.dispose();
+        if(generated != null) generated.dispose();
+        assets.dispose();
     }
 
 

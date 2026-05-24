@@ -4,8 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -30,7 +28,6 @@ public class OverworldScreen implements Screen {
         new Rectangle( 1.5f, -3f, 2f, 1.3f),
     };
 
-    private final Texture doorTex;
     private boolean transitioning = false;
 
     private final Main game;
@@ -38,25 +35,17 @@ public class OverworldScreen implements Screen {
     private final MovementSystem movementSystem = new MovementSystem();
 
     private final GameEnvironment environment;
-    private final Texture avatarTex;
     private final Sprite avatar;
     private final FreePosition pos;
 
     public OverworldScreen(Main game){
         this.game = game;
-        this.environment = new GameEnvironment(game.viewport);
+        this.environment = new GameEnvironment(game.viewport, game.assets.caveWall(), game.assets.caveFloor());
 
-        this.avatarTex = new Texture("sprites/beastkin.png");
-        this.avatar = new Sprite(avatarTex);
+        this.avatar = new Sprite(game.assets.avatar());
 
         Rectangle bounds = new Rectangle(-5f, -3f, 10f, 6f);
         this.pos = new FreePosition(0f, 0f, AVATAR_SPEED, bounds);
-
-        Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pm.setColor(Color.WHITE);
-        pm.fill();
-        this.doorTex = new Texture(pm);
-        pm.dispose();
     }
 
     @Override
@@ -100,7 +89,7 @@ public class OverworldScreen implements Screen {
             float cz = d.y + d.height * 0.5f;
             Vector2 s = environment.project(cx, cz);
             float ds = environment.depthScale(cz);
-            game.batch.draw(doorTex, s.x - DOOR_WIDTH * ds * 0.5f, s.y, DOOR_WIDTH * ds, DOOR_HEIGHT * ds);
+            game.batch.draw(game.generated.pixel(), s.x - DOOR_WIDTH * ds * 0.5f, s.y, DOOR_WIDTH * ds, DOOR_HEIGHT * ds);
         }
         game.batch.setColor(Color.WHITE);
     }
@@ -146,7 +135,5 @@ public class OverworldScreen implements Screen {
     @Override
     public void dispose() {
         environment.dispose();
-        avatarTex.dispose();
-        doorTex.dispose();
     }
 }

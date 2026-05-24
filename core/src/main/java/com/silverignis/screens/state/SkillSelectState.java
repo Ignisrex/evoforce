@@ -21,7 +21,7 @@ public class SkillSelectState implements GameScreenState {
     private static int HAND_SIZE = 6;
 
     private final GameScreen screen;
-    private final SkillSelectOverlay overlay = new SkillSelectOverlay();
+    private final SkillSelectOverlay overlay;
 
     private List<Skill> hand;
     private int cursor;
@@ -30,6 +30,7 @@ public class SkillSelectState implements GameScreenState {
 
     public SkillSelectState(GameScreen screen) {
         this.screen = screen;
+        this.overlay = new SkillSelectOverlay(screen.game.generated.pixel());
     }
 
     @Override
@@ -80,7 +81,7 @@ public class SkillSelectState implements GameScreenState {
         batch.end();
     }
 
-    public void dispose() { overlay.dispose(); }
+    public void dispose() {}
 
     private void snapshotSlots(){
         var slots = screen.playState.getPlayer().getSlots();

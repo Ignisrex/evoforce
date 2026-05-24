@@ -17,7 +17,7 @@ public class Player implements Combatant {
 
     private static final float MOVE_SMOOTH_SPEED = 18f;
 
-    private final DirectionalSprite sprites;
+    private final Sprite sprite;
     private final Battlefield battlefield;
     private final HitFlash     hitFlash     = new HitFlash();
     private final Caster       caster;
@@ -29,8 +29,8 @@ public class Player implements Combatant {
 
     public float visualHeight = 0f;
 
-    public Player(int col, int row, DirectionalSprite sprites, Battlefield battlefield, Caster caster, Stats stats) {
-        this.sprites      = sprites;
+    public Player(int col, int row, Sprite sprite, Battlefield battlefield, Caster caster, Stats stats) {
+        this.sprite       = sprite;
         this.battlefield  = battlefield;
         this.gridMovement = new GridMovement(
             new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED),
@@ -72,7 +72,7 @@ public class Player implements Combatant {
 
     public int    getHp()         { return this.health.getCurrent(); }
     public int    getMaxHp()      { return this.health.getMax(); }
-    public Sprite getSprite()     { return sprites.forTeam(getTeam()); }
+    public Sprite getSprite()     { return sprite; }
     public boolean isAlive()      { return this.health.getCurrent() > 0; }
 
     public void update(float delta) {
@@ -92,7 +92,6 @@ public class Player implements Combatant {
 
     public void render(SpriteBatch batch) {
         if (hitFlash.isHidden()) return;
-        Sprite sprite = sprites.forTeam(getTeam());
         float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
         sprite.setBounds(
             gridMovement.getPosition().getVisualX() - pw * 0.5f,

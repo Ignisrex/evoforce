@@ -111,8 +111,10 @@ evoforce/
 ### Package dependency rules
 The deliberate import direction, top to bottom:
 ```
-Main                    →  screens, sessions
-screens, screens.state  →  systems, systems.combat, environment, entities, components, sessions, ui, skills, input
+Main                    →  screens, sessions, assets, registry
+screens, screens.state  →  systems, systems.combat, environment, entities, components, sessions, ui, skills, input, registry
+assets                  →  registry, components            (GameAssets loads monster sprites via Monster.texturePath(Team))
+registry                →  assets, components              (MonsterRegistry fetches from GameAssets; Monster owns the sprite path)
 ui                      →  skills, entities                (read-only, for HUD)
 skills                  →  entities, components, util, systems, systems.combat   (skills act on Combatants and route HP through DamageSystem)
 skills.effects          →  systems.combat                  (Effect carries a StatusType payload)
@@ -131,6 +133,8 @@ util                    →  (leaf — InputLock, HitFlash, PositionSmoother, Pa
 **`systems.combat/` is the combat-pipeline subpackage.** It holds the `Combatant` interface, `DamageSystem`, `TriggerBus`, and the `Status` hierarchy. It depends *only* on `components/` — no upward edge into `entities/` or `skills/` — so the pipeline can be unit-tested with fakes. The `entities → systems.combat` edge exists because `Player`/`Enemy` implement `Combatant`; the `skills → systems.combat` edge exists because `SkillInstance` operates on `Combatant`s and routes HP changes through `DamageSystem`.
 
 **`components/ → entities/`** still exists only because `GridPosition` needs `Battlefield` for tile-center lookups. Tolerable: `entities/Battlefield.java` is itself a leaf (pure geometry + panel state, no upward deps). If we tighten the cycle, move `Battlefield` somewhere neutral.
+
+**`assets/ ↔ registry/` is a tolerated cycle.** `GameAssets` loads monster sprites (it iterates the `Monster` enum and calls `Monster.texturePath`), while `MonsterRegistry` fetches them back through `GameAssets` — so the two packages import each other. Accepted because the only thing crossing the boundary is the monster sprite-path convention; the alternative (a third neutral package just for `Monster`) buys little for two small classes. If it grows, move `Monster` somewhere neutral both can depend on.
 
 **`components/` is the ECS-style role layer.** Skill-aware composable pieces live here and may freely import from `skills`. Today: `Caster`, `GridPosition`, `GridMovement`, `GridBounds`, `Direction`, `FreePosition`, `Health`, `Stats`, `Team`. `Health` and `Stats` are deliberately dumb data — all mutation logic lives in `systems/combat/DamageSystem`. Entities reach skill state through the composed `Caster`, not through a direct `entities → skills` import. `GridMovement` bundles a `GridPosition` with the entity's `GridBounds`; `Direction` is the shared step-vector enum read by `MovementSystem`.
 
@@ -205,20 +209,24 @@ The `systems/combat/` package is the backbone for HP changes and reactive effect
 - `InputManager` composes any number of sources, ORs their pressed state per `GameAction`, and runs *its own* edge detection on the OR-folded result. This is the layer that prevents double-fires when both keyboard and pad are pushing the same action.
 
 ### Resource ownership & disposal
-Textures and GPU resources are owned by the closest scope that needs them and disposed on the way back up:
-- `Battlefield` owns no GPU resources — it's pure geometry + panel state; the floor is drawn by `GameEnvironment`'s 3D panel meshes.
-- `SkillLibrary` owns each skill's icon **and** its VFX texture (plus the sprite sheet backing any `Skill.vfxAnimation`); all disposed in `SkillLibrary.dispose()`.
-- `GameEnvironment` owns the wall/floor textures, `ModelBatch`, and every `Model` it builds.
-- `PlayState` owns sprite sheets, the clash texture, the procedural shadow texture, the `VfxManager`, the `BloomEffect`, the `GameEnvironment` instance, and constructs the per-battle `TriggerBus` + `DamageSystem` (plain Java objects — no GPU resources, GC-collected with the state). Both casters' basic-attack icons and VFX textures are owned by `SkillLibrary` (loaded from the `wind_slash` JSON entry).
-- `StatusContainer`s live on each `Combatant` and hold no GPU resources — their lifecycle is tied to the entity.
-- HUDs own their 1×1 pixel pixmaps (used for tinted rectangles).
-- `GameScreen.dispose()` cascades into `playState`, `skillSelectState`, `chargeHud`, `slotsHud`, `basicAttackHud`, `lifeBarHud`, `skills`.
+GPU resources have **three central owners**, loaded once and disposed once; everything else *borrows* and never disposes what it borrows:
+
+- **`GameAssets` (package `assets/`, owned by `Main`)** wraps a single libGDX `AssetManager` and owns every file-loaded texture + audio clip: cave wall/floor, the clash VFX, the overworld avatar, the drop SFX + music, **and all monster directional sprites** (both `_se`/`_sw` facings for every `Monster`). `Main.create()` runs `assets.queueLoad()` then `assets.finishLoading()` (synchronous — `get()` is two-phase, never lazy, so the roster must be known up front; structured so an async loading screen could replace `finishLoading()` later). A typed facade (`caveWall()`, `clash()`, `avatar()`, `texture(path)`, …) hands shared instances to callers. `assets.dispose()` frees the whole manager at once.
+- **`GeneratedAssets` (package `assets/`, owned by `Main`)** owns the runtime-generated (Pixmap-built) textures the `AssetManager` can't manage: one shared 1×1 white `pixel()` (HUDs draw it tinted for bars/fills) and the soft `shadow()` ellipse drawn under combatants. Built in `create()` (needs a GL context); `dispose()` frees both.
+- **`SkillLibrary` (owned by `GameSession`)** owns each skill's icon, VFX texture, and any VFX animation sheet; all disposed in `SkillLibrary.dispose()` via `GameSession.dispose()`.
+
+These three sets are **disjoint** — no texture is owned twice, so there is no double-dispose. Borrowers:
+- **`MonsterRegistry` (package `registry/`, owned by `Main`)** owns nothing — it's a fetch facade. `getMonsterTexture(monster, team)` resolves the facing via `Monster.texturePath(team)` (player → east/`_se`, enemy → west/`_sw`) and pulls the texture from `GameAssets`. `Monster.texturePath` is the single source of truth for the sprite path: `GameAssets.queueLoad` loads with it, the registry fetches with it. `PlayState` wraps each fetched texture in a fresh `Sprite` per entity (a `Sprite` carries per-instance transform/color, so combatants can't share one).
+- **`GameEnvironment`** borrows the cave wall/floor textures (passed into its constructor from `GameAssets`); it owns only its `ModelBatch` and the `Model`s it builds. The overworld and battle `GameEnvironment` instances therefore **share one pair** of cave textures.
+- **`PlayState`** owns the `VfxManager`, `BloomEffect`, and the `GameEnvironment` instance, and constructs the per-battle `TriggerBus`/`DamageSystem` (plain Java, GC'd with the state). Its combatant sprites, clash, and shadow are all borrowed (`GameAssets`/`GeneratedAssets`).
+- **HUDs and `SkillSelectOverlay`** borrow the shared `GeneratedAssets.pixel()` (constructor-injected) — they own no textures and have no `dispose()`. `Battlefield` and `StatusContainer`s likewise hold no GPU resources.
+- **`Main.dispose()`** frees `session` (→ `SkillLibrary`), `batch`, `font`, the active `screen`, then `generated` and `assets`. `GameScreen.dispose()` only cascades into `playState` + `skillSelectState`.
 - **Cross-screen disposal is centralized in `Main.setScreen`.** The override captures the outgoing screen, calls `super.setScreen(...)` (which fires `hide` on the old and `show`/`resize` on the new), then schedules `old.dispose()` via `Gdx.app.postRunnable`. Deferring to the next frame avoids the mid-render hazard where a screen's own `render()` call stack is still unwinding when `setScreen` is invoked. Individual screens therefore do **not** self-dispose after `setScreen`.
 
-**Don't add `new Texture(...)` calls inside per-frame paths.** Construct in `*.create()`/state constructors, dispose alongside. The shadow texture is the canonical example — built once procedurally in `PlayState.buildShadowTexture()` and reused every frame.
+**Don't add `new Texture(...)` calls inside per-frame paths, and don't load files outside `GameAssets`.** File textures go through `GameAssets.queueLoad`; procedural textures live in `GeneratedAssets`. The shadow is the canonical procedural example — built once in `GeneratedAssets` and reused every frame.
 ## Core Classes
 ### `Main` (extends `Game`)
-Application root. Owns shared rendering resources (`SpriteBatch batch`, `BitmapFont font`, `FitViewport viewport` — 16×9). `create()` pushes `MainMenuScreen`. Overrides `setScreen(Screen)` to dispose the predecessor via `Gdx.app.postRunnable` — see "Resource ownership & disposal" above.
+Application root. Owns shared rendering resources (`SpriteBatch batch`, `BitmapFont font`, `FitViewport viewport` — 16×9) plus the central asset layer: `GameAssets` (the single `AssetManager` wrapper — `create()` runs `queueLoad()` + `finishLoading()`), `GeneratedAssets` (shared `pixel` + `shadow`, built once GL is up), and `MonsterRegistry` (sprite fetch facade over `GameAssets`). `create()` pushes `MainMenuScreen`. Overrides `setScreen(Screen)` to dispose the predecessor via `Gdx.app.postRunnable` — see "Resource ownership & disposal" above.
 ### Screens
 - **`MainMenuScreen`** — splash; switches to `GameScreen` on touch.
 - **`GameScreen`** — owns the global per-battle objects (`SkillLibrary skills`, `ChargeMeter charge`) and HUDs (`ChargeBarHud`, `SlotsHud`, `BasicAttackHud`, `LifeBarHud`, `FpsHud`). Per-caster state (`SkillDeck`, `SkillSlots`, the basic-attack holder) lives on the `Caster`, not here. Constructor seeds `player.getDeck()` with every library skill *except* `wind_slash` — that one is assigned to `player.getCaster().setBasicAttack(...)` and fired via the dedicated `ATTACK_BASIC` button, so it deliberately stays out of the staging hand. Delegates per-frame `input/update/render` to whichever `GameScreenState` is active; the HUD pass draws on top of the state's rendering.
@@ -321,8 +329,8 @@ The `components/` package is for ECS-style role components — entities compose 
 ### UI
 - **`ChargeBarHud`** — small charge meter sitting just above the `SlotsHud` panels in the bottom-left, width-matched to the X/Y/B slot row so the two HUDs read as one stack. Batch-aware (`wasDrawing` check).
 - **`SlotsHud`** — bottom-left X/Y/B columns with FIFO icons (top of column = front of queue), placeholder for empty cells.
-- **`BasicAttackHud`** — bottom-left icon one slot-gap to the right of the X/Y/B column, showing the skill held in `player.getBasicAttack()`. Renders a translucent black "cooldown veil" over the top portion of the icon when on cooldown — the veil shrinks downward as `deck.remainingFor(skill)` ticks toward 0, the standard MOBA-HUD cooldown sweep. Owns a 1×1 white pixel disposed by `GameScreen`.
-- **`LifeBarHud`** — horizontal player HP bar anchored to the top-left of the viewport. Fill ratio is `player.getHp() / player.getMaxHp()`; tint shifts green → yellow → red as HP drops. Owns a 1×1 white pixel disposed by `GameScreen`.
+- **`BasicAttackHud`** — bottom-left icon one slot-gap to the right of the X/Y/B column, showing the skill held in `player.getBasicAttack()`. Renders a translucent black "cooldown veil" over the top portion of the icon when on cooldown — the veil shrinks downward as `deck.remainingFor(skill)` ticks toward 0, the standard MOBA-HUD cooldown sweep. Borrows the shared 1×1 white pixel from `GeneratedAssets` (constructor-injected; not owned).
+- **`LifeBarHud`** — horizontal player HP bar anchored to the top-left of the viewport. Fill ratio is `player.getHp() / player.getMaxHp()`; tint shifts green → yellow → red as HP drops. Borrows the shared 1×1 white pixel from `GeneratedAssets` (constructor-injected; not owned).
 - **`FpsHud`** — top-right frame-rate readout. Samples `Gdx.graphics.getFramesPerSecond()` every 0.25s (so the text doesn't flicker each frame).
 - **`SkillSelectOverlay`** — card hand renderer used by `SkillSelectState`. Hand size is currently 6; horizontal layout was originally tuned for 4, so visual fit may need a pass.
 ## Viewport & Coordinates

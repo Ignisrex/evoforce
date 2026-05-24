@@ -1,7 +1,6 @@
 package com.silverignis.ui;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -37,12 +36,8 @@ public class SlotsHud {
 
     private final Texture pixel;
 
-    public SlotsHud() {
-        Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        p.setColor(Color.WHITE);
-        p.fill();
-        this.pixel = new Texture(p);
-        p.dispose();
+    public SlotsHud(Texture pixel) {
+        this.pixel = pixel;
     }
 
     public void render(SpriteBatch batch, Viewport viewport, SkillSlots slots) {
@@ -96,7 +91,4 @@ public class SlotsHud {
         // No font draw yet — leave the label drawing to the caller if desired.
     }
 
-    public void dispose() {
-        pixel.dispose();
-    }
 }

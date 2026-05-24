@@ -1,6 +1,7 @@
 package com.silverignis.screens;
 
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Texture;
 import com.silverignis.Main;
 import com.silverignis.entities.Enemy;
 import com.silverignis.input.InputManager;
@@ -27,15 +28,22 @@ public class GameScreen implements Screen {
 
     public final ChargeMeter charge = new ChargeMeter(/* max */ 1f, /* fillRate */ 0.20f);
 
-    //HUDs
-    private final ChargeBarHud chargeHud = new ChargeBarHud();
-    private final SlotsHud slotsHud = new SlotsHud();
+    //HUDs — share one 1x1 pixel from GeneratedAssets; FpsHud owns no texture.
+    private final ChargeBarHud chargeHud;
+    private final SlotsHud slotsHud;
     private final FpsHud fpsHud = new FpsHud();
-    private final LifeBarHud lifeBarHud = new LifeBarHud();
-    private final BasicAttackHud basicAttackHud = new BasicAttackHud();
+    private final LifeBarHud lifeBarHud;
+    private final BasicAttackHud basicAttackHud;
 
     public GameScreen(Main game){
         this.game = game;
+
+        Texture pixel = game.generated.pixel();
+        this.chargeHud      = new ChargeBarHud(pixel);
+        this.slotsHud       = new SlotsHud(pixel);
+        this.lifeBarHud     = new LifeBarHud(pixel);
+        this.basicAttackHud = new BasicAttackHud(pixel);
+
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
 
@@ -109,9 +117,5 @@ public class GameScreen implements Screen {
     public void dispose() {
         playState.dispose();
         skillSelectState.dispose();
-        chargeHud.dispose();
-        slotsHud.dispose();
-        basicAttackHud.dispose();
-        lifeBarHud.dispose();
     }
 }
