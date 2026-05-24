@@ -5,15 +5,17 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
 import com.silverignis.components.Stats;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.RenderLayer;
+import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.systems.BattleContext;
-import com.silverignis.systems.CombatSystem;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusFactory;
 import com.silverignis.systems.combat.event.DamageEvent;
 import com.silverignis.systems.combat.event.HealEvent;
 
-public abstract class SkillInstance {
+public abstract class SkillInstance implements SceneRenderable {
 
     protected final Skill def;
     protected final Combatant combatant;
@@ -23,17 +25,22 @@ public abstract class SkillInstance {
     /** Logical caster position at the moment the skill was fired. */
     protected final int originCol;
     protected final int originRow;
+    protected final float worldZ;
 
     private boolean finished  = false;
     private boolean lockTaken = false;
 
-    protected SkillInstance(Skill def, Combatant combatant) {
+    private final BattleContext battleContext;
+
+    protected SkillInstance(Skill def, Combatant combatant, BattleContext ctx) {
         this.def       = def;
         this.combatant = combatant;
         this.caster    = this.combatant.getCaster();
         this.pos       = this.combatant.getGridPosition();
         this.originCol = pos.getCol();
         this.originRow = pos.getRow();
+        this.worldZ = combatant.getGridPosition().getWorldZ();
+        this.battleContext = ctx;
     }
 
     public Skill        getDef()    { return def; }
@@ -62,7 +69,7 @@ public abstract class SkillInstance {
 
     public final boolean isFinished() { return finished; }
 
-    protected void applyEffectsTo(Combatant target, BattleContext ctx) {
+    protected void applyEffectsTo(Combatant target) {
         if(target == null || !target.isAlive()) return;
 
         for (Effect e : def.getEffects()) {
@@ -72,16 +79,16 @@ public abstract class SkillInstance {
                     int scaledBase = e.getValue()
                         + Math.round(casterStats.getPower() * def.getPowerScale())
                         + Math.round(casterStats.getMagic() * def.getMagicScale());
-                    ctx.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
+                    battleContext.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
                     break;
                 case HEAL:
-                    ctx.damageSystem.heal(new HealEvent(target, e.getValue()));
+                    battleContext.damageSystem.heal(new HealEvent(target, e.getValue()));
                     break;
                 case APPLY_STATUS:
                     if(MathUtils.random(99) < e.getChance()){
                         target.getStatusContainer().apply(
                             StatusFactory.create(e.getStatusType(), e.getDuration(), e.getValue()),
-                            ctx.triggerBus
+                            battleContext.triggerBus
                         );
                     }
                     break;
@@ -92,7 +99,20 @@ public abstract class SkillInstance {
         }
     }
 
-    public abstract void update(float delta, BattleContext ctx);
+    public BattleContext battleContext() {
+        return battleContext;
+    }
+
+    public abstract void update(float delta);
 
     public void render(SpriteBatch batch, BattleContext ctx) {}
+
+    public float depth() {
+        return worldZ;
+    }
+
+    public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+    public void render(RenderContext rc) {
+        render(rc.batch, this.battleContext);
+    }
 }

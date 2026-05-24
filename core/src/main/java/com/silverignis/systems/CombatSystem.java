@@ -1,7 +1,7 @@
 package com.silverignis.systems;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.entities.ClashEffect;
+import com.silverignis.render.WorldRenderer;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.instances.ProjectileInstance;
 import com.silverignis.skills.instances.ZoneInstance;
@@ -28,7 +28,7 @@ public class CombatSystem {
         // Iterate over a snapshot index so an instance that spawns another
         // mid-update doesn't get double-ticked this frame.
         for (int i = 0, n = active.size(); i < n; i++){
-            active.get(i).update(delta, ctx);
+            active.get(i).update(delta);
         }
 
         resolveProjectileClashes();
@@ -79,22 +79,13 @@ public class CombatSystem {
         float midX = (a.getCenterX() + b.getCenterX()) * 0.5f;
         float midY = ctx.projectedTileWorld(0, row).y;
         float size = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row);
-        ctx.vfx.add(new ClashEffect(ctx.clashTexture, midX, midY, size));
+        ctx.vfx.add(new ClashEffect(ctx.clashTexture, midX, midY, size, ctx.battlefield.floorZ(row)));
     }
 
-    /** Render zone effects that should appear under entities. */
-    public void renderUnder(SpriteBatch batch) {
+    public void submitRenderables(WorldRenderer renderer) {
         for (SkillInstance s : active) {
-            if (s instanceof ZoneInstance && ((ZoneInstance) s).isRenderUnder()) {
-                s.render(batch, ctx);
-            }
-        }
-    }
-
-    public void render(SpriteBatch batch) {
-        for (SkillInstance s : active) {
-            if (s instanceof ZoneInstance && ((ZoneInstance) s).isRenderUnder()) continue;
-            s.render(batch, ctx);
+            if(s.isFinished()) continue;
+            renderer.submit(s);
         }
     }
 

@@ -23,8 +23,8 @@ public class StrikeInstance extends SkillInstance {
     private final int targetCol;
     private final int row;
 
-    public StrikeInstance(Skill def, Combatant combatant) {
-        super(def, combatant);
+    public StrikeInstance(Skill def, Combatant combatant, BattleContext ctx) {
+        super(def, combatant, ctx);
         this.strikeFromCol = originCol + 1;
         this.targetCol     = originCol + 2;
         this.row           = originRow;
@@ -33,9 +33,9 @@ public class StrikeInstance extends SkillInstance {
     }
 
     @Override
-    public void update(float delta, BattleContext ctx) {
+    public void update(float delta) {
         if (!primed) {
-            ctx.movementSystem.forceGridTeleport(combatant, strikeFromCol, row);
+            battleContext().movementSystem.forceGridTeleport(combatant, strikeFromCol, row);
             primed = true;
         }
         phaseTime += delta;
@@ -43,13 +43,13 @@ public class StrikeInstance extends SkillInstance {
         switch (phase) {
             case DASH_FORWARD:
                 if (phaseTime >= DASH_FORWARD_TIME) {
-                    enterHit(ctx);
+                    enterHit(battleContext());
                 }
                 break;
 
             case HIT:
                 if (phaseTime >= HIT_TIME) {
-                    enterDashBack(ctx);
+                    enterDashBack(battleContext());
                 }
                 break;
 
@@ -90,13 +90,13 @@ public class StrikeInstance extends SkillInstance {
         float cy = tilePos.y + panelH * 0.5f;
         float size = Math.max(panelW, panelH);
 
-        ctx.vfx.add(new ClashEffect(def.getVfxTexture(), cx, cy, size));
+        ctx.vfx.add(new ClashEffect(def.getVfxTexture(), cx, cy, size, worldZ));
     }
 
     private void applyHit(BattleContext ctx) {
         Combatant target = ctx.combatantAt(targetCol, row);
         if (target == null) return;
         if (target.getTeam() == combatant.getTeam()) return;
-        applyEffectsTo(target, ctx);
+        applyEffectsTo(target);
     }
 }

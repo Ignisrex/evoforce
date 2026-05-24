@@ -3,6 +3,7 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.silverignis.render.RenderLayer;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
@@ -26,12 +27,12 @@ public class ZoneInstance extends SkillInstance {
     private final int targetRow;
     private boolean rendersUnder = true;
 
-    public ZoneInstance(Skill def, Combatant combatant) {
-        this(def, combatant, combatant.getCol() + 1, combatant.getRow());
+    public ZoneInstance(Skill def, Combatant combatant, BattleContext ctx) {
+        this(def, combatant, combatant.getCol() + 1, combatant.getRow(), ctx);
     }
 
-    public ZoneInstance(Skill def, Combatant combatant, int targetCol, int targetRow) {
-        super(def, combatant);
+    public ZoneInstance(Skill def, Combatant combatant, int targetCol, int targetRow, BattleContext ctx) {
+        super(def, combatant, ctx);
         this.targetCol = targetCol;
         this.targetRow = targetRow;
 
@@ -41,7 +42,7 @@ public class ZoneInstance extends SkillInstance {
     public boolean isRenderUnder() { return rendersUnder; }
 
     @Override
-    public void update(float delta, BattleContext ctx) {
+    public void update(float delta) {
         phaseTime += delta;
 
         switch (phase) {
@@ -52,7 +53,7 @@ public class ZoneInstance extends SkillInstance {
                 tickTimer += delta;
                 if (tickTimer >= TICK_INTERVAL) {
                     tickTimer -= TICK_INTERVAL;
-                    applyTick(ctx);
+                    applyTick(battleContext());
                 }
                 if (phaseTime >= ACTIVE_TIME) enterFade();
                 break;
@@ -81,7 +82,7 @@ public class ZoneInstance extends SkillInstance {
         Combatant target = ctx.combatantAt(targetCol, targetRow);
         if (target == null) return;
         if (target.getTeam() == combatant.getTeam()) return;
-        applyEffectsTo(target, ctx);
+        applyEffectsTo(target);
     }
 
     @Override
@@ -125,5 +126,9 @@ public class ZoneInstance extends SkillInstance {
         sprite.setAlpha(alpha);
         sprite.draw(batch);
         sprite.setAlpha(1f);
+    }
+
+    public RenderLayer layer() {
+        return isRenderUnder() ? RenderLayer.GROUND : RenderLayer.BILLBOARD;
     }
 }

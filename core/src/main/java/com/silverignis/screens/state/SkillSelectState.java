@@ -76,7 +76,7 @@ public class SkillSelectState implements GameScreenState {
         screen.game.viewport.apply();
         batch.setProjectionMatrix(screen.game.viewport.getCamera().combined);
         batch.begin();
-        screen.playState.renderWorld(batch);
+        screen.playState.renderWorld();
         overlay.render(batch, screen.game.viewport);
         batch.end();
     }

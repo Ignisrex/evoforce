@@ -36,8 +36,8 @@ public class ProjectileInstance extends SkillInstance {
     private float flightElapsed = 0f;
     private boolean landed = false;
 
-    public ProjectileInstance(Skill def, Combatant combatant) {
-        super(def, combatant);
+    public ProjectileInstance(Skill def, Combatant combatant, BattleContext ctx) {
+        super(def, combatant, ctx);
         this.row = originRow;
         this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
 
@@ -59,10 +59,10 @@ public class ProjectileInstance extends SkillInstance {
     }
 
     @Override
-    public void update(float delta, BattleContext ctx) {
+    public void update(float delta) {
         if (!sized) {
-            float w = ctx.battlefield.getPanelWidth();
-            float h = ctx.battlefield.getPanelRenderHeight();
+            float w = battleContext().battlefield.getPanelWidth();
+            float h = battleContext().battlefield.getPanelRenderHeight();
             sprite.setSize(w, h);
 
             //adjusted to deal with enemy fire projectile
@@ -73,9 +73,9 @@ public class ProjectileInstance extends SkillInstance {
         }
 
         if (config.getMovementType() == MovementType.LOB) {
-            updateLob(delta, ctx);
+            updateLob(delta, battleContext());
         } else {
-            updateStraight(delta, ctx);
+            updateStraight(delta, battleContext());
         }
     }
 
@@ -130,7 +130,7 @@ public class ProjectileInstance extends SkillInstance {
         for (Combatant target : ctx.opposingOnRow(combatant, row)){
             float targetX =ctx.projectedTileWorld(target.getCol(), row).x;
             if (projCenter >= targetX - halfW && projCenter<=targetX + halfW){
-                applyEffectsTo(target, ctx);
+                applyEffectsTo(target);
                 finish();
                 return;
             }
@@ -143,7 +143,7 @@ public class ProjectileInstance extends SkillInstance {
 
         if (target == null) return;
         if (target.getTeam() == combatant.getTeam()) return;
-        applyEffectsTo(target, ctx);
+        applyEffectsTo(target);
     }
 
     private void spawnLandingEffect(BattleContext ctx) {
@@ -168,7 +168,7 @@ public class ProjectileInstance extends SkillInstance {
                 .cooldown(0f)
                 .vfxTexture(def.getVfxTexture())
                 .build();
-        ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row);
+        ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row, ctx);
         ctx.combatSystem.spawn(cloud);
     }
 

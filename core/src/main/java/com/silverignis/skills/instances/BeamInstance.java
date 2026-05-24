@@ -31,24 +31,24 @@ public class BeamInstance extends SkillInstance {
     /** +1 = caster faces east (player), -1 = faces west (enemy). Matches ProjectileInstance. */
     private final int dir;
 
-    public BeamInstance(Skill def, Combatant combatant) {
-        super(def, combatant);
+    public BeamInstance(Skill def, Combatant combatant, BattleContext ctx) {
+        super(def, combatant, ctx);
         this.row = originRow;
         this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
         acquireInputLock();
 
-        this.animation = def.getVfxAnimation(); // may be null
+        this.animation = def.getVfxAnimation();
         this.sprite    = new Sprite(def.getVfxTexture());
     }
 
     @Override
-    public void update(float delta, BattleContext ctx) {
+    public void update(float delta) {
         phaseTime += delta;
         stateTime += delta;
 
         switch (phase) {
             case CHARGE:
-                if (phaseTime >= CHARGE_TIME) enterFire(ctx);
+                if (phaseTime >= CHARGE_TIME) enterFire(battleContext());
                 break;
             case FIRE:
                 if (phaseTime >= FIRE_TIME) enterFade();
@@ -83,7 +83,7 @@ public class BeamInstance extends SkillInstance {
         for(Combatant target: ctx.opposingOnRow(combatant, row)){
             // Only targets ahead of the caster in the beam's facing direction.
             if ((target.getCol() - originCol) * dir > 0){
-                applyEffectsTo(target, ctx);
+                applyEffectsTo(target);
             }
         }
     }

@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.RenderLayer;
 
 /**
  * A one-shot, short-lived visual flourish drawn at the world point where
@@ -26,6 +28,7 @@ public class ClashEffect implements BattleVfx {
     private final float centerX;
     private final float centerY;
     private float elapsed = 0f;
+    private final float worldZ;
 
     /**
      * @param texture starburst texture (transparent background expected)
@@ -33,11 +36,12 @@ public class ClashEffect implements BattleVfx {
      * @param centerY world-space Y of the clash midpoint
      * @param size    target sprite size at scale 1.0 (typically one panel cell)
      */
-    public ClashEffect(Texture texture, float centerX, float centerY, float size) {
+    public ClashEffect(Texture texture, float centerX, float centerY, float size, float worldZ) {
         this.sprite = new Sprite(texture);
         this.baseSize = size;
         this.centerX = centerX;
         this.centerY = centerY;
+        this.worldZ = worldZ;
     }
 
     @Override
@@ -46,16 +50,21 @@ public class ClashEffect implements BattleVfx {
     }
 
     @Override
-    public void render(SpriteBatch batch) {
+    public float depth() { return worldZ; }
+
+    @Override
+    public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+
+    @Override
+    public void render(RenderContext rc) {
         float t = MathUtils.clamp(elapsed / DURATION, 0f, 1f);
         float scale = MathUtils.lerp(START_SCALE, END_SCALE, t);
         float w = baseSize * scale;
         float h = baseSize * scale;
-
         sprite.setBounds(centerX - w * 0.5f, centerY - h * 0.5f, w, h);
         sprite.setColor(1f, 1f, 1f, 1f - t);
-        sprite.draw(batch);
-        sprite.setColor(Color.WHITE); // reset so we don't bleed onto the next sprite
+        sprite.draw(rc.batch);
+        sprite.setColor(Color.WHITE);
     }
 
     @Override

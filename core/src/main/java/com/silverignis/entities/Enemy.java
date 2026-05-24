@@ -8,6 +8,9 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.silverignis.components.*;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.RenderLayer;
+import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
@@ -18,7 +21,7 @@ import com.silverignis.systems.combat.StatusType;
 import com.silverignis.util.HitFlash;
 import com.silverignis.util.InputLock;
 
-public class Enemy implements Combatant {
+public class Enemy implements Combatant, SceneRenderable {
 
     private static final float MIN_MOVE_INTERVAL   = 0.5f;
     private static final float MAX_MOVE_INTERVAL   = 1.5f;
@@ -157,7 +160,7 @@ public class Enemy implements Combatant {
     }
 
     /** Shadow ellipse drawn at ground position before the sprite pass. */
-    public void renderShadow(SpriteBatch batch, Texture shadowTex) {
+    private void renderShadow(SpriteBatch batch, Texture shadowTex) {
         if (isDead()) return;
         float pw = battlefield.getPanelWidth();
         float ph = battlefield.getPanelRenderHeight();
@@ -169,30 +172,25 @@ public class Enemy implements Combatant {
         batch.setColor(Color.WHITE);
     }
 
-    public void render(SpriteBatch batch, BitmapFont font) {
+    @Override
+    public void render(RenderContext rc) {
         if (isDead()) return;
-
         float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
         sprite.setBounds(
             gridMovement.getPosition().getVisualX() - pw * 0.5f,
             gridMovement.getPosition().getVisualY() + visualHeight,
-                pw, pw);
-
+            pw, pw);
         if (isDying()) {
             float alpha = deathTimer / DEATH_DURATION;
             sprite.setColor(1f, 1f, 1f, alpha);
-            sprite.draw(batch);
+            sprite.draw(rc.batch);
             sprite.setColor(Color.WHITE);
         } else if (!hitFlash.isHidden()) {
             boolean frozen = statusContainer.has(StatusType.FREEZE);
             if (frozen) sprite.setColor(FREEZE_TINT);
-            sprite.draw(batch);
+            sprite.draw(rc.batch);
             if (frozen) sprite.setColor(Color.WHITE);
         }
-
-
-
-        renderHpLabel(batch, font);
     }
 
     private void renderHpLabel(SpriteBatch batch, BitmapFont font) {
@@ -204,5 +202,27 @@ public class Enemy implements Combatant {
         font.setColor(1f, 1f, 1f, alpha);
         font.draw(batch, hpLayout, x, y);
         font.setColor(prev);
+    }
+
+    @Override public float       depth() { return battlefield.floorZ(getRow()); }
+    @Override public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+
+    public SceneRenderable shadowView(Texture shadowTex) {
+        return new SceneRenderable() {
+            @Override public float       depth() { return battlefield.floorZ(getRow()); }
+            @Override public RenderLayer layer() { return RenderLayer.GROUND; }
+            @Override public void render(RenderContext rc) { renderShadow(rc.batch, shadowTex); }
+        };
+    }
+
+    public SceneRenderable hpLabelView() {
+        return new SceneRenderable() {
+            @Override public float       depth() { return battlefield.floorZ(getRow()); }
+            @Override public RenderLayer layer() { return RenderLayer.OVERLAY; }
+            @Override public void render(RenderContext rc) {
+                if (isDead()) return;
+                renderHpLabel(rc.batch, rc.font);
+            }
+        };
     }
 }

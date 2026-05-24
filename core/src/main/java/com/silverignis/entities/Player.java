@@ -5,6 +5,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.components.*;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.RenderLayer;
+import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
@@ -13,7 +16,7 @@ import com.silverignis.systems.combat.StatusContainer;
 import com.silverignis.util.HitFlash;
 import com.silverignis.util.InputLock;
 
-public class Player implements Combatant {
+public class Player implements Combatant, SceneRenderable {
 
     private static final float MOVE_SMOOTH_SPEED = 18f;
 
@@ -81,23 +84,13 @@ public class Player implements Combatant {
         hitFlash.tick(delta);
     }
 
-    public void renderShadow(SpriteBatch batch, Texture shadowTex) {
+    private void renderShadow(SpriteBatch batch, Texture shadowTex) {
         float pw = battlefield.getPanelWidth();
         float ph = battlefield.getPanelRenderHeight();
         float sw = pw * 0.75f;
         float sh = ph * 0.35f;
         batch.setColor(Color.WHITE);
         batch.draw(shadowTex, gridMovement.getPosition().getVisualX() - sw * 0.5f, gridMovement.getPosition().getVisualY(), sw, sh);
-    }
-
-    public void render(SpriteBatch batch) {
-        if (hitFlash.isHidden()) return;
-        float pw = battlefield.getPanelWidth() * gridMovement.getPosition().getDepthScale();
-        sprite.setBounds(
-            gridMovement.getPosition().getVisualX() - pw * 0.5f,
-            gridMovement.getPosition().getVisualY() + visualHeight,
-                pw, pw);
-        sprite.draw(batch);
     }
 
     public Health          getHealth()          { return health; }
@@ -108,4 +101,30 @@ public class Player implements Combatant {
     public void onHitFlash() { hitFlash.flash();}
 
     public void onDeath(){}
+
+    @Override public float       depth() { return battlefield.floorZ(getRow()); }
+    @Override public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+
+    @Override
+    public void render(RenderContext rc) {
+        if (hitFlash.isHidden()) return;
+        float pw = battlefield.panelFloorWidth() * gridMovement.getPosition().getDepthScale();
+        sprite.setBounds(
+            gridMovement.getPosition().getVisualX() - pw * 0.5f,
+            gridMovement.getPosition().getVisualY() + visualHeight,
+            pw,
+            pw
+        );
+        sprite.draw(rc.batch);
+    }
+
+    public SceneRenderable shadowView(Texture shadowTex) {
+        return new SceneRenderable() {
+            @Override public float       depth() { return battlefield.floorZ(getRow()); }
+            @Override public RenderLayer layer() { return RenderLayer.GROUND; }
+            @Override public void render(RenderContext rc) {
+                if (isAlive()) renderShadow(rc.batch, shadowTex);
+            }
+        };
+    }
 }

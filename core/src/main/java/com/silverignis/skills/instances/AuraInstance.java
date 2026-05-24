@@ -25,19 +25,19 @@ public class AuraInstance extends SkillInstance {
     private final Sprite sprite;
     private float activeDuration;
 
-    public AuraInstance(Skill def, Combatant combatant) {
-        super(def, combatant);
+    public AuraInstance(Skill def, Combatant combatant, BattleContext ctx) {
+        super(def, combatant, ctx);
         this.sprite = new Sprite(def.getVfxTexture());
     }
 
     @Override
-    public void update(float delta, BattleContext ctx) {
+    public void update(float delta) {
         if (!combatant.isAlive()) { finish(); return; }
         phaseTime += delta;
 
         switch (phase) {
             case EXPAND:
-                if (phaseTime >= EXPAND_TIME) enterActive(ctx);
+                if (phaseTime >= EXPAND_TIME) enterActive(battleContext());
                 break;
             case ACTIVE:
                 if (shouldFade()) enterFade();
@@ -58,7 +58,7 @@ public class AuraInstance extends SkillInstance {
         phaseTime = 0f;
         activeDuration = computeActiveDuration();
         if (combatant.isAlive()){
-            applyEffectsTo(combatant, ctx);
+            applyEffectsTo(combatant);
             ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_TICK, combatant, null)); //might need move to status onTick??
         }
     }
@@ -128,5 +128,10 @@ public class AuraInstance extends SkillInstance {
         sprite.setAlpha(alpha);
         sprite.draw(batch);
         sprite.setAlpha(1f);
+    }
+
+    @Override
+    public float depth() {
+        return combatant.getGridPosition().getWorldZ();
     }
 }

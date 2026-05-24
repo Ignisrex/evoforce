@@ -56,4 +56,8 @@ public class GridPosition {
         float ty = Float.isNaN(projectedTargetY) ? battlefield.tileCenterY(row) : projectedTargetY;
         smoother.update(delta, tx, ty);
     }
+
+    public float getWorldZ(){
+        return this.battlefield.floorZ(row);
+    }
 }

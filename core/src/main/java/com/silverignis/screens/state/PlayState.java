@@ -2,6 +2,7 @@ package com.silverignis.screens.state;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -15,11 +16,14 @@ import com.silverignis.components.Stats;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
-import com.silverignis.registry.Monster;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.evironment.BattlefieldDecor;
+import com.silverignis.registry.Monster;
 import com.silverignis.input.GameAction;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.SceneRenderable;
+import com.silverignis.render.WorldRenderer;
 import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.screens.OverworldScreen;
@@ -29,7 +33,6 @@ import com.silverignis.skills.SkillFactory;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SlotKey;
-import com.badlogic.gdx.graphics.GL20;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.evironment.GameEnvironment;
 import com.silverignis.systems.CombatSystem;
@@ -59,6 +62,12 @@ public class PlayState implements GameScreenState {
 
     private boolean transitionScheduled = false;
 
+    private final WorldRenderer worldRenderer = new WorldRenderer();
+    private final RenderContext renderContext;
+    private final SceneRenderable playerShadow;
+    private final SceneRenderable[] enemyShadows;
+    private final SceneRenderable[] enemyHpLabels;
+
     public PlayState(GameScreen screen) {
         this.screen = screen;
 
@@ -75,6 +84,16 @@ public class PlayState implements GameScreenState {
         player = new Player(1, 1, new Sprite(registry.getMonsterTexture(Monster.BEASTKIN, Team.PLAYER)), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
         enemies.add(new Enemy(Battlefield.COLS - 2, 1, new Sprite(registry.getMonsterTexture(Monster.ELDER_LICH, Team.ENEMY)), battlefield, new Stats(20, 10, 100, 10, 20)));
         enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(registry.getMonsterTexture(Monster.SKELETON, Team.ENEMY)), battlefield, new Stats(20, 10, 100, 10, 20)));
+
+        Texture shadowTex = screen.game.generated.shadow();
+        this.renderContext = new RenderContext(screen.game.batch, screen.game.font, environment);
+        this.playerShadow = player.shadowView(shadowTex);
+        this.enemyShadows = new SceneRenderable[enemies.size()];
+        this.enemyHpLabels = new SceneRenderable[enemies.size()];
+        for (int i = 0; i < enemies.size(); i++){
+            enemyShadows[i] = enemies.get(i).shadowView(shadowTex);
+            enemyHpLabels[i] = enemies.get(i).hpLabelView();
+        }
 
         TriggerBus triggerBus = new TriggerBus();
         DamageSystem damageSystem = new DamageSystem(triggerBus);
@@ -192,7 +211,7 @@ public class PlayState implements GameScreenState {
         screen.game.viewport.apply();
         batch.setProjectionMatrix(screen.game.viewport.getCamera().combined);
         batch.begin();
-        renderWorld(batch);
+        renderWorld();
         batch.end();
 
         vfxManager.endInputCapture();
@@ -207,38 +226,19 @@ public class PlayState implements GameScreenState {
         battleContext.buildCache();
     }
 
-    public void renderWorld(SpriteBatch batch) {
-        // ── Layer 1: Zone effects (terrain-level skill visuals) ───────────
-        combatSystem.renderUnder(batch);
-
-        // ── Layer 3: Shadows ──────────────────────────────────────────────
-        Texture shadow = screen.game.generated.shadow();
-        if (player.isAlive()) player.renderShadow(batch, shadow);
-        for (Enemy e : enemies) if (e.isAlive()) e.renderShadow(batch, shadow);
-
-        // ── Layer 4: Entities — Y-sorted (higher Y = farther = drawn first) ─
-        renderEntitiesYSorted(batch);
-
-        // ── Layer 5: Skill VFX (both casters' projectiles, beams, auras, etc.) ─
-        combatSystem.render(batch);
-        for (BattleVfx e : effects) e.render(batch);
-    }
-
-    private void renderEntitiesYSorted(SpriteBatch batch) {
-
-        List<Object> drawList = new ArrayList<>(1 + enemies.size());
-        if (player.isAlive()) drawList.add(player);
-        for (Enemy e : enemies) if (!e.isDead()) drawList.add(e);
-        drawList.sort((a, b) -> Float.compare(visualY(b), visualY(a)));
-        for (Object o : drawList) {
-            if (o instanceof Player) ((Player) o).render(batch);
-            else                     ((Enemy) o).render(batch, screen.game.font);
+    public void renderWorld() {
+        worldRenderer.submit(playerShadow);
+        if (player.isAlive()) worldRenderer.submit(player);
+        for (int i = 0; i<enemies.size(); i++){
+            Enemy e = enemies.get(i);
+            if (e.isDead()) continue;
+            worldRenderer.submit(enemyShadows[i]);
+            worldRenderer.submit(e);
+            worldRenderer.submit(enemyHpLabels[i]);
         }
-    }
-
-    private static float visualY(Object o) {
-        if (o instanceof Player) return ((Player) o).getVisualY();
-        return ((Enemy) o).getVisualY();
+        combatSystem.submitRenderables(worldRenderer);
+        worldRenderer.submit(effects);
+        worldRenderer.flush(renderContext);
     }
 
     public void dispose() {
@@ -258,7 +258,7 @@ public class PlayState implements GameScreenState {
         SkillDeck deck = player.getDeck();
         if (deck.isOnCooldown(skill)) return;
         deck.onUsed(skill);
-        combatSystem.spawn(SkillFactory.create(skill, player));
+        combatSystem.spawn(SkillFactory.create(skill, player, battleContext));
     }
 
     private void handleSlotFire() {
@@ -276,7 +276,7 @@ public class PlayState implements GameScreenState {
 
         Skill skill = slot.pop();
         player.getDeck().onUsed(skill);
-        SkillInstance instance = SkillFactory.create(skill, player);
+        SkillInstance instance = SkillFactory.create(skill, player, battleContext);
         combatSystem.spawn(instance);
     }
 
@@ -300,7 +300,7 @@ public class PlayState implements GameScreenState {
             if (deck.isOnCooldown(skill)) continue;
             deck.onUsed(skill);
             enemy.onBasicAttackFired();
-            combatSystem.spawn(SkillFactory.create(skill, enemy));
+            combatSystem.spawn(SkillFactory.create(skill, enemy, battleContext));
         }
     }
 }
