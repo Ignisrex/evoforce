@@ -19,7 +19,10 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.silverignis.assets.GameAssets;
 import com.silverignis.assets.GeneratedAssets;
+import com.silverignis.evironment.GameEnvironment;
 import com.silverignis.registry.MonsterRegistry;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.WorldRenderer;
 import com.silverignis.screens.MainMenuScreen;
 import com.silverignis.sessions.GameSession;
 
@@ -35,6 +38,9 @@ public class Main extends Game {
     public final GameAssets assets = new GameAssets();
     public final MonsterRegistry monsterRegistry = new MonsterRegistry(assets);
     public GeneratedAssets generated;
+    public GameEnvironment environment;
+    public WorldRenderer worldRenderer;
+    public RenderContext renderContext;
 
     public GameSession session;
 
@@ -42,11 +48,15 @@ public class Main extends Game {
         batch = new SpriteBatch();
         font = new BitmapFont();
         viewport = new FitViewport(16, 9);
+        loadAssets();
+
+        this.environment = new GameEnvironment(viewport, assets.caveWall(), assets.caveFloor());
+        this.worldRenderer = new WorldRenderer();
+        this.renderContext = new RenderContext(batch, font, environment);
 
         font.setUseIntegerPositions(false);
         font.getData().setScale(viewport.getWorldHeight()/ Gdx.graphics.getHeight());
 
-        loadAssets();
         this.generated = new GeneratedAssets();
 
         this.session = new GameSession();
@@ -76,6 +86,7 @@ public class Main extends Game {
         font.dispose();
         screen.dispose();
         if(generated != null) generated.dispose();
+        environment.dispose();
         assets.dispose();
     }
 

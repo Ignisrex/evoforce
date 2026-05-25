@@ -13,6 +13,9 @@ import com.silverignis.components.FreePosition;
 import com.silverignis.evironment.GameEnvironment;
 import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
+import com.silverignis.render.RenderContext;
+import com.silverignis.render.RenderLayer;
+import com.silverignis.render.SceneRenderable;
 import com.silverignis.systems.MovementSystem;
 
 public class OverworldScreen implements Screen {
@@ -38,14 +41,20 @@ public class OverworldScreen implements Screen {
     private final Sprite avatar;
     private final FreePosition pos;
 
+    private final DoorRenderable[] doorRenderables;
+    private final AvatarRenderable avatarRenderable = new AvatarRenderable();
+
     public OverworldScreen(Main game){
         this.game = game;
-        this.environment = new GameEnvironment(game.viewport, game.assets.caveWall(), game.assets.caveFloor());
+        this.environment = game.environment;
 
         this.avatar = new Sprite(game.assets.avatar());
 
         Rectangle bounds = new Rectangle(-5f, -3f, 10f, 6f);
         this.pos = new FreePosition(0f, 0f, AVATAR_SPEED, bounds);
+
+        this.doorRenderables = new DoorRenderable[DOORS.length];
+        for(int i =0; i<DOORS.length; i++) this.doorRenderables[i] = new DoorRenderable(DOORS[i]);
     }
 
     @Override
@@ -67,8 +76,9 @@ public class OverworldScreen implements Screen {
         game.viewport.apply();
         game.batch.setProjectionMatrix(game.viewport.getCamera().combined);
         game.batch.begin();
-        renderDoors();
-        renderAvatar();
+        for (DoorRenderable d : doorRenderables) game.worldRenderer.submit(d);
+        game.worldRenderer.submit(avatarRenderable);
+        game.worldRenderer.flush(game.renderContext);
         game.batch.end();
     }
 
@@ -82,18 +92,6 @@ public class OverworldScreen implements Screen {
         }
     }
 
-    private void renderDoors() {
-        game.batch.setColor(0.3f, 0.8f, 1f, 0.85f);
-        for (Rectangle d : DOORS) {
-            float cx = d.x + d.width * 0.5f;
-            float cz = d.y + d.height * 0.5f;
-            Vector2 s = environment.project(cx, cz);
-            float ds = environment.depthScale(cz);
-            game.batch.draw(game.generated.pixel(), s.x - DOOR_WIDTH * ds * 0.5f, s.y, DOOR_WIDTH * ds, DOOR_HEIGHT * ds);
-        }
-        game.batch.setColor(Color.WHITE);
-    }
-
     private void handleInput(float delta) {
         float dx = 0f, dz = 0f;
         if (input.isActionPressed(GameAction.MOVE_LEFT))  dx -= 1f;
@@ -101,13 +99,6 @@ public class OverworldScreen implements Screen {
         if (input.isActionPressed(GameAction.MOVE_UP))    dz -= 1f;   // away from camera
         if (input.isActionPressed(GameAction.MOVE_DOWN))  dz += 1f;   // toward camera
         movementSystem.applyFreeInput(pos, dx, dz, delta);
-    }
-
-    private void renderAvatar() {
-        Vector2 screen = environment.project(pos.getX(), pos.getY());
-        float size = AVATAR_SIZE * environment.depthScale(pos.getY());
-        avatar.setBounds(screen.x - size * 0.5f, screen.y, size, size);
-        avatar.draw(game.batch);
     }
 
     @Override
@@ -133,7 +124,38 @@ public class OverworldScreen implements Screen {
     }
 
     @Override
-    public void dispose() {
-        environment.dispose();
+    public void dispose() {}
+
+    private final class DoorRenderable implements SceneRenderable {
+        private final float centerX;
+        private final float centerZ;
+
+        DoorRenderable(Rectangle rect) {
+            this.centerX = rect.x + rect.width * 0.5f;
+            this.centerZ = rect.y + rect.height * 0.5f;
+        }
+
+        public float depth() { return centerZ; }
+        public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+
+        public void render(RenderContext rc){
+            Vector2 s = rc.project(centerX, centerZ);
+            float ds = rc.depthScale(centerZ);
+            rc.batch.setColor(0.3f, 0.8f, 1f, 0.85f);
+            rc.batch.draw(game.generated.pixel(), s.x - DOOR_WIDTH * ds * 0.5f, s.y, DOOR_WIDTH * ds, DOOR_HEIGHT * ds);
+            rc.batch.setColor(Color.WHITE);
+        }
+    }
+
+    private final class AvatarRenderable implements SceneRenderable {
+        public float depth() { return pos.getY(); }
+        public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+
+        public void render(RenderContext rc) {
+            Vector2 screen = rc.project(pos.getX(), pos.getY());
+            float size = AVATAR_SIZE * rc.depthScale(pos.getY());
+            avatar.setBounds(screen.x - size * 0.5f, screen.y, size, size);
+            avatar.draw(rc.batch);
+        }
     }
 }

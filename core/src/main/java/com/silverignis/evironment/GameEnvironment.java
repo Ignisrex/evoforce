@@ -32,6 +32,8 @@ public class GameEnvironment implements Disposable {
 
     private final Array<Model>         models    = new Array<>();
     private final Array<ModelInstance> instances = new Array<>();
+    private final Array<Model> decorModels = new Array<>();
+    private final Array<ModelInstance> decorInstances = new Array<>();
 
     private final Texture wallTex;
     private final Texture floorTex;
@@ -119,6 +121,7 @@ public class GameEnvironment implements Disposable {
         for (ModelInstance inst : instances) {
             modelBatch.render(inst, environment);
         }
+        for (ModelInstance inst : decorInstances) modelBatch.render(inst, environment);
         modelBatch.end();
     }
 
@@ -130,12 +133,23 @@ public class GameEnvironment implements Disposable {
     public float depthScale(float worldZ) { return sceneCamera.depthScale(worldZ); }
 
     public void addDecor(Material mat, float w, float h, float d, float x, float y, float z) {
-        addBox(modelBuilder, mat, Usage.Position | Usage.Normal, w, h, d, x, y, z);
+        Model m = modelBuilder.createBox(w, h, d, mat, Usage.Position | Usage.Normal);
+        decorModels.add(m);
+        ModelInstance inst = new ModelInstance(m);
+        inst.transform.setToTranslation(x, y, z);
+        decorInstances.add(inst);
+    }
+
+    public void clearDecor() {
+        for (Model m : decorModels) m.dispose();
+        decorModels.clear();
+        decorInstances.clear();
     }
 
     @Override
     public void dispose() {
         modelBatch.dispose();
         for (Model m : models) m.dispose();
+        for (Model m : decorModels) m.dispose();
     }
 }

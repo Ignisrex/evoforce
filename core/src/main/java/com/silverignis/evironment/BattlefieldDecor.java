@@ -26,4 +26,8 @@ public class BattlefieldDecor {
             }
         }
     }
+
+    public static void clear(GameEnvironment env) {
+        env.clearDecor();
+    }
 }

@@ -62,7 +62,7 @@ public class PlayState implements GameScreenState {
 
     private boolean transitionScheduled = false;
 
-    private final WorldRenderer worldRenderer = new WorldRenderer();
+    private final WorldRenderer worldRenderer;
     private final RenderContext renderContext;
     private final SceneRenderable playerShadow;
     private final SceneRenderable[] enemyShadows;
@@ -77,8 +77,8 @@ public class PlayState implements GameScreenState {
         float panelWidth  = 10f / Battlefield.COLS;
         float panelHeight = 4f  / Battlefield.ROWS;
         battlefield = new Battlefield(3f, 1f, panelWidth, panelHeight, PanelGenerator.generatePanels());
-
-        environment = new GameEnvironment(screen.game.viewport, assets.caveWall(), assets.caveFloor());
+        this.worldRenderer = screen.game.worldRenderer;
+        this.environment = screen.game.environment;
         BattlefieldDecor.apply(environment, battlefield);
 
         player = new Player(1, 1, new Sprite(registry.getMonsterTexture(Monster.BEASTKIN, Team.PLAYER)), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
@@ -86,7 +86,7 @@ public class PlayState implements GameScreenState {
         enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(registry.getMonsterTexture(Monster.SKELETON, Team.ENEMY)), battlefield, new Stats(20, 10, 100, 10, 20)));
 
         Texture shadowTex = screen.game.generated.shadow();
-        this.renderContext = new RenderContext(screen.game.batch, screen.game.font, environment);
+        this.renderContext = screen.game.renderContext;
         this.playerShadow = player.shadowView(shadowTex);
         this.enemyShadows = new SceneRenderable[enemies.size()];
         this.enemyHpLabels = new SceneRenderable[enemies.size()];
@@ -110,6 +110,8 @@ public class PlayState implements GameScreenState {
         bloomEffect.setBloomSaturation(0.85f);
         bloomEffect.setThreshold(0.25f);
         vfxManager.addEffect(bloomEffect);
+
+
     }
 
     public Player      getPlayer()  { return player; }
@@ -242,7 +244,7 @@ public class PlayState implements GameScreenState {
     }
 
     public void dispose() {
-        environment.dispose();
+        BattlefieldDecor.clear(environment);
         bloomEffect.dispose();
         vfxManager.dispose();
     }
