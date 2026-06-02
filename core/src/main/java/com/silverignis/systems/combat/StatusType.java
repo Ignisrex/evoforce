@@ -6,5 +6,7 @@ public enum StatusType {
     POISON,
     STUN,
     REGEN,
-    SHIELD
+    SHIELD,
+    POWER_UP,
+    MAGIC_UP
 }

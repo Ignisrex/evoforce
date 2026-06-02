@@ -6,7 +6,7 @@ import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
-import com.silverignis.evironment.GameEnvironment;
+import com.silverignis.environment.GameEnvironment;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;

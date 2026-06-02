@@ -15,7 +15,7 @@ evoforce/
 ```
 
 All Java is under `core/src/main/java/com/silverignis/` and groups by concern:
-`Main` → `screens/` → `state/` → `systems/` + `entities/` + `skills/` + `environment/` (rendering; **the directory is misspelled `evironment/`**) + `sessions/` (run-level state) (+ `ui/`, `input/`, `components/`, `util/`).
+`Main` → `screens/` → `state/` → `systems/` + `entities/` + `skills/` + `environment/` (rendering) + `sessions/` (run-level state) (+ `ui/`, `input/`, `components/`, `util/`).
 
 ## Where things live (cheat sheet)
 
@@ -31,9 +31,9 @@ All Java is under `core/src/main/java/com/silverignis/` and groups by concern:
 | Add a panel type | `entities/Battlefield.PanelType` + matching `assets/panels/*.png` |
 | Tweak game feel (timings) | `private static final float`s at the top of the relevant `*Instance.java` |
 | Change the overworld scene | `screens/OverworldScreen.java` (free-roam, doors → battle) |
-| Change the HD-2D camera / projection | `evironment/SceneCamera.java` (camera + `project`/`depthScale`) |
-| Change cave room geometry | `evironment/GameEnvironment.java` (shared shell, grid-agnostic) |
-| Change battlefield floor panels | `evironment/BattlefieldDecor.java` |
+| Change the HD-2D camera / projection | `environment/SceneCamera.java` (camera + `project`/`depthScale`) |
+| Change cave room geometry | `environment/GameEnvironment.java` (shared shell, grid-agnostic) |
+| Change battlefield floor panels | `environment/BattlefieldDecor.java` |
 | Change run-persistent player state | `sessions/PlayerProfile.java` + `sessions/GameSession.java` (held on `Main.session`) |
 
 ## Per-frame loop (don't reorder casually)

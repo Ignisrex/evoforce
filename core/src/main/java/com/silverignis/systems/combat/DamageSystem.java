@@ -57,8 +57,13 @@ public class DamageSystem {
 
     public void heal(HealEvent ev){
         if (ev.target == null || !ev.target.isAlive()) return;
-        if (ev.amount <= 0) return;
 
+        //if target burnt then reduce healing
+        if(ev.target.getStatusContainer().has(StatusType.BURN)){
+            ev.amount = ev.amount / 2;
+        }
+
+        if (ev.amount <= 0) return;
         ev.target.getHealth().heal(ev.amount);
         bus.fire(new TriggerEvent(Trigger.ON_HEAL, ev.target, ev));
     }

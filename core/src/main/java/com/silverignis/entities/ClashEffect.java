@@ -2,8 +2,10 @@ package com.silverignis.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
@@ -24,11 +26,14 @@ public class ClashEffect implements BattleVfx {
     private static final float END_SCALE = 1.6f;
 
     private final Sprite sprite;
+    /** Optional animated frames. When non-null, takes priority over the static texture. */
+    private final Animation<TextureRegion> animation;
     private final float baseSize;
     private final float centerX;
     private final float centerY;
     private float elapsed = 0f;
     private final float worldZ;
+    private final Color tint;
 
     /**
      * @param texture starburst texture (transparent background expected)
@@ -37,7 +42,14 @@ public class ClashEffect implements BattleVfx {
      * @param size    target sprite size at scale 1.0 (typically one panel cell)
      */
     public ClashEffect(Texture texture, float centerX, float centerY, float size, float worldZ) {
+        this(texture, null, Color.WHITE, centerX, centerY, size, worldZ);
+    }
+
+    public ClashEffect(Texture texture, Animation<TextureRegion> animation, Color tint,
+                       float centerX, float centerY, float size, float worldZ) {
         this.sprite = new Sprite(texture);
+        this.animation = animation;
+        this.tint = tint != null ? tint : Color.WHITE;
         this.baseSize = size;
         this.centerX = centerX;
         this.centerY = centerY;
@@ -61,10 +73,18 @@ public class ClashEffect implements BattleVfx {
         float scale = MathUtils.lerp(START_SCALE, END_SCALE, t);
         float w = baseSize * scale;
         float h = baseSize * scale;
-        sprite.setBounds(centerX - w * 0.5f, centerY - h * 0.5f, w, h);
-        sprite.setColor(1f, 1f, 1f, 1f - t);
-        sprite.draw(rc.batch);
-        sprite.setColor(Color.WHITE);
+        float alpha = (1f - t) * tint.a;
+        if (animation != null) {
+            TextureRegion frame = animation.getKeyFrame(elapsed, false);
+            rc.batch.setColor(tint.r, tint.g, tint.b, alpha);
+            rc.batch.draw(frame, centerX - w * 0.5f, centerY - h * 0.5f, w, h);
+            rc.batch.setColor(1f, 1f, 1f, 1f);
+        } else {
+            sprite.setBounds(centerX - w * 0.5f, centerY - h * 0.5f, w, h);
+            sprite.setColor(tint.r, tint.g, tint.b, alpha);
+            sprite.draw(rc.batch);
+            sprite.setColor(Color.WHITE);
+        }
     }
 
     @Override

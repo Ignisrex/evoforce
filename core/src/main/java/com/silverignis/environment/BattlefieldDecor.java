@@ -1,4 +1,4 @@
-package com.silverignis.evironment;
+package com.silverignis.environment;
 
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;

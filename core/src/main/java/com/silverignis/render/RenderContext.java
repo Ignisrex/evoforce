@@ -3,7 +3,7 @@ package com.silverignis.render;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.silverignis.evironment.GameEnvironment;
+import com.silverignis.environment.GameEnvironment;
 
 public final class RenderContext {
 

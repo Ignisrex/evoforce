@@ -24,7 +24,8 @@
     "vfxTexture": "effects/fireball.png",
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
     "effects": [
-      { "type": "DAMAGE", "value": 20 }
+      { "type": "DAMAGE", "value": 20 },
+      { "type":  "APPLY_STATUS", "statusType": "BURN", "value":5, "duration":5, "chance": 60}
     ]
   },
   {
@@ -70,7 +71,7 @@
     "shape": "ZONE",
     "element": "ICE",
     "cooldown": 3.5,
-    "vfxTexture": "effects/beam.png",
+    "vfxTexture": "effects/zone.png",
     "effects": [
       { "type": "DAMAGE", "value": 5 },
       { "type": "APPLY_STATUS",  "statusType":"FREEZE", "duration": 3, "chance": 100 }
@@ -127,6 +128,77 @@
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 12.0 },
     "effects": [
       { "type": "DAMAGE", "value": 5 }
+    ]
+  },
+  {
+    "id": "power_up",
+    "displayName": "Power Up",
+    "description": "Triple your physical power for 10 seconds.",
+    "icon": "skills/power_up.png",
+    "shape": "AURA",
+    "element": "NONE",
+    "cooldown": 12.0,
+    "vfxTexture": "effects/aura.png",
+    "vfxTint": "ff3030ff",
+    "effects": [
+      { "type": "APPLY_STATUS", "statusType": "POWER_UP", "duration": 10 }
+    ]
+  },
+  {
+    "id": "magic_up",
+    "displayName": "Magic Up",
+    "description": "Triple your magical power for 10 seconds.",
+    "icon": "skills/magic_up.png",
+    "shape": "AURA",
+    "element": "NONE",
+    "cooldown": 12.0,
+    "vfxTexture": "effects/aura.png",
+    "vfxTint": "9030ffff",
+    "effects": [
+      { "type": "APPLY_STATUS", "statusType": "MAGIC_UP", "duration": 10 }
+    ]
+  },
+  {
+    "id": "flame_claw",
+    "displayName": "Flame Claw",
+    "description": "Dash 1 tile forward and rake the 2 tiles beyond it with fire.",
+    "icon": "skills/flame_claw.png",
+    "shape": "STRIKE",
+    "element": "FIRE",
+    "cooldown": 3.0,
+    "powerScale": 0.6,
+    "vfxTexture": "effects/slash.png",
+    "vfxAnimation": {
+      "spritesheet": "skills/animations/flame_claw_spritesheet.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "frameDuration": 0.03
+    },
+    "shapeConfig": { "dashTiles": 1, "hitTiles": 2 },
+    "effects": [
+      { "type": "DAMAGE", "value": 22 },
+      { "type": "APPLY_STATUS", "statusType": "BURN", "duration": 5, "value": 4, "chance": 100 }
+    ]
+  },
+  {
+    "id": "thunder",
+    "displayName": "Thunder",
+    "description": "Sear a row-spanning lightning beam.",
+    "icon": "skills/thunder.png",
+    "shape": "BEAM",
+    "element": "LIGHTNING",
+    "cooldown": 4.5,
+    "magicScale": 0.7,
+    "vfxTexture": "effects/beam.png",
+    "vfxAnimation": {
+      "spritesheet": "skills/animations/thunder_spritesheet.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "frameDuration": 0.08
+    },
+    "effects": [
+      { "type": "DAMAGE", "value": 28 },
+      { "type": "APPLY_STATUS", "statusType": "STUN", "duration": 1.0, "chance": 50 }
     ]
   }
 ]

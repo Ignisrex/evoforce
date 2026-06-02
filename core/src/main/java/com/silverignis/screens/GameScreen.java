@@ -47,16 +47,6 @@ public class GameScreen implements Screen {
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
 
-        // Seed the player's deck with every library skill except the
-        // basic-attack skill — that one is held in the Caster's basic-attack
-        // slot and fired by the dedicated ATTACK_BASIC button, so it should
-        // never appear in the staging hand.
-
-        Skill  windSlash = game.session.skills.get("wind_slash");
-        playState.getEnemies().get(1).getCaster().setBasicAttack(windSlash);
-        Skill  iceBeam = game.session.skills.get("fire_blast");
-        playState.getEnemies().get(0).getCaster().setBasicAttack(iceBeam);
-
         setState(playState);
     }
 

@@ -1,5 +1,6 @@
 package com.silverignis.skills.instances;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -31,6 +32,8 @@ public class BeamInstance extends SkillInstance {
     /** +1 = caster faces east (player), -1 = faces west (enemy). Matches ProjectileInstance. */
     private final int dir;
 
+    private final Color tint;
+
     public BeamInstance(Skill def, Combatant combatant, BattleContext ctx) {
         super(def, combatant, ctx);
         this.row = originRow;
@@ -39,6 +42,8 @@ public class BeamInstance extends SkillInstance {
 
         this.animation = def.getVfxAnimation();
         this.sprite    = new Sprite(def.getVfxTexture());
+        this.tint      = def.getVfxTint() != null ? def.getVfxTint() : Color.WHITE;
+        sprite.setColor(tint);
     }
 
     @Override
@@ -134,7 +139,7 @@ public class BeamInstance extends SkillInstance {
 
         if (animation != null) {
             TextureRegion frame = animation.getKeyFrame(stateTime, false);
-            batch.setColor(1f, 1f, 1f, alpha);
+            batch.setColor(tint.r, tint.g, tint.b, tint.a * alpha);
             if (dir < 0) batch.draw(frame, drawX + w, y, -w, h); // mirror for westward beams
             else         batch.draw(frame, drawX, y, w, h);
             batch.setColor(1f, 1f, 1f, 1f);

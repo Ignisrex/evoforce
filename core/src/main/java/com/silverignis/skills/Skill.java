@@ -1,5 +1,6 @@
 package com.silverignis.skills;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -46,6 +47,10 @@ public final class Skill {
 
     private final ShapeConfig shapeConfig;
 
+    /** VFX tint, applied multiplicatively to {@link #vfxTexture}/animation at render time.
+     *  Defaults to white (no tint). */
+    private final Color vfxTint;
+
     private final float powerScale;
     private final float magicScale;
 
@@ -62,6 +67,7 @@ public final class Skill {
         this.vfxAnimation = b.vfxAnimation;
         this.vfxAnimationSheet = b.vfxAnimationSheet;
         this.shapeConfig = b.shapeConfig;
+        this.vfxTint = b.vfxTint;
         this.powerScale = b.powerScale;
         this.magicScale = b.magicScale;
     }
@@ -80,6 +86,7 @@ public final class Skill {
     public Animation<TextureRegion> getVfxAnimation() { return vfxAnimation; }
     public Texture      getVfxAnimationSheet() { return vfxAnimationSheet; }
     public ShapeConfig  getShapeConfig() { return shapeConfig; }
+    public Color        getVfxTint()    { return vfxTint; }
     public float        getPowerScale() {return powerScale; }
     public float        getMagicScale() { return magicScale; }
 
@@ -98,6 +105,7 @@ public final class Skill {
         private Animation<TextureRegion> vfxAnimation;
         private Texture vfxAnimationSheet;
         private ShapeConfig shapeConfig;
+        private Color vfxTint = Color.WHITE;
         private float powerScale = 0f;
         private float magicScale = 0f;
 
@@ -112,6 +120,7 @@ public final class Skill {
         public Builder cooldown(float v)                            { this.cooldown = v; this.cooldownSet = true; return this; }
         public Builder vfxTexture(Texture v)                        { this.vfxTexture = v; return this; }
         public Builder shapeConfig(ShapeConfig v)                   { this.shapeConfig = v; return this; }
+        public Builder vfxTint(Color v)                             { this.vfxTint = v == null ? Color.WHITE : v; return this; }
         public Builder powerScale(float v)                          { this.powerScale = v; return this; }
         public Builder magicScale(float v)                          { this.magicScale = v; return this; }
 

@@ -10,7 +10,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.silverignis.Main;
 import com.silverignis.components.FreePosition;
-import com.silverignis.evironment.GameEnvironment;
+import com.silverignis.environment.GameEnvironment;
 import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
 import com.silverignis.render.RenderContext;
@@ -70,6 +70,11 @@ public class OverworldScreen implements Screen {
         if (transitioning) return;
 
         ScreenUtils.clear(Color.BLACK);
+
+        game.vfxManager.cleanUpBuffers();
+        game.vfxManager.beginInputCapture();
+
+        ScreenUtils.clear(Color.BLACK);
         environment.render(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_DEPTH_BUFFER_BIT);
 
@@ -80,6 +85,10 @@ public class OverworldScreen implements Screen {
         game.worldRenderer.submit(avatarRenderable);
         game.worldRenderer.flush(game.renderContext);
         game.batch.end();
+
+        game.vfxManager.endInputCapture();
+        game.vfxManager.applyEffects();
+        game.vfxManager.renderToScreen();
     }
 
     private void checkDoors() {

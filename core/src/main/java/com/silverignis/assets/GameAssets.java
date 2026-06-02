@@ -1,6 +1,7 @@
 package com.silverignis.assets;
 
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.assets.loaders.TextureLoader;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
@@ -30,18 +31,17 @@ public final class GameAssets implements Disposable {
     public static final String CAVE_FLOOR = "cave_floor.png";
     public static final String CLASH      = "effects/clash.png";
     public static final String AVATAR     = "sprites/beastkin.png";
-    public static final String DROP_SFX   = "drop.mp3";
-    public static final String MUSIC      = "music.mp3";
 
     private final AssetManager mgr = new AssetManager();
 
     public void queueLoad() {
         mgr.load(CAVE_WALL,  Texture.class);
-        mgr.load(CAVE_FLOOR, Texture.class);
+        // Floor tiles 6x across the cave at perspective — without mipmaps the far rows shimmer.
+        TextureLoader.TextureParameter floorParams = new TextureLoader.TextureParameter();
+        floorParams.genMipMaps = true;
+        mgr.load(CAVE_FLOOR, Texture.class, floorParams);
         mgr.load(CLASH,      Texture.class);
         mgr.load(AVATAR,     Texture.class);
-        mgr.load(DROP_SFX,   Sound.class);
-        mgr.load(MUSIC,      Music.class);
 
         for (Monster m : Monster.values()) {
             mgr.load(m.texturePath(Team.PLAYER), Texture.class);
@@ -57,7 +57,8 @@ public final class GameAssets implements Disposable {
     public void finishLoading() {
         mgr.finishLoading();
         caveWall().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        caveFloor().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        caveFloor().setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+        caveFloor().setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
     }
 
     public Texture texture(String path) { return mgr.get(path, Texture.class); }
@@ -68,8 +69,6 @@ public final class GameAssets implements Disposable {
     public Texture caveFloor() { return texture(CAVE_FLOOR); }
     public Texture clash()     { return texture(CLASH); }
     public Texture avatar()    { return texture(AVATAR); }
-    public Sound   drop()      { return sound(DROP_SFX); }
-    public Music   music()     { return music(MUSIC); }
 
     @Override
     public void dispose() {

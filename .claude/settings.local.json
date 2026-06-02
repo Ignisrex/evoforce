@@ -28,7 +28,13 @@
       "Bash(cp /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_sw.png /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king.png)",
       "Bash(stat -c%s /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_se.png)",
       "Bash(stat -c%s /c/Users/silverignis/projects/evoforce/assets/sprites/lich_king_sw.png)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "mcp__pixellab__list_characters",
+      "mcp__pixellab__animate_character",
+      "Bash(curl *)",
+      "Bash(ls -la tools/pixellab_raw/beastkin/idle/se/)",
+      "Bash(ls tools/pixellab_raw/skeleton/idle/sw/)",
+      "Bash(ls tools/pixellab_raw/lich/idle/sw/ tools/pixellab_raw/lich_king/idle/sw/)"
     ]
   }
 }

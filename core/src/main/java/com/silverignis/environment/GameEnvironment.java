@@ -1,4 +1,4 @@
-package com.silverignis.evironment;
+package com.silverignis.environment;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -20,7 +20,6 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.silverignis.entities.Battlefield;
 
 public class GameEnvironment implements Disposable {
 
@@ -35,17 +34,22 @@ public class GameEnvironment implements Disposable {
     private final Array<Model> decorModels = new Array<>();
     private final Array<ModelInstance> decorInstances = new Array<>();
 
+    // Floor texture is 4x tiled across the 22x18 floor box (~5 world units per repeat).
+    private static final float FLOOR_UV_SCALE = 4f;
+
     private final Texture wallTex;
     private final Texture floorTex;
+    private final Texture floorEmissiveTex;
 
     private final SceneCamera sceneCamera;
     private final ModelBuilder modelBuilder = new ModelBuilder();
 
-    public GameEnvironment(Viewport viewport, Texture wallTex, Texture floorTex) {
-        // Cave textures are borrowed from GameAssets (loaded + Linear-filtered
-        // centrally); this class neither owns nor disposes them.
-        this.wallTex  = wallTex;
-        this.floorTex = floorTex;
+    public GameEnvironment(Viewport viewport, Texture wallTex, Texture floorTex, Texture floorEmissiveTex) {
+        // Cave textures are borrowed from GameAssets / GeneratedAssets (loaded + filtered
+        // centrally); this class neither owns nor disposes them. floorEmissiveTex may be null.
+        this.wallTex          = wallTex;
+        this.floorTex         = floorTex;
+        this.floorEmissiveTex = floorEmissiveTex;
 
         modelBatch = new ModelBatch();
 
@@ -67,15 +71,28 @@ public class GameEnvironment implements Disposable {
         long colorAttrs = Usage.Position | Usage.Normal;
 
         Material wallMat  = new Material(TextureAttribute.createDiffuse(wallTex));
-        Material floorMat = new Material(TextureAttribute.createDiffuse(floorTex));
+
+        TextureAttribute floorDiffuse = TextureAttribute.createDiffuse(floorTex);
+        floorDiffuse.scaleU = FLOOR_UV_SCALE;
+        floorDiffuse.scaleV = FLOOR_UV_SCALE;
+        Material floorMat = new Material(floorDiffuse);
+        if (floorEmissiveTex != null) {
+            TextureAttribute floorEmissive = TextureAttribute.createEmissive(floorEmissiveTex);
+            floorEmissive.scaleU = FLOOR_UV_SCALE;
+            floorEmissive.scaleV = FLOOR_UV_SCALE;
+            floorMat.set(floorEmissive);
+        }
+
         Material darkMat  = new Material(ColorAttribute.createDiffuse(0.05f, 0.05f, 0.08f, 1f));
 
-        // Cave structure
-        addBox(modelBuilder, floorMat,  attrs, 14f, 0.15f, 14f,  0f,  -0.1f,  2f);   // floor
-        addBox(modelBuilder, wallMat,   attrs, 14f, 8f,    0.1f,  0f,    3f,   -6f);   // back wall
-        addBox(modelBuilder, wallMat,   attrs, 14f, 0.5f,  3f,    0f,    5.5f, -3f);   // ceiling
-        addBox(modelBuilder, wallMat,   attrs,  0.2f, 8f, 14f,   -7f,    3f,   -1f);   // left wall  z∈[-8,6]
-        addBox(modelBuilder, wallMat,   attrs,  0.2f, 8f, 14f,    7f,    3f,   -1f);   // right wall z∈[-8,6]
+        // Cave structure — enlarged. Floor is wider+deeper than the wall enclosure so its
+        // edges stay hidden behind/under the walls. Battlefield grid (x ±5.5, z -3..+2) sits
+        // well within the new bounds.
+        addBox(modelBuilder, floorMat,  attrs, 220f, 0.15f, 18f,   0f,  -0.1f,  2f);   // floor
+        addBox(modelBuilder, wallMat,   attrs, 20f, 8f,    0.1f,  0f,    3f,   -8f);   // back wall
+        addBox(modelBuilder, wallMat,   attrs, 20f, 0.5f,  3f,    0f,    5.5f, -3f);   // ceiling
+        addBox(modelBuilder, wallMat,   attrs,  0.2f, 8f, 18f,  -10f,    3f,   -2f);   // left wall  z∈[-11,7]
+        addBox(modelBuilder, wallMat,   attrs,  0.2f, 8f, 18f,   10f,    3f,   -2f);   // right wall z∈[-11,7]
 
         // Stalactites
         float[][] stalPos = {

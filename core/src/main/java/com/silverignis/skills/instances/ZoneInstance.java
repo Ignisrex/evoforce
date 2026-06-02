@@ -3,6 +3,7 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.silverignis.components.Team;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
@@ -28,7 +29,9 @@ public class ZoneInstance extends SkillInstance {
     private boolean rendersUnder = true;
 
     public ZoneInstance(Skill def, Combatant combatant, BattleContext ctx) {
-        this(def, combatant, combatant.getCol() + 1, combatant.getRow(), ctx);
+        this(def, combatant,
+             combatant.getCol() + (combatant.getTeam() == Team.PLAYER ? 1 : -1),
+             combatant.getRow(), ctx);
     }
 
     public ZoneInstance(Skill def, Combatant combatant, int targetCol, int targetRow, BattleContext ctx) {

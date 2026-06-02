@@ -1,5 +1,6 @@
 package com.silverignis.skills.instances;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.silverignis.skills.Skill;
@@ -28,6 +29,8 @@ public class AuraInstance extends SkillInstance {
     public AuraInstance(Skill def, Combatant combatant, BattleContext ctx) {
         super(def, combatant, ctx);
         this.sprite = new Sprite(def.getVfxTexture());
+        Color tint = def.getVfxTint();
+        if (tint != null) sprite.setColor(tint);
     }
 
     @Override

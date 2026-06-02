@@ -31,4 +31,11 @@ public enum Monster {
     public String texturePath(Team team) {
         return "sprites/" + name + (team == Team.PLAYER ? "_se" : "_sw") + ".png";
     }
+
+    public static Monster fromName(String name) {
+        for (Monster m : values()) {
+            if (m.name.equals(name)) return m;
+        }
+        return null;
+    }
 }

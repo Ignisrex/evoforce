@@ -11,7 +11,9 @@ import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.StatusContainer;
 import com.silverignis.systems.combat.StatusFactory;
+import com.silverignis.systems.combat.StatusType;
 import com.silverignis.systems.combat.event.DamageEvent;
 import com.silverignis.systems.combat.event.HealEvent;
 
@@ -76,9 +78,12 @@ public abstract class SkillInstance implements SceneRenderable {
             switch (e.getType()) {
                 case DAMAGE:
                     Stats casterStats =  combatant.getStats();
+                    StatusContainer casterStatus = combatant.getStatusContainer();
+                    float powerMul = casterStatus.has(StatusType.POWER_UP) ? 3f : 1f;
+                    float magicMul = casterStatus.has(StatusType.MAGIC_UP) ? 3f : 1f;
                     int scaledBase = e.getValue()
-                        + Math.round(casterStats.getPower() * def.getPowerScale())
-                        + Math.round(casterStats.getMagic() * def.getMagicScale());
+                        + Math.round(casterStats.getPower() * powerMul * def.getPowerScale())
+                        + Math.round(casterStats.getMagic() * magicMul * def.getMagicScale());
                     battleContext.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
                     break;
                 case HEAL:

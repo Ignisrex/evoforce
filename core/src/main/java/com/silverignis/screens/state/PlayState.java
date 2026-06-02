@@ -3,22 +3,19 @@ package com.silverignis.screens.state;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
-import com.crashinvaders.vfx.effects.BloomEffect;
 import com.silverignis.components.Direction;
-import com.silverignis.components.Stats;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
-import com.silverignis.evironment.BattlefieldDecor;
+import com.silverignis.environment.BattlefieldDecor;
 import com.silverignis.registry.Monster;
 import com.silverignis.input.GameAction;
 import com.silverignis.render.RenderContext;
@@ -27,6 +24,7 @@ import com.silverignis.render.WorldRenderer;
 import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.screens.OverworldScreen;
+import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.SkillFactory;
@@ -34,9 +32,10 @@ import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.systems.BattleContext;
-import com.silverignis.evironment.GameEnvironment;
+import com.silverignis.environment.GameEnvironment;
 import com.silverignis.systems.CombatSystem;
 import com.silverignis.systems.MovementSystem;
+import com.silverignis.systems.SpawnSystem;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
 import com.silverignis.util.PanelGenerator;
@@ -58,7 +57,6 @@ public class PlayState implements GameScreenState {
 
     private final GameEnvironment environment;
     private final VfxManager vfxManager;
-    private final BloomEffect bloomEffect;
 
     private boolean transitionScheduled = false;
 
@@ -67,6 +65,8 @@ public class PlayState implements GameScreenState {
     private final SceneRenderable playerShadow;
     private final SceneRenderable[] enemyShadows;
     private final SceneRenderable[] enemyHpLabels;
+
+    private final SpawnSystem spawnSystem;
 
     public PlayState(GameScreen screen) {
         this.screen = screen;
@@ -81,9 +81,14 @@ public class PlayState implements GameScreenState {
         this.environment = screen.game.environment;
         BattlefieldDecor.apply(environment, battlefield);
 
+        this.spawnSystem = new SpawnSystem(
+            screen.game.session.spawnTable,
+            registry,
+            screen.game.session.skills);
+
         player = new Player(1, 1, new Sprite(registry.getMonsterTexture(Monster.BEASTKIN, Team.PLAYER)), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
-        enemies.add(new Enemy(Battlefield.COLS - 2, 1, new Sprite(registry.getMonsterTexture(Monster.ELDER_LICH, Team.ENEMY)), battlefield, new Stats(20, 10, 100, 10, 20)));
-        enemies.add(new Enemy(Battlefield.COLS - 1, 2, new Sprite(registry.getMonsterTexture(Monster.SKELETON, Team.ENEMY)), battlefield, new Stats(20, 10, 100, 10, 20)));
+        int level = screen.game.session.playerProfile.getProgressionLevel();
+        enemies.addAll(spawnSystem.spawnNext(battlefield, level));
 
         Texture shadowTex = screen.game.generated.shadow();
         this.renderContext = screen.game.renderContext;
@@ -103,15 +108,7 @@ public class PlayState implements GameScreenState {
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
 
-        vfxManager = new VfxManager(Pixmap.Format.RGBA8888, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        bloomEffect = new BloomEffect();
-        bloomEffect.setBaseIntensity(1.0f);
-        bloomEffect.setBloomIntensity(1.2f);
-        bloomEffect.setBloomSaturation(0.85f);
-        bloomEffect.setThreshold(0.25f);
-        vfxManager.addEffect(bloomEffect);
-
-
+        vfxManager = screen.game.vfxManager;
     }
 
     public Player      getPlayer()  { return player; }
@@ -150,13 +147,18 @@ public class PlayState implements GameScreenState {
 
     private boolean checkBattleOver() {
         if (transitionScheduled) return true;
+
         if (allEnemiesDead()) {
+            this.combatSystem.finishAll();
             transitionScheduled = true;
+            screen.game.session.playerProfile.progressPlayer();
             screen.game.session.playerProfile.getCaster().getSlots().clearAll();
             screen.game.setScreen(new OverworldScreen(screen.game));
             return true;
         }
         if (!player.isAlive()) {
+            screen.game.session.playerProfile.getCaster().getSlots().clearAll();
+            this.combatSystem.finishAll();
             transitionScheduled = true;
             screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.LOST));
             return true;
@@ -223,7 +225,6 @@ public class PlayState implements GameScreenState {
 
     @Override
     public void resize(int width, int height) {
-        vfxManager.resize(width, height);
         environment.resize(width, height);
         battleContext.buildCache();
     }
@@ -245,8 +246,6 @@ public class PlayState implements GameScreenState {
 
     public void dispose() {
         BattlefieldDecor.clear(environment);
-        bloomEffect.dispose();
-        vfxManager.dispose();
     }
 
     private void handleAttack() {
@@ -293,16 +292,59 @@ public class PlayState implements GameScreenState {
         }
     }
 
+    // Self-contained placeholder AI. Each enemy picks the first off-cooldown
+    // skill whose shape could plausibly land on the player from its current
+    // tile, falling back to its basic attack. Slated for overhaul — keep all
+    // the logic in this section so the rewrite can lift it cleanly.
     private void enemyAi() {
         for (Enemy enemy : enemies) {
             if (!enemy.wantsToBasicAttack()) continue;
-            Skill skill = enemy.getBasicAttack();
-            if (skill == null) continue;
-            SkillDeck deck = enemy.getDeck();
-            if (deck.isOnCooldown(skill)) continue;
-            deck.onUsed(skill);
+            Skill chosen = pickEnemyAction(enemy);
+            if (chosen == null) continue;
+            enemy.getDeck().onUsed(chosen);
             enemy.onBasicAttackFired();
-            combatSystem.spawn(SkillFactory.create(skill, enemy, battleContext));
+            combatSystem.spawn(SkillFactory.create(chosen, enemy, battleContext));
+        }
+    }
+
+    private Skill pickEnemyAction(Enemy enemy) {
+        SkillDeck deck = enemy.getDeck();
+        for (Skill s : deck.all()) {
+            if (deck.isOnCooldown(s)) continue;
+            if (canSkillReachPlayer(enemy, s)) return s;
+        }
+        Skill basic = enemy.getBasicAttack();
+        if (basic != null && !deck.isOnCooldown(basic) && canSkillReachPlayer(enemy, basic)) {
+            return basic;
+        }
+        return null;
+    }
+
+    private boolean canSkillReachPlayer(Enemy enemy, Skill skill) {
+        int dir = -1; // enemies face west
+        int dr = player.getRow() - enemy.getRow();
+        int dc = player.getCol() - enemy.getCol();
+
+        switch (skill.getShape()) {
+            case AURA:
+                return true;
+            case STRIKE:
+                return dr == 0 && dc == 2 * dir;
+            case ZONE:
+                return dr == 0 && dc == dir;
+            case BEAM:
+                return dr == 0 && dc * dir > 0;
+            case PROJECTILE:
+                if (dr != 0) return false;
+                if (skill.getShapeConfig() instanceof ProjectileConfig) {
+                    ProjectileConfig pc = (ProjectileConfig) skill.getShapeConfig();
+                    if (pc.getMovementType() == ProjectileConfig.MovementType.LOB) {
+                        return dc == pc.getTargetRange() * dir;
+                    }
+                }
+                return dc * dir > 0;
+            default:
+                return false;
         }
     }
 }

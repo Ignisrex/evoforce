@@ -10,6 +10,7 @@ public class PlayerProfile {
 
     private final Caster caster;
     private final Stats stats;
+    private int progressionLevel;
 
     public PlayerProfile(SkillLibrary library){
         this.stats = new Stats(20, 10, 100, 10, 20);
@@ -21,8 +22,15 @@ public class PlayerProfile {
             caster.getDeck().add(s);
         }
         caster.setBasicAttack(windSlash);
+
+        this.progressionLevel = 0;
     }
 
     public Caster getCaster() { return caster; }
     public Stats getStats() { return stats; }
+
+    public void progressPlayer() { this.progressionLevel++; }
+    public int getProgressionLevel() {
+        return progressionLevel;
+    }
 }

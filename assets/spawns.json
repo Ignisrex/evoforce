@@ -1,0 +1,72 @@
+{
+  "tier1": [
+    {
+      "species": "skeleton",
+      "skills": ["fire_blast"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 15, "magic": 8, "vitality": 80, "defense": 8, "speed": 18 }
+    },
+    {
+      "species": "beastkin",
+      "skills": ["wind_slash"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 20, "magic": 4, "vitality": 100, "defense": 10, "speed": 20 }
+    }
+  ],
+  "tier2": [
+    {
+      "species": "lycan",
+      "skills": ["wind_slash", "regen"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 30, "magic": 6, "vitality": 140, "defense": 14, "speed": 26 }
+    },
+    {
+      "species": "lionen",
+      "skills": ["fire_blast", "shield"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 28, "magic": 14, "vitality": 150, "defense": 16, "speed": 22 }
+    }
+  ],
+  "tier3": [
+    {
+      "species": "undead_beastkin",
+      "skills": ["venom_bomb", "wind_slash"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 38, "magic": 18, "vitality": 200, "defense": 20, "speed": 24 }
+    },
+    {
+      "species": "lich",
+      "skills": ["ice_beam", "frost_trap", "heal"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 18, "magic": 42, "vitality": 180, "defense": 16, "speed": 22 }
+    }
+  ],
+  "tier4": [
+    {
+      "species": "fenrir",
+      "skills": ["wind_slash", "regen", "shield"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 52, "magic": 12, "vitality": 260, "defense": 24, "speed": 32 }
+    },
+    {
+      "species": "elder_lich",
+      "skills": ["ice_beam", "fire_blast", "frost_trap", "heal"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 22, "magic": 58, "vitality": 240, "defense": 22, "speed": 26 }
+    }
+  ],
+  "tier5": [
+    {
+      "species": "eclipse_beast",
+      "skills": ["venom_bomb", "wind_slash", "regen", "shield"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 70, "magic": 30, "vitality": 340, "defense": 30, "speed": 36 }
+    },
+    {
+      "species": "lich_king",
+      "skills": ["ice_beam", "fire_blast", "frost_trap", "heal", "shield"],
+      "basicAttack": "wind_strike",
+      "stats": { "power": 28, "magic": 78, "vitality": 320, "defense": 28, "speed": 30 }
+    }
+  ]
+}

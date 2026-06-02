@@ -14,6 +14,8 @@ public class StatusFactory {
             case STUN -> new StunStatus(duration);
             case SHIELD -> new ShieldStatus(duration);
             case REGEN -> new RegenStatus(duration, dotMag);
+            case POWER_UP -> new PowerUpStatus(duration);
+            case MAGIC_UP -> new MagicUpStatus(duration);
         };
     }
 }

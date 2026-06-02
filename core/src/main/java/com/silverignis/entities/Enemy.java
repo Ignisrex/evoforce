@@ -21,6 +21,8 @@ import com.silverignis.systems.combat.StatusType;
 import com.silverignis.util.HitFlash;
 import com.silverignis.util.InputLock;
 
+import java.util.List;
+
 public class Enemy implements Combatant, SceneRenderable {
 
     private static final float MIN_MOVE_INTERVAL   = 0.5f;
@@ -81,6 +83,11 @@ public class Enemy implements Combatant, SceneRenderable {
     public void setProjectedTarget(float x, float y) { gridMovement.getPosition().setProjectedTarget(x, y); }
     public void setDepthScale(float s)               { gridMovement.getPosition().setDepthScale(s); }
 
+
+    public void setupSkills(List<Skill> skills, Skill basicAttack) {
+        for (Skill s : skills) caster.getDeck().add(s);
+        caster.setBasicAttack(basicAttack);
+    }
 
     public Caster     getCaster()       { return caster; }
     public InputLock  getInputLock()    { return caster.getInputLock(); }

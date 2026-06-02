@@ -1,4 +1,4 @@
-package com.silverignis.evironment;
+package com.silverignis.environment;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.PerspectiveCamera;

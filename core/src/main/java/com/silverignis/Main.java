@@ -1,32 +1,22 @@
 package com.silverignis;
 
-import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.crashinvaders.vfx.VfxManager;
+import com.crashinvaders.vfx.effects.BloomEffect;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.silverignis.assets.GameAssets;
 import com.silverignis.assets.GeneratedAssets;
-import com.silverignis.evironment.GameEnvironment;
+import com.silverignis.environment.GameEnvironment;
 import com.silverignis.registry.MonsterRegistry;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.WorldRenderer;
 import com.silverignis.screens.MainMenuScreen;
 import com.silverignis.sessions.GameSession;
-
-import java.util.ArrayList;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends Game {
@@ -41,6 +31,8 @@ public class Main extends Game {
     public GameEnvironment environment;
     public WorldRenderer worldRenderer;
     public RenderContext renderContext;
+    public VfxManager vfxManager;
+    public BloomEffect bloomEffect;
 
     public GameSession session;
 
@@ -50,14 +42,25 @@ public class Main extends Game {
         viewport = new FitViewport(16, 9);
         loadAssets();
 
-        this.environment = new GameEnvironment(viewport, assets.caveWall(), assets.caveFloor());
+        this.generated = new GeneratedAssets();
+        // Emissive is derived from the diffuse PNG once at startup, so the floor's
+        // cyan crystal veins glow through bloom without managing a second asset file.
+        this.generated.buildCaveFloorEmissive(GameAssets.CAVE_FLOOR);
+
+        this.environment = new GameEnvironment(viewport, assets.caveWall(), assets.caveFloor(), generated.caveFloorEmissive());
         this.worldRenderer = new WorldRenderer();
         this.renderContext = new RenderContext(batch, font, environment);
 
+        this.vfxManager = new VfxManager(Pixmap.Format.RGBA8888, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        this.bloomEffect = new BloomEffect();
+        bloomEffect.setBaseIntensity(1.0f);
+        bloomEffect.setBloomIntensity(1.4f);
+        bloomEffect.setBloomSaturation(0.85f);
+        bloomEffect.setThreshold(0.18f);
+        vfxManager.addEffect(bloomEffect);
+
         font.setUseIntegerPositions(false);
         font.getData().setScale(viewport.getWorldHeight()/ Gdx.graphics.getHeight());
-
-        this.generated = new GeneratedAssets();
 
         this.session = new GameSession();
 
@@ -86,6 +89,8 @@ public class Main extends Game {
         font.dispose();
         screen.dispose();
         if(generated != null) generated.dispose();
+        if(bloomEffect != null) bloomEffect.dispose();
+        if(vfxManager != null) vfxManager.dispose();
         environment.dispose();
         assets.dispose();
     }
@@ -100,6 +105,7 @@ public class Main extends Game {
 
         // Resize your application here. The parameters represent the new window size.
         viewport.update(width, height, true);
+        if (vfxManager != null) vfxManager.resize(width, height);
     }
 
 

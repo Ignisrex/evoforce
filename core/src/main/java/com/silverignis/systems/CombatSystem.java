@@ -89,6 +89,11 @@ public class CombatSystem {
         }
     }
 
+    public void finishAll() {
+        for (SkillInstance inst : active) inst.finish();
+        active.clear();
+    }
+
     public boolean hasActive(){
         return !active.isEmpty();
     }

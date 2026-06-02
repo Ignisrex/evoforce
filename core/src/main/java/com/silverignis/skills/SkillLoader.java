@@ -2,6 +2,7 @@ package com.silverignis.skills;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -41,11 +42,13 @@ public final class SkillLoader {
         String id = node.getString("id", null);
         if (id == null) throw missing("<unknown>", "id");
 
+        Skill.Shape shape = parseEnum(Skill.Shape.class, requireString(node, id, "shape"), id, "shape");
+
         Skill.Builder b = Skill.builder()
             .id(id)
             .displayName(requireString(node, id, "displayName"))
             .description(requireString(node, id, "description"))
-            .shape(parseEnum(Skill.Shape.class, requireString(node, id, "shape"), id, "shape"))
+            .shape(shape)
             .element(parseEnum(Element.class, requireString(node, id, "element"), id, "element"))
             .cooldown(requireFloat(node, id, "cooldown"))
             .icon(loadTexture(requireString(node, id, "icon"), id, "icon"))
@@ -53,6 +56,9 @@ public final class SkillLoader {
 
         b.powerScale(node.getFloat("powerScale", 0f));
         b.magicScale(node.getFloat("magicScale", 0f));
+
+        String tintHex = node.getString("vfxTint", null);
+        if (tintHex != null) b.vfxTint(parseColor(tintHex, id));
 
         JsonValue effects = node.get("effects");
         if (effects != null) {
@@ -71,10 +77,19 @@ public final class SkillLoader {
 
         JsonValue shapeCfg = node.get("shapeConfig");
         if (shapeCfg != null) {
-            b.shapeConfig(parseShapeConfig(shapeCfg, id));
+            b.shapeConfig(parseShapeConfig(shapeCfg, id, shape));
         }
 
         return b.build();
+    }
+
+    private static Color parseColor(String hex, String skillId) {
+        try {
+            return Color.valueOf(hex);
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException(
+                "Skill '" + skillId + "' field 'vfxTint' has invalid color '" + hex + "'", ex);
+        }
     }
 
     private static List<Effect> parseEffects(JsonValue arr, String skillId) {
@@ -109,7 +124,21 @@ public final class SkillLoader {
         return effects;
     }
 
-    private static ShapeConfig parseShapeConfig(JsonValue node, String skillId) {
+    private static ShapeConfig parseShapeConfig(JsonValue node, String skillId, Skill.Shape shape) {
+        switch (shape) {
+            case PROJECTILE:
+                return parseProjectileConfig(node, skillId);
+            case STRIKE:
+                return new StrikeConfig(
+                    node.getInt("dashTiles", 1),
+                    node.getInt("hitTiles", 1));
+            default:
+                throw new IllegalStateException(
+                    "Skill '" + skillId + "' has shapeConfig but shape " + shape + " does not support one");
+        }
+    }
+
+    private static ShapeConfig parseProjectileConfig(JsonValue node, String skillId) {
         String movement = requireString(node, skillId, "shapeConfig.movementType");
         ProjectileConfig.MovementType type = parseEnum(
             ProjectileConfig.MovementType.class, movement, skillId, "shapeConfig.movementType");
