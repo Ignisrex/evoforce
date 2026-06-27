@@ -99,10 +99,9 @@ public class SpawnSystem {
         List<Enemy> result = new ArrayList<>(configs.size());
         int col = Battlefield.COLS - 1;
         int row = 0;
-        for (SpawnConfig cfg : configs) {
-            Sprite sprite = new Sprite(registry.getMonsterTexture(cfg.species, Team.ENEMY));
+        for (SpawnConfig cfg : configs) {;
             Stats stats = new Stats(cfg.power, cfg.magic, cfg.vitality, cfg.defense, cfg.speed);
-            Enemy enemy = new Enemy(col, row, sprite, battlefield, stats);
+            Enemy enemy = new Enemy(col, row, registry.getAnimSet(cfg.species, Team.ENEMY), battlefield, stats);
             enemy.setupSkills(resolveSkills(cfg), resolveBasicAttack(cfg));
             result.add(enemy);
 

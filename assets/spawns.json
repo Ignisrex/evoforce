@@ -64,7 +64,7 @@
     },
     {
       "species": "lich_king",
-      "skills": ["ice_beam", "fire_blast", "frost_trap", "heal", "shield"],
+      "skills": ["ice_beam", "fire_blast", "frost_trap", "heal", "shield", "void_pull"],
       "basicAttack": "wind_strike",
       "stats": { "power": 28, "magic": 78, "vitality": 320, "defense": 28, "speed": 30 }
     }

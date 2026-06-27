@@ -49,13 +49,14 @@ public class ProjectileInstance extends SkillInstance {
         if (dir < 0) this.sprite.setFlip(true, false);
 
         if (config.getMovementType() == MovementType.LOB) {
-            this.startX    = pos.getVisualX();
-            this.startY    = pos.getVisualY();
+            this.startX    = combatant.getVisualX();
+            this.startY    = combatant.getVisualY();
             this.arcHeight = config.getArcHeight();
         } else {
-            this.posX = pos.getVisualX();
-            this.posY = pos.getVisualY();
+            this.posX = combatant.getVisualX();
+            this.posY = combatant.getVisualY();
         }
+        combatant.getAnimController().enterAttack();
     }
 
     @Override
@@ -67,7 +68,7 @@ public class ProjectileInstance extends SkillInstance {
 
             //adjusted to deal with enemy fire projectile
             if (config.getMovementType() == MovementType.STRAIGHT) {
-                posX = pos.getVisualX() - w * 0.5f + w * dir;
+                posX = combatant.getVisualX() - w * 0.5f + w * dir;
             }
             sized = true;
         }

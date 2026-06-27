@@ -1,0 +1,57 @@
+{
+  "fenrir": {
+    "character_id": "8c0d4d50-232a-472a-bc46-27cfa9cb958e",
+    "se": "69a7285b-e927-4c53-963e-818bb35e35c0",
+    "sw": "fd07479a-ed66-4fb4-ad74-eadb855fdeff"
+  },
+  "lycan": {
+    "character_id": "a56a7a88-ed97-4ff2-b177-120b5c1196d0",
+    "se": "98f35da1-63d5-44e1-890e-ef83e4625498",
+    "sw": "243cf112-bde5-4b2e-9bf5-f3fd1b2c2b08"
+  },
+  "lich": {
+    "character_id": "05992226-78f3-42fd-8aec-c9c6c6b0ea64",
+    "se": "94f00bb3-2185-4f23-8590-99f6aaa5a2ee",
+    "sw": "779c61a2-e0ff-4543-b548-9eb222c55d01"
+  },
+  "elder_lich": {
+    "character_id": "35f92d60-374d-4fad-a750-2d0ecff03a16",
+    "se": "1cf4c570-5def-4a84-a231-4d7101523ca6",
+    "sw": "3348ef13-6449-4a24-83f4-c9c60c31c848"
+  },
+  "lich_king": {
+    "character_id": "1bb00df2-81be-4a91-8701-1e3e97035479",
+    "se": "26ac8ffd-c2b6-4732-a2b7-f01fd1c37524",
+    "sw": "b2702e61-ae55-4520-80b8-cae614ed6f59"
+  },
+  "undead_beastkin": {
+    "character_id": "6dafa2e7-5b18-43c4-a517-1a616b1d7e1b",
+    "se": "3adb274d-c013-4dea-a7ac-df97224c5be0",
+    "sw": "720ac63f-4e6e-4e53-bf7b-3bebd2d0f67e"
+  },
+  "skeleton": {
+    "character_id": "5d7404ef-1a95-4453-91a1-1f061c5006b1",
+    "se": "2c464d22-3b0e-4a77-86a3-d20ad45ed7bc",
+    "sw": "6eda2608-0c0c-44e6-b3ff-a2072bc47ae7"
+  },
+  "beastkin": {
+    "character_id": "0e116fa7-867c-45c2-937f-bbc10f187e1e",
+    "se": "c9b4d2e4-34de-4aa4-9a06-79d872088692",
+    "sw": "789f7276-c15b-48d9-9e91-18ecd19e971b"
+  },
+  "lionen": {
+    "character_id": "b568fa66-136f-4192-b5cc-7483a4141fb8",
+    "se": "20c681af-32a3-419f-a4b3-2b49883d60a1",
+    "sw": "92d650d2-c132-4cca-9002-4fc64e64413f"
+  },
+  "nemean": {
+    "character_id": "20388c0f-1da8-478b-96a3-94b0f815f5c6",
+    "se": "94338682-9733-4453-86e2-5bc749fc4854",
+    "sw": "8c03e0a7-5ea1-4315-bed0-c3ce5abead26"
+  },
+  "eclipse_beast": {
+    "character_id": "e59249e7-a388-4a8d-a001-43963f8ef99f",
+    "se": "7a9f663c-d161-4ee4-86bf-651edcb6af0a",
+    "sw": "bbbe997e-8743-4284-8f64-13e2045a7692"
+  }
+}

@@ -72,7 +72,6 @@ public class StrikeInstance extends SkillInstance {
                 break;
 
             case DONE:
-                // Nothing left to do; CombatSystem will reap us next pass.
                 break;
         }
     }
@@ -80,6 +79,7 @@ public class StrikeInstance extends SkillInstance {
     private void enterHit(BattleContext ctx) {
         phase = Phase.HIT;
         phaseTime = 0f;
+        combatant.getAnimController().enterAttack();
 
         for (int i = 0; i < hitTiles; i++) {
             int col = firstTargetCol + dir * i;

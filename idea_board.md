@@ -4,9 +4,6 @@ evoforce idea board
 
 Bugs list:
 
-&#x20;- attacks need to be rendered based on z index they aren't currently so it can look like attacks are hitting you when they are behind you. might be resolves in render/animation refactor.
-
-
 
 Combat Mechanics
 
@@ -32,11 +29,11 @@ Todo list:
 
 * ***Introduce overworld***
 
-&#x09;- after the battle player should be able to move around in the over in the space an not    be limited to the grid based movement, the panels will be gone.
+- after the battle player should be able to move around in the over in the space an not    be limited to the grid based movement, the panels will be gone.
 
-&#x20;       - moving in this overworld is how the player will move onto and by so doing select another room which will trigger a battle
+- moving in this overworld is how the player will move onto and by so doing select another room which will trigger a battle
 
-&#x09;- introduce 2 doors which will just be holes in the wall for the player to walk up towards
+- introduce 2 doors which will just be holes in the wall for the player to walk up towards
 	- how should the transition between overworld and battle look? seamless if i can 
 
 
@@ -81,11 +78,32 @@ Todo list:
 
 * ***Evolution System***
 
+todo list update 06/24/2026
+- Allow panel types to change and implement effects
+  - lava/fire -> burn
+  - cracked -> if hit again with an effect that can break a panel it will break
+  - broken -> cant place anything on it and combatants cant move on to it
+  - ice -> frozen so it slows player??
+  - grass -> heal?
+  - poison -> poison dmg
 
+- Add vfx effects system that can visual enrich attacks, casting
+  - we could just add vfx around the main skill animation to enhance it visual, colors would be based on element
 
+- Particle system to enhance visuals and give it more of a hd 2d visual signature 
 
+- Refactor monster data structure to an actual object
 
-
+- Fusion system
+  - while holding the right trigger, if a player tries to cast a skill it will be loaded.
+  - when a player releases the trigger, it will actually execute or cast
+  - you can load multiply skills like this
+  - all these skills will cast in the sequence they were loaded in, in quick succession
+  - if the skills loaded are all the requirements for an advance skill then we will do that skill instead
+    - this is similar to program advances in megaman battle network
+  - when this skill is executed, then the world will time will stop for the skill to play out
+  - I expect that advance skills will have special animations and potential dynamic camera work
+  - 
 
 
 

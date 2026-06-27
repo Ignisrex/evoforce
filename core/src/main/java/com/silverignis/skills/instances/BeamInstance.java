@@ -39,6 +39,7 @@ public class BeamInstance extends SkillInstance {
         this.row = originRow;
         this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
         acquireInputLock();
+        combatant.getAnimController().enterCast();
 
         this.animation = def.getVfxAnimation();
         this.sprite    = new Sprite(def.getVfxTexture());
@@ -79,6 +80,7 @@ public class BeamInstance extends SkillInstance {
         phase = Phase.FADE;
         phaseTime = 0f;
         releaseInputLock();
+        combatant.getAnimController().enterIdle();
     }
 
     private void applyHit(BattleContext ctx) {

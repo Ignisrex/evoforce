@@ -36,7 +36,7 @@ public class DamageSystem {
 
         //3.Mutation
         ev.target.getHealth().damage(ev.amount);
-        ev.target.onHitFlash();
+        ev.target.getAnimController().enterHurt();
 
         // 4. Trigger fan-out. Order: defenders'reaction first then attacker's
         bus.fire(new TriggerEvent(Trigger.ON_DAMAGE_TAKEN, ev.target, ev));
@@ -50,7 +50,7 @@ public class DamageSystem {
             if(ev.source != null){
                 bus.fire(new TriggerEvent(Trigger.ON_KILL, ev.source, ev));
             }
-            ev.target.onDeath();
+            ev.target.getAnimController().enterDeath();
         }
 
     }

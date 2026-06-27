@@ -165,3 +165,6 @@ Thumbs.db
 
 ## PixelLab animation frame dumps (raw input to build_anim_sheets.py)
 tools/pixellab_raw/
+
+## Local scratch space
+.scratch/

@@ -5,6 +5,7 @@ public enum Element {
     FIRE,
     POISON,
     ICE,
-    LIGHTNING
+    LIGHTNING,
+    DARK
 }
 

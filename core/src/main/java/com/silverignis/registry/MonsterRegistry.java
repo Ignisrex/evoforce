@@ -1,6 +1,7 @@
 package com.silverignis.registry;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.silverignis.animation.AnimSet;
 import com.silverignis.assets.GameAssets;
 import com.silverignis.components.Team;
 
@@ -18,7 +19,8 @@ public class MonsterRegistry {
         this.assets = assets;
     }
 
-    public Texture getMonsterTexture(Monster monster, Team team) {
-        return assets.texture(monster.texturePath(team));
+
+    public AnimSet getAnimSet(Monster monster, Team facing) {
+        return assets.animSet(monster, facing);
     }
 }

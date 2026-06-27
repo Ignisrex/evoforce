@@ -1,5 +1,6 @@
 package com.silverignis.systems.combat;
 
+import com.silverignis.animation.AnimController;
 import com.silverignis.components.*;
 
 public interface Combatant {
@@ -10,6 +11,7 @@ public interface Combatant {
     GridMovement getGridMovement();
     Team getTeam();
     StatusContainer getStatusContainer();
+    AnimController getAnimController();
 
     int getCol();
     int getRow();
@@ -20,8 +22,4 @@ public interface Combatant {
     boolean isAlive();
     boolean isDead();
     boolean isInputLocked();
-
-    void onHitFlash();
-    void onDeath();
-
 }

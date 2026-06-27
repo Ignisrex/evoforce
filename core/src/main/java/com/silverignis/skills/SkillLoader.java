@@ -132,6 +132,11 @@ public final class SkillLoader {
                 return new StrikeConfig(
                     node.getInt("dashTiles", 1),
                     node.getInt("hitTiles", 1));
+            case ZONE:
+                return new ZoneConfig(
+                    node.getBoolean("pull", false),
+                    node.getFloat("duration", 1.0f),
+                    node.getFloat("tickInterval", 0.33f));
             default:
                 throw new IllegalStateException(
                     "Skill '" + skillId + "' has shapeConfig but shape " + shape + " does not support one");

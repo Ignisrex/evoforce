@@ -2,8 +2,11 @@ package com.silverignis.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.silverignis.animation.AnimController;
+import com.silverignis.animation.AnimSet;
+import com.silverignis.animation.AnimState;
 import com.silverignis.components.*;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
@@ -13,75 +16,97 @@ import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
-import com.silverignis.util.HitFlash;
 import com.silverignis.util.InputLock;
 
 public class Player implements Combatant, SceneRenderable {
 
-    private static final float MOVE_SMOOTH_SPEED = 18f;
-
-    private final Sprite sprite;
-    private final Battlefield battlefield;
-    private final HitFlash     hitFlash     = new HitFlash();
-    private final Caster       caster;
-    private final Health health;
-    private final Stats stats;
+    private final Battlefield     battlefield;
+    private final AnimController  animController;
+    private final Caster          caster;
+    private final Health          health;
+    private final Stats           stats;
     private final StatusContainer statusContainer;
-    private final GridMovement gridMovement;
-
+    private final GridMovement    gridMovement;
 
     public float visualHeight = 0f;
 
-    public Player(int col, int row, Sprite sprite, Battlefield battlefield, Caster caster, Stats stats) {
-        this.sprite       = sprite;
+    public Player(int col, int row, AnimSet animSet, Battlefield battlefield, Caster caster, Stats stats) {
         this.battlefield  = battlefield;
         this.gridMovement = new GridMovement(
-            new GridPosition(battlefield, col, row, MOVE_SMOOTH_SPEED),
+            new GridPosition(battlefield, col, row),
             new GridBounds(0, Battlefield.COLS / 2 - 1, 0, Battlefield.ROWS - 1));
         this.caster = caster;
-        this.stats = stats;
-        this.health = new Health(this.stats.getVitality());
+        this.stats  = stats;
+        this.health = new Health(stats.getVitality());
         this.statusContainer = new StatusContainer(this);
-
+        this.animController = new AnimController(animSet,
+            battlefield.tileCenterX(col), battlefield.tileCenterY(row));
     }
 
-    // --- Position (delegated to GridPosition) ---
+    // --- Position (delegated to GridPosition / AnimController) ---
 
     public GridPosition getGridPosition() { return gridMovement.getPosition(); }
 
-    @Override
-    public GridMovement getGridMovement() { return gridMovement; }
+    @Override public GridMovement   getGridMovement()   { return gridMovement; }
+    @Override public AnimController getAnimController() { return animController; }
 
-    public int          getCol()          { return gridMovement.getPosition().getCol(); }
-    public int          getRow()          { return gridMovement.getPosition().getRow(); }
-    public float        getVisualX()      { return gridMovement.getPosition().getVisualX(); }
-    public float        getVisualY()      { return gridMovement.getPosition().getVisualY(); }
-    public float        getDepthScale()   { return gridMovement.getPosition().getDepthScale(); }
+    public int   getCol()        { return gridMovement.getPosition().getCol(); }
+    public int   getRow()        { return gridMovement.getPosition().getRow(); }
+    public float getVisualX()    { return animController.getRenderX(); }
+    public float getVisualY()    { return animController.getRenderY(); }
+    public float getDepthScale() { return gridMovement.getPosition().getDepthScale(); }
 
-    public void setProjectedTarget(float x, float y) { gridMovement.getPosition().setProjectedTarget(x, y); }
-    public void setDepthScale(float s)               { gridMovement.getPosition().setDepthScale(s); }
+    /** Per-frame projection push from PlayState. Snaps the visual unless a MOVE is mid-tween. */
+    public void setProjectedTarget(float x, float y) {
+        if (animController.getState() != AnimState.MOVE) {
+            animController.snapTo(x, y);
+        }
+    }
+    public void setDepthScale(float s) { gridMovement.getPosition().setDepthScale(s); }
 
     // --- Caster role (delegated to Caster) ---
 
-    public Caster     getCaster()       { return caster; }
-    public InputLock  getInputLock()    { return caster.getInputLock(); }
-    public boolean    isInputLocked()   { return caster.getInputLock().isLocked(); }
-    public Team       getTeam()         { return caster.getTeam(); }
-    public SkillDeck  getDeck()         { return caster.getDeck(); }
-    public SkillSlots getSlots()        { return caster.getSlots(); }
-    public Skill      getBasicAttack()  { return caster.getBasicAttack(); }
+    public Caster     getCaster()      { return caster; }
+    public InputLock  getInputLock()   { return caster.getInputLock(); }
+    public boolean    isInputLocked()  { return caster.getInputLock().isLocked(); }
+    public Team       getTeam()        { return caster.getTeam(); }
+    public SkillDeck  getDeck()        { return caster.getDeck(); }
+    public SkillSlots getSlots()       { return caster.getSlots(); }
+    public Skill      getBasicAttack() { return caster.getBasicAttack(); }
 
     // --- Entity-proper state ---
 
-    public int    getHp()         { return this.health.getCurrent(); }
-    public int    getMaxHp()      { return this.health.getMax(); }
-    public Sprite getSprite()     { return sprite; }
-    public boolean isAlive()      { return this.health.getCurrent() > 0; }
+    public int    getHp()    { return health.getCurrent(); }
+    public int    getMaxHp() { return health.getMax(); }
+    public boolean isAlive() { return health.getCurrent() > 0; }
+    public boolean isDead()  { return health.getCurrent() <= 0; }
+
+    public Health          getHealth()          { return health; }
+    public Stats           getStats()           { return stats; }
+    public StatusContainer getStatusContainer() { return statusContainer; }
 
     public void update(float delta) {
         caster.update(delta);
-        gridMovement.getPosition().update(delta);
-        hitFlash.tick(delta);
+        animController.update(delta);
+    }
+
+    @Override public float       depth() { return battlefield.floorZ(getRow()); }
+    @Override public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+
+    @Override
+    public void render(RenderContext rc) {
+        if (animController.isHurtHidden()) return;
+        TextureRegion frame = animController.currentFrame();
+        if (frame == null) return;
+
+        float pw = battlefield.panelFloorWidth() * gridMovement.getPosition().getDepthScale();
+        float alpha = animController.getRenderAlpha();
+        rc.batch.setColor(1f, 1f, 1f, alpha);
+        rc.batch.draw(frame,
+            animController.getRenderX() - pw * 0.5f,
+            animController.getRenderY() + visualHeight,
+            pw, pw);
+        rc.batch.setColor(Color.WHITE);
     }
 
     private void renderShadow(SpriteBatch batch, Texture shadowTex) {
@@ -90,32 +115,10 @@ public class Player implements Combatant, SceneRenderable {
         float sw = pw * 0.75f;
         float sh = ph * 0.35f;
         batch.setColor(Color.WHITE);
-        batch.draw(shadowTex, gridMovement.getPosition().getVisualX() - sw * 0.5f, gridMovement.getPosition().getVisualY(), sw, sh);
-    }
-
-    public Health          getHealth()          { return health; }
-    public Stats           getStats()           { return stats; }
-    public StatusContainer getStatusContainer() { return statusContainer; }
-    public boolean         isDead()             { return health.getCurrent() <= 0; }
-
-    public void onHitFlash() { hitFlash.flash();}
-
-    public void onDeath(){}
-
-    @Override public float       depth() { return battlefield.floorZ(getRow()); }
-    @Override public RenderLayer layer() { return RenderLayer.BILLBOARD; }
-
-    @Override
-    public void render(RenderContext rc) {
-        if (hitFlash.isHidden()) return;
-        float pw = battlefield.panelFloorWidth() * gridMovement.getPosition().getDepthScale();
-        sprite.setBounds(
-            gridMovement.getPosition().getVisualX() - pw * 0.5f,
-            gridMovement.getPosition().getVisualY() + visualHeight,
-            pw,
-            pw
-        );
-        sprite.draw(rc.batch);
+        batch.draw(shadowTex,
+            animController.getRenderX() - sw * 0.5f,
+            animController.getRenderY(),
+            sw, sh);
     }
 
     public SceneRenderable shadowView(Texture shadowTex) {

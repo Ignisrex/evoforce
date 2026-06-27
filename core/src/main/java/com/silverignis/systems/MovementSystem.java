@@ -2,11 +2,17 @@ package com.silverignis.systems;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+import com.silverignis.animation.AnimController;
 import com.silverignis.components.*;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.systems.combat.Combatant;
 
 public final class MovementSystem {
+
+    private BattleContext ctx;
+
+    public void setBattleContext(BattleContext ctx){ this.ctx = ctx; }
 
     public boolean tryGridStep(Combatant combatant, Direction dir) {
         if (combatant.isInputLocked()) return false;
@@ -20,7 +26,12 @@ public final class MovementSystem {
         int newRow = MathUtils.clamp(pos.getRow() + dir.dRow, bounds.minRow, bounds.maxRow);
         if (newCol == pos.getCol() && newRow == pos.getRow()) return false;
 
+        if (this.ctx.combatantAt(newCol, newRow) != null) return false;
+
         pos.setTile(newCol, newRow);
+        AnimController ac = combatant.getAnimController();
+        Vector2 to = ctx.projectedTileWorld(newCol, newRow);
+        ac.enterMove(ac.getRenderX(), ac.getRenderY(), to.x, to.y);
         return true;
     }
 
@@ -28,6 +39,9 @@ public final class MovementSystem {
         int c = MathUtils.clamp(col, 0, Battlefield.COLS - 1);
         int r = MathUtils.clamp(row, 0, Battlefield.ROWS - 1);
         combatant.getGridMovement().getPosition().setTile(c, r);
+        AnimController ac = combatant.getAnimController();
+        Vector2 to = ctx.projectedTileWorld(c,r);
+        ac.snapTo(to.x, to.y);
     }
 
     public void applyDisplacement(Combatant combatant, int tiles, Direction dir) {

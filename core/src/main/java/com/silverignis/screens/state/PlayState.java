@@ -86,7 +86,7 @@ public class PlayState implements GameScreenState {
             registry,
             screen.game.session.skills);
 
-        player = new Player(1, 1, new Sprite(registry.getMonsterTexture(Monster.BEASTKIN, Team.PLAYER)), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
+        player = new Player(1, 1, registry.getAnimSet(Monster.BEASTKIN, Team.PLAYER), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
         int level = screen.game.session.playerProfile.getProgressionLevel();
         enemies.addAll(spawnSystem.spawnNext(battlefield, level));
 

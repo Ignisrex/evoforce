@@ -34,7 +34,16 @@
       "Bash(curl *)",
       "Bash(ls -la tools/pixellab_raw/beastkin/idle/se/)",
       "Bash(ls tools/pixellab_raw/skeleton/idle/sw/)",
-      "Bash(ls tools/pixellab_raw/lich/idle/sw/ tools/pixellab_raw/lich_king/idle/sw/)"
+      "Bash(ls tools/pixellab_raw/lich/idle/sw/ tools/pixellab_raw/lich_king/idle/sw/)",
+      "PowerShell(Get-ChildItem assets\\\\sprites -Recurse -File | Select-Object @{N='Path';E={$_.FullName.Replace\\('C:\\\\Users\\\\silverignis\\\\projects\\\\evoforce\\\\assets\\\\sprites\\\\',''\\)}}, Length | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem tools -Recurse -File | Select-Object @{N='Path';E={$_.FullName.Replace\\('C:\\\\Users\\\\silverignis\\\\projects\\\\evoforce\\\\tools\\\\',''\\)}}, Length | Format-Table -AutoSize)",
+      "Bash(mkdir -p .scratch/dl)",
+      "Read(//c/Users/silverignis/projects/evoforce/**)",
+      "Bash(unzip -l .scratch/dl/fenrir.zip)",
+      "Bash(rm -rf fenrir_ex)",
+      "Bash(unzip -q fenrir.zip -d fenrir_ex)",
+      "mcp__pixellab__delete_animation",
+      "PowerShell($cmds = @\\('python','py'\\); foreach\\($c in $cmds\\){ $p = \\(Get-Command $c -ErrorAction SilentlyContinue\\); if\\($p\\){ \"$c -> $\\($p.Source\\)\"; & $c --version } }; python -c \"import PIL; print\\('Pillow', PIL.__version__\\)\")"
     ]
   }
 }

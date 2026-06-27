@@ -31,6 +31,7 @@ public class AuraInstance extends SkillInstance {
         this.sprite = new Sprite(def.getVfxTexture());
         Color tint = def.getVfxTint();
         if (tint != null) sprite.setColor(tint);
+        combatant.getAnimController().enterCast();
     }
 
     @Override
@@ -59,6 +60,7 @@ public class AuraInstance extends SkillInstance {
     private void enterActive(BattleContext ctx) {
         phase = Phase.ACTIVE;
         phaseTime = 0f;
+        combatant.getAnimController().enterIdle();
         activeDuration = computeActiveDuration();
         if (combatant.isAlive()){
             applyEffectsTo(combatant);
@@ -103,8 +105,8 @@ public class AuraInstance extends SkillInstance {
         float panelW = ctx.battlefield.getPanelWidth();
         float panelH = ctx.battlefield.getPanelHeight();
 
-        float cx = pos.getVisualX();
-        float cy = pos.getVisualY() + panelH * 0.5f;
+        float cx = combatant.getVisualX();
+        float cy = combatant.getVisualY() + panelH * 0.5f;
 
         float scale;
         float alpha;

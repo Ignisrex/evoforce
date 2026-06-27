@@ -63,6 +63,7 @@ public class BattleContext {
         this.damageSystem = damageSystem;
         this.triggerBus = triggerBus;
         this.movementSystem = movementSystem;
+        this.movementSystem.setBattleContext(this);
     }
 
     /** Call once after the viewport has been sized. Bakes all tile positions. */

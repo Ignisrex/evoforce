@@ -200,5 +200,26 @@
       { "type": "DAMAGE", "value": 28 },
       { "type": "APPLY_STATUS", "statusType": "STUN", "duration": 1.0, "chance": 50 }
     ]
+  },
+  {
+    "id": "void_pull",
+    "displayName": "Void Pull",
+    "description": "Open a dark void one tile ahead. Each second it drags aligned foes one tile inward and saps them with dark energy.",
+    "icon": "skills/void_pull.png",
+    "shape": "ZONE",
+    "element": "DARK",
+    "cooldown": 8.0,
+    "vfxTexture": "effects/void_zone.png",
+    "vfxTint": "8a2be2ff",
+    "vfxAnimation": {
+      "spritesheet": "skills/animations/void_pull_spritesheet.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "frameDuration": 0.08
+    },
+    "shapeConfig": { "pull": true, "duration": 6.0, "tickInterval": 1.0 },
+    "effects": [
+      { "type": "DAMAGE", "value": 6 }
+    ]
   }
 ]
