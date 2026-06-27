@@ -5,6 +5,9 @@ import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.util.InputLock;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Role component for entities that can stage and cast skills. Owns:
  * <ul>
@@ -27,6 +30,8 @@ public class Caster {
     private final SkillDeck  deck      = new SkillDeck();
     private final SkillSlots slots     = new SkillSlots();
     private final InputLock  inputLock = new InputLock();
+
+    private final List<Skill> loadedSkills = new ArrayList<>();
     private Skill basicAttack;
 
     public Caster(Team team) {
@@ -43,5 +48,24 @@ public class Caster {
     /** Tick per-caster state (currently just cooldowns inside the deck). */
     public void update(float delta) {
         deck.update(delta);
+    }
+
+    public void loadSkill(Skill skill) {
+        this.loadedSkills.add(skill);
+    }
+
+    public boolean areSkillsLoaded(){
+        return !this.loadedSkills.isEmpty();
+    }
+
+    public List<Skill> releaseLoadedSkills() {
+        List<Skill> drained = new ArrayList<>(this.loadedSkills);
+        this.loadedSkills.clear();
+        return drained;
+    }
+
+    public void resetStaging() {
+        this.slots.clearAll();
+        this.loadedSkills.clear();
     }
 }

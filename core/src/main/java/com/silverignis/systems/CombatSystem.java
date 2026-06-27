@@ -1,10 +1,13 @@
 package com.silverignis.systems;
 
+import com.silverignis.components.Caster;
 import com.silverignis.entities.ClashEffect;
 import com.silverignis.render.WorldRenderer;
+import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillFactory;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.instances.ProjectileInstance;
-import com.silverignis.skills.instances.ZoneInstance;
+import com.silverignis.systems.combat.Combatant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +23,12 @@ public class CombatSystem {
 
     public BattleContext getBattleContext(){ return this.ctx; }
 
+    /** Create and spawn a fresh instance for {@code skill}, cast by {@code combatant}. */
+    public void spawn(Skill skill, Combatant combatant){
+        active.add(SkillFactory.create(skill, combatant, ctx));
+    }
+
+    /** Spawn an already-built instance — for derived/synthetic instances (e.g. a lingering cloud). */
     public void spawn(SkillInstance instance){
         active.add(instance);
     }
@@ -92,6 +101,30 @@ public class CombatSystem {
     public void finishAll() {
         for (SkillInstance inst : active) inst.finish();
         active.clear();
+    }
+
+    public void fireSkill(Combatant combatant, Skill skill){
+        combatant.getCaster().getDeck().onUsed(skill);
+        spawn(skill, combatant);
+    }
+    public void loadSkill(Combatant combatant, Skill skill) {
+        combatant.getCaster().loadSkill(skill);
+    }
+
+    public void resolveLoadedSkills(Combatant combatant) {
+        Caster caster = combatant.getCaster();
+        List<Skill> loaded = caster.releaseLoadedSkills();
+
+        //trigger cooldowns
+        for (Skill s : loaded) caster.getDeck().onUsed(s);
+
+        //handle advance skill check or rapid cast
+        Skill advanced = null; //matchRecipe(loaded) -> future impl
+        if(advanced != null) {
+            spawn(advanced, combatant);
+        } else {
+            for (Skill s : loaded) spawn(s, combatant);
+        }
     }
 
     public boolean hasActive(){

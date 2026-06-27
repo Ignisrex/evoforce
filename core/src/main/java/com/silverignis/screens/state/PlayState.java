@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -18,6 +17,7 @@ import com.silverignis.entities.Player;
 import com.silverignis.environment.BattlefieldDecor;
 import com.silverignis.registry.Monster;
 import com.silverignis.input.GameAction;
+import com.silverignis.input.InputManager;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.SceneRenderable;
 import com.silverignis.render.WorldRenderer;
@@ -27,8 +27,6 @@ import com.silverignis.screens.OverworldScreen;
 import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
-import com.silverignis.skills.SkillFactory;
-import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.systems.BattleContext;
@@ -46,6 +44,7 @@ import java.util.List;
 public class PlayState implements GameScreenState {
 
     private GameScreen screen;
+    private final InputManager input;
 
     private final Battlefield battlefield;
     private final Player player;
@@ -70,6 +69,7 @@ public class PlayState implements GameScreenState {
 
     public PlayState(GameScreen screen) {
         this.screen = screen;
+        this.input  = screen.getInputManager();
 
         var assets   = screen.game.assets;
         var registry = screen.game.monsterRegistry;
@@ -123,7 +123,6 @@ public class PlayState implements GameScreenState {
 
     @Override
     public void input() {
-        var input = screen.getInputManager();
         if (input.isActionJustPressed(GameAction.MOVE_UP))    battleContext.movementSystem.tryGridStep(player, Direction.UP);
         if (input.isActionJustPressed(GameAction.MOVE_DOWN))  battleContext.movementSystem.tryGridStep(player, Direction.DOWN);
         if (input.isActionJustPressed(GameAction.MOVE_LEFT))  battleContext.movementSystem.tryGridStep(player, Direction.LEFT);
@@ -131,7 +130,9 @@ public class PlayState implements GameScreenState {
 
         handleAttack();
         handleSlotFire();
+        handleReleaseSkills();
         handleSkillSelectOpen();
+
     }
 
     @Override
@@ -152,12 +153,12 @@ public class PlayState implements GameScreenState {
             this.combatSystem.finishAll();
             transitionScheduled = true;
             screen.game.session.playerProfile.progressPlayer();
-            screen.game.session.playerProfile.getCaster().getSlots().clearAll();
+            screen.game.session.playerProfile.getCaster().resetStaging();
             screen.game.setScreen(new OverworldScreen(screen.game));
             return true;
         }
         if (!player.isAlive()) {
-            screen.game.session.playerProfile.getCaster().getSlots().clearAll();
+            screen.game.session.playerProfile.getCaster().resetStaging();
             this.combatSystem.finishAll();
             transitionScheduled = true;
             screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.LOST));
@@ -248,22 +249,27 @@ public class PlayState implements GameScreenState {
         BattlefieldDecor.clear(environment);
     }
 
+    private void handleReleaseSkills(){
+        if (!input.isActionPressed(GameAction.TRIGGER_RIGHT) && player.getCaster().areSkillsLoaded()) {
+            combatSystem.resolveLoadedSkills(player);
+        }
+    }
+
     private void handleAttack() {
+        //handles basic attack
         if( player.isInputLocked() || player.getStatusContainer().blocksMovement()) return;
 
-        var input = screen.getInputManager();
         if (!input.isActionJustPressed(GameAction.ATTACK_BASIC)) return;
         if (player.isInputLocked()) return;
+
         Skill skill = player.getBasicAttack();
         if (skill == null) return;
-        SkillDeck deck = player.getDeck();
-        if (deck.isOnCooldown(skill)) return;
-        deck.onUsed(skill);
-        combatSystem.spawn(SkillFactory.create(skill, player, battleContext));
+
+        if (player.getDeck().isOnCooldown(skill)) return;
+        combatSystem.fireSkill(player, skill);
     }
 
     private void handleSlotFire() {
-        var input = screen.getInputManager();
         if (input.isActionJustPressed(GameAction.SKILL_X)) tryFireSlot(SlotKey.X);
         if (input.isActionJustPressed(GameAction.SKILL_Y)) tryFireSlot(SlotKey.Y);
         if (input.isActionJustPressed(GameAction.SKILL_B)) tryFireSlot(SlotKey.B);
@@ -276,16 +282,18 @@ public class PlayState implements GameScreenState {
         if (slot.isEmpty()) return;
 
         Skill skill = slot.pop();
-        player.getDeck().onUsed(skill);
-        SkillInstance instance = SkillFactory.create(skill, player, battleContext);
-        combatSystem.spawn(instance);
+
+        if (input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
+            combatSystem.loadSkill(player, skill);
+        }else {
+            combatSystem.fireSkill(player, skill);
+        }
     }
 
     private void handleSkillSelectOpen() {
         // The charge meter gates *menu access*, not individual casts:
         // you can only stage new skills once the bar is full.
         if (!screen.charge.isFull()) return;
-        var input = screen.getInputManager();
         if (input.isActionPressed(GameAction.TRIGGER_LEFT)
             && input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
             screen.setState(screen.skillSelectState);
@@ -301,9 +309,8 @@ public class PlayState implements GameScreenState {
             if (!enemy.wantsToBasicAttack()) continue;
             Skill chosen = pickEnemyAction(enemy);
             if (chosen == null) continue;
-            enemy.getDeck().onUsed(chosen);
             enemy.onBasicAttackFired();
-            combatSystem.spawn(SkillFactory.create(chosen, enemy, battleContext));
+            combatSystem.fireSkill(enemy, chosen);
         }
     }
 
