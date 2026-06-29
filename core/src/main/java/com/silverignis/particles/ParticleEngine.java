@@ -27,6 +27,9 @@ public final class ParticleEngine implements SceneRenderable {
     };
 
     private final Array<Particle> live = new Array<>(false, 256);
+    private final Array<Emitter> emitters = new Array<>(false, 16);
+
+    public void add(Emitter e) { emitters.add(e); }
 
     public Particle spawn(float x, float y, float z, float vx, float vy, float vz, float life) {
         Particle p = pool.obtain();
@@ -39,6 +42,11 @@ public final class ParticleEngine implements SceneRenderable {
     }
 
     public void update(float dt) {
+
+        for(int i = emitters.size - 1; i >= 0; i--){
+            if (emitters.get(i).update(dt, this)) emitters.removeIndex(i) ;
+        }
+
         for (int i = live.size - 1; i >= 0; i--) {
             Particle p = live.get(i);
             p.age += dt;

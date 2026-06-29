@@ -331,6 +331,16 @@ live particles in one `BILLBOARD` renderable (additive blend, `depthScale`d size
 Ticked in `PlayState.update()` **after** `combatSystem.update()` (the §7 clock-then-read order).
 Verified visually by a temporary debug fountain (`PlayState.spawnDebugFountain()`).
 
+**Milestone 3 — emitter + Anchor + ranged values.** `particles/Val.java` (constant-or-range,
+`sample()` via `MathUtils`), `particles/Anchor.java` (`@FunctionalInterface` + `at(x,y,z)` and
+`follow(Combatant)` = `c::worldPos`), and `particles/Emitter.java` (CONTINUOUS/BURST modes via
+`continuous(...)`/`burst(...)` factories, ranged `speed`/`life`/`size`, cone velocity around +Y by
+`spreadDeg`, fractional-accumulator scheduling). `ParticleEngine` now owns an `Array<Emitter>`
+(`add(Emitter)`), ticks them at the top of `update(dt)` (spawn-before-integrate), and drops finished
+burst emitters. `PlayState`'s debug fountain replaced by a continuous `Emitter`. Emitter timing
+covered by a `java -ea` self-check in `Emitter.main`. **`Anchor.alongBeam` not built yet** (needs a
+beam instance handle — arrives with M5).
+
 ### Deviations from the plan above (deliberate)
 
 - **`Channel` enum deferred to M7.** It has no behavior until per-channel caps / clear-on-battle-end
@@ -343,13 +353,17 @@ Verified visually by a temporary debug fountain (`PlayState.spawnDebugFountain()
 - **M1 assert self-check (`main`) was dropped** when M2 landed. The sim loop (integrate + recycle) has
   no runnable check now — re-add a `java -ea` self-check or a small test if regressions appear.
 
-### Next: Milestone 3 — emitter + Anchor + ranged values
+### Next: Milestone 4 — fluent builder + curves + catalog
 
-Replace `spawnDebugFountain()` with a real `Emitter` (spawn schedule + `Anchor` + lifetime policy:
-continuous/burst) and ranged initial values. **Delete the debug fountain** (`spawnDebugFountain()`
-call + method, and the temporary `particles.depth` line) when the emitter drives spawns. This is
-also where per-emitter submission (each emitter its own `SceneRenderable` at its own `depth()`)
-should replace the whole-engine renderable.
+`effect()...build()` producing an immutable `EffectDef` (several emitters layered), the
+`Interpolation`-backed curve helpers (`constant`/`lerp`/`gradient`), a `Vfx`/`ParticleEffects`
+catalog of 1–2 named effects, and the `spark(Element)` parametric variant factory. The `Emitter`
+static factories (`continuous`/`burst`) become what the builder emits, not a second route.
+
+**Still deferred — per-emitter rendering.** Each emitter owning its particle list and submitting its
+own `SceneRenderable` at its own `depth()` (replacing the single whole-engine renderable) is not done.
+Do it when multiple emitters at different depths coexist (M5 skills / M6 ambient), since that's when
+one shared `depth` visibly mis-sorts.
 
 ### Owner / lifecycle still open
 
