@@ -1,5 +1,6 @@
 package com.silverignis.components;
 
+import com.badlogic.gdx.math.Vector3;
 import com.silverignis.entities.Battlefield;
 
 /**
@@ -35,4 +36,8 @@ public class GridPosition {
     }
 
     public float getWorldZ() { return battlefield.floorZ(row); }
+    public float getWorldX() {return battlefield.floorX(col);}
+
+    /** Tile-snapped ground point (worldX, y=0, worldZ) written into {@code out}. */
+    public void worldPos(Vector3 out) { out.set(getWorldX(), 0f, getWorldZ()); }
 }

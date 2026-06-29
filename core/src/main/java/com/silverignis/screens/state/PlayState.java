@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
@@ -15,6 +16,8 @@ import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.environment.BattlefieldDecor;
+import com.silverignis.particles.Particle;
+import com.silverignis.particles.ParticleEngine;
 import com.silverignis.registry.Monster;
 import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
@@ -60,6 +63,7 @@ public class PlayState implements GameScreenState {
     private boolean transitionScheduled = false;
 
     private final WorldRenderer worldRenderer;
+    private final ParticleEngine particles;
     private final RenderContext renderContext;
     private final SceneRenderable playerShadow;
     private final SceneRenderable[] enemyShadows;
@@ -78,6 +82,8 @@ public class PlayState implements GameScreenState {
         float panelHeight = 4f  / Battlefield.ROWS;
         battlefield = new Battlefield(3f, 1f, panelWidth, panelHeight, PanelGenerator.generatePanels());
         this.worldRenderer = screen.game.worldRenderer;
+        this.particles = new ParticleEngine(screen.game.generated.pixel());
+        this.particles.depth = battlefield.floorZ(2);
         this.environment = screen.game.environment;
         BattlefieldDecor.apply(environment, battlefield);
 
@@ -142,6 +148,9 @@ public class PlayState implements GameScreenState {
         enemyAi();
         combatSystem.tickStatuses(delta);
         combatSystem.update(delta);
+
+        particles.update(delta);
+        spawnDebugFountain();
         if (checkBattleOver()) return;
         tickAndCullEffects(delta);
     }
@@ -242,6 +251,7 @@ public class PlayState implements GameScreenState {
         }
         combatSystem.submitRenderables(worldRenderer);
         worldRenderer.submit(effects);
+        worldRenderer.submit(particles);
         worldRenderer.flush(renderContext);
     }
 
@@ -287,6 +297,19 @@ public class PlayState implements GameScreenState {
             combatSystem.loadSkill(player, skill);
         }else {
             combatSystem.fireSkill(player, skill);
+        }
+    }
+
+    private void spawnDebugFountain() {
+        float x = battlefield.floorX(5), z = battlefield.floorZ(2);
+        for (int i = 0; i < 3; i++ ) {
+            Particle p = particles.spawn(
+                x, 0f, z,
+                MathUtils.random(-0.05f, 0.5f), MathUtils.random(2f, 3f), MathUtils.random(-0.5f, 0.5f),
+                0.8f);
+            p.size = 0.25f;
+            p.color.set(1f, 0.6f, 0.2f, 1f);
+
         }
     }
 

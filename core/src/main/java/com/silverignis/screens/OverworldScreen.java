@@ -44,6 +44,9 @@ public class OverworldScreen implements Screen {
     private final DoorRenderable[] doorRenderables;
     private final AvatarRenderable avatarRenderable = new AvatarRenderable();
 
+    // Shared per-frame projection scratch; render() uses it immediately, never retains it.
+    private final Vector2 projTmp = new Vector2();
+
     public OverworldScreen(Main game){
         this.game = game;
         this.environment = game.environment;
@@ -148,7 +151,7 @@ public class OverworldScreen implements Screen {
         public RenderLayer layer() { return RenderLayer.BILLBOARD; }
 
         public void render(RenderContext rc){
-            Vector2 s = rc.project(centerX, centerZ);
+            Vector2 s = rc.project(centerX, centerZ, projTmp);
             float ds = rc.depthScale(centerZ);
             rc.batch.setColor(0.3f, 0.8f, 1f, 0.85f);
             rc.batch.draw(game.generated.pixel(), s.x - DOOR_WIDTH * ds * 0.5f, s.y, DOOR_WIDTH * ds, DOOR_HEIGHT * ds);
@@ -161,7 +164,7 @@ public class OverworldScreen implements Screen {
         public RenderLayer layer() { return RenderLayer.BILLBOARD; }
 
         public void render(RenderContext rc) {
-            Vector2 screen = rc.project(pos.getX(), pos.getY());
+            Vector2 screen = rc.project(pos.getX(), pos.getY(), projTmp);
             float size = AVATAR_SIZE * rc.depthScale(pos.getY());
             avatar.setBounds(screen.x - size * 0.5f, screen.y, size, size);
             avatar.draw(rc.batch);

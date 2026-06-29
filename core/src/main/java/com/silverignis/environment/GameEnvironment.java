@@ -147,6 +147,11 @@ public class GameEnvironment implements Disposable {
     }
 
     public Vector2 project(float worldX, float worldZ){ return sceneCamera.project(worldX, worldZ); }
+
+    public Vector2 project(float worldX, float worldZ, Vector2 out) {
+        return sceneCamera.project(worldX, worldZ, out);
+    }
+
     public float depthScale(float worldZ) { return sceneCamera.depthScale(worldZ); }
 
     public void addDecor(Material mat, float w, float h, float d, float x, float y, float z) {

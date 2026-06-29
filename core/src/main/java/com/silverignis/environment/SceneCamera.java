@@ -39,12 +39,16 @@ public class SceneCamera {
     }
 
     /** Project a cave-floor point (world X, Z; y=0) to viewport world coords. */
-    public Vector2 project(float worldX, float worldZ) {
+    public Vector2 project(float worldX, float worldZ, Vector2 out) {
         tmp.set(worldX, 0f, worldZ);
         cam.project(tmp);
         float wx = (tmp.x - viewport.getScreenX()) / viewport.getScreenWidth()  * viewport.getWorldWidth();
         float wy = (tmp.y - viewport.getScreenY()) / viewport.getScreenHeight() * viewport.getWorldHeight();
-        return new Vector2(wx, wy);
+        return out.set(wx, wy);
+    }
+
+    public Vector2 project(float worldX, float worldZ) {
+        return project(worldX, worldZ, new Vector2());
     }
 
     /** Perspective sprite scale at floor depth z: 1.0 near, smaller toward the back. */

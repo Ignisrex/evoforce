@@ -18,5 +18,6 @@ public final class RenderContext {
     }
 
     public Vector2 project(float worldX, float worldZ) { return env.project(worldX, worldZ); }
+    public Vector2 project(float worldX, float worldZ, Vector2 out) { return env.project(worldX, worldZ, out); }
     public float depthScale(float worldZ){ return env.depthScale(worldZ); }
 }
