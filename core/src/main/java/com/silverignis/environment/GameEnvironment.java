@@ -154,6 +154,12 @@ public class GameEnvironment implements Disposable {
 
     public float depthScale(float worldZ) { return sceneCamera.depthScale(worldZ); }
 
+    public float unprojectX(float viewportX, float worldZ) { return sceneCamera.unprojectX(viewportX, worldZ); }
+
+    public float unprojectHeight(float viewportY, float worldX, float worldZ) {
+        return sceneCamera.unprojectHeight(viewportY, worldX, worldZ);
+    }
+
     public void addDecor(Material mat, float w, float h, float d, float x, float y, float z) {
         Model m = modelBuilder.createBox(w, h, d, mat, Usage.Position | Usage.Normal);
         decorModels.add(m);

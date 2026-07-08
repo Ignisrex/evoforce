@@ -2,9 +2,18 @@ package com.silverignis.skills;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.Array;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
 import com.silverignis.components.Stats;
+import com.silverignis.components.Team;
+import com.silverignis.entities.Battlefield;
+import com.silverignis.particles.Anchor;
+import com.silverignis.particles.Channel;
+import com.silverignis.particles.Drive;
+import com.silverignis.particles.EmitterHandle;
+import com.silverignis.particles.ParticleEngine;
+import com.silverignis.particles.VfxFactory;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.render.SceneRenderable;
@@ -31,6 +40,9 @@ public abstract class SkillInstance implements SceneRenderable {
 
     private boolean finished  = false;
     private boolean lockTaken = false;
+
+    /** Handles for the skill's layered particle effects (from {@code def.getVfx()}), stopped on finish. */
+    private final Array<EmitterHandle> vfxHandles = new Array<>(false, 4);
 
     private final BattleContext battleContext;
 
@@ -70,7 +82,32 @@ public abstract class SkillInstance implements SceneRenderable {
         onFinish();
     }
 
-    protected void onFinish() {}
+    /** Base stops the layered particle emitters (spawning halts; live particles age out).
+     *  Subclasses that override MUST call {@code super.onFinish()}. */
+    protected void onFinish() {
+        for (EmitterHandle h : vfxHandles) if (h != null) h.stop();
+        vfxHandles.clear();
+    }
+
+    /** Plays every effect in {@code def.getVfx()}, layered, at {@code anchor}, driven by {@code drive}.
+     *  Call once at the shape's trigger moment; handles are stopped in {@link #onFinish()}. */
+    protected void playVfx(Anchor anchor, Drive drive) {
+        ParticleEngine engine = battleContext.particleEngine;
+        if (engine == null || def.getVfx().isEmpty()) return;
+        int dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
+        for (VfxFactory f : def.getVfx()) {
+            vfxHandles.add(f.create(def.getElement(), def.getVfxTint(), dir)
+                            .play(engine, anchor, drive, Channel.COMBAT));
+        }
+    }
+
+    protected void playVfx(Anchor anchor) { playVfx(anchor, Drive.FULL); }
+
+    /** Ground point at the center of a grid tile — the natural anchor for tile-targeted shapes. */
+    protected Anchor tileAnchor(int col, int row) {
+        Battlefield bf = battleContext.battlefield;
+        return out -> out.set(bf.floorX(col), 0f, bf.floorZ(row));
+    }
 
     public final boolean isFinished() { return finished; }
 

@@ -37,10 +37,62 @@ public final class GameAssets implements Disposable {
 
     public static final String CAVE_WALL  = "cave_wall.png";
     public static final String CAVE_FLOOR = "cave_floor.png";
-    public static final String CLASH      = "effects/clash.png";
-    public static final String DUST       = "effects/star_05.png";
-    public static final String EMBER      = "effects/star_08.png";
-    public static final String MIST       = "effects/smoke_04.png";
+    // Effect texture sets, individually addressable (spark/star/smoke/circle/flare(int), 1-based) —
+    // effects pick which frames and in what order at their build site.
+    public static final String[] SPARK_SET = {
+        "effects/spark_01.png", "effects/spark_02.png", "effects/spark_03.png",
+        "effects/spark_04.png", "effects/spark_05.png", "effects/spark_06.png",
+        "effects/spark_07.png",
+    };
+
+    public static final String[] STAR_SET = {
+        "effects/star_01.png", "effects/star_02.png", "effects/star_03.png",
+        "effects/star_04.png", "effects/star_05.png", "effects/star_06.png",
+        "effects/star_07.png", "effects/star_08.png", "effects/star_09.png",
+    };
+
+    public static final String[] SMOKE_SET = {
+        "effects/smoke_01.png", "effects/smoke_02.png", "effects/smoke_03.png",
+        "effects/smoke_04.png", "effects/smoke_05.png", "effects/smoke_06.png",
+        "effects/smoke_07.png", "effects/smoke_08.png", "effects/smoke_09.png",
+        "effects/smoke_10.png",
+    };
+
+    public static final String[] CIRCLE_SET = {
+        "effects/circle_01.png", "effects/circle_02.png", "effects/circle_03.png",
+        "effects/circle_04.png", "effects/circle_05.png",
+    };
+
+    public static final String[] FLARE_SET = {
+        "effects/flare_01.png",
+    };
+
+    public static final String[] FLAME_SET = {
+        "effects/flame_01.png", "effects/flame_02.png", "effects/flame_03.png",
+        "effects/flame_04.png", "effects/flame_05.png", "effects/flame_06.png",
+    };
+
+    public static final String[] MAGIC_SET = {
+        "effects/magic_01.png", "effects/magic_02.png", "effects/magic_03.png",
+        "effects/magic_04.png", "effects/magic_05.png",
+    };
+
+    public static final String[] LIGHT_SET = {
+        "effects/light_01.png", "effects/light_02.png", "effects/light_03.png",
+    };
+
+    public static final String[] SYMBOL_SET = {
+        "effects/symbol_01.png", "effects/symbol_02.png",
+    };
+
+    public static final String[] TWIRL_SET = {
+        "effects/twirl_01.png", "effects/twirl_02.png", "effects/twirl_03.png",
+    };
+
+    private static final String[][] EFFECT_SETS = {
+        SPARK_SET, STAR_SET, SMOKE_SET, CIRCLE_SET, FLARE_SET,
+        FLAME_SET, MAGIC_SET, LIGHT_SET, SYMBOL_SET, TWIRL_SET,
+    };
 
 
     private final AssetManager mgr = new AssetManager();
@@ -53,10 +105,8 @@ public final class GameAssets implements Disposable {
         TextureLoader.TextureParameter floorParams = new TextureLoader.TextureParameter();
         floorParams.genMipMaps = true;
         mgr.load(CAVE_FLOOR, Texture.class, floorParams);
-        mgr.load(CLASH,      Texture.class);
-        mgr.load(DUST,       Texture.class);
-        mgr.load(EMBER,      Texture.class);
-        mgr.load(MIST,       Texture.class);
+        for (String[] set : EFFECT_SETS)
+            for (String s : set) mgr.load(s, Texture.class);
 
         for (Monster m : Monster.values()) {
             for (AnimSheet.Row r : m.animSheet().rows()) {
@@ -76,9 +126,8 @@ public final class GameAssets implements Disposable {
         caveWall().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         caveFloor().setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
         caveFloor().setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-        dust().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        ember().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        mist().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        for (String[] set : EFFECT_SETS)
+            for (String s : set) texture(s).setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         for (Monster m: Monster.values()) {
             EnumMap<Team, AnimSet> byFacing = new EnumMap<>(Team.class);
@@ -127,10 +176,17 @@ public final class GameAssets implements Disposable {
 
     public Texture caveWall()  { return texture(CAVE_WALL); }
     public Texture caveFloor() { return texture(CAVE_FLOOR); }
-    public Texture clash()     { return texture(CLASH); }
-    public Texture dust()      { return texture(DUST); }
-    public Texture ember()     { return texture(EMBER); }
-    public Texture mist()      { return texture(MIST); }
+    // 1-based, matching the effects/<set>_XX filenames.
+    public Texture spark(int n)  { return texture(SPARK_SET[n - 1]); }
+    public Texture star(int n)   { return texture(STAR_SET[n - 1]); }
+    public Texture smoke(int n)  { return texture(SMOKE_SET[n - 1]); }
+    public Texture circle(int n) { return texture(CIRCLE_SET[n - 1]); }
+    public Texture flare(int n)  { return texture(FLARE_SET[n - 1]); }
+    public Texture flame(int n)  { return texture(FLAME_SET[n - 1]); }
+    public Texture magic(int n)  { return texture(MAGIC_SET[n - 1]); }
+    public Texture light(int n)  { return texture(LIGHT_SET[n - 1]); }
+    public Texture symbol(int n) { return texture(SYMBOL_SET[n - 1]); }
+    public Texture twirl(int n)  { return texture(TWIRL_SET[n - 1]); }
     public TextureRegion avatar()    { return avatarRegion; }
 
     public AnimSet animSet(Monster m, Team facing) { return animSets.get(m).get(facing); }

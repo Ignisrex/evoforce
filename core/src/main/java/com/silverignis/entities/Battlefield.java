@@ -69,8 +69,9 @@ public class Battlefield {
     /** World Y at the center of the given row (uses the compressed render height). */
     public float tileCenterY(int row) { return y + (row + 0.3f) * getPanelRenderHeight(); }
 
-    public float panelFloorWidth() { return GRID_WIDTH_3D / COLS; }
-    public float panelFloorDepth() { return GRID_DEPTH_3D / ROWS; }
+    // Static: pure functions of the grid constants (Vfx uses them for tile-relative offsets).
+    public static float panelFloorWidth() { return GRID_WIDTH_3D / COLS; }
+    public static float panelFloorDepth() { return GRID_DEPTH_3D / ROWS; }
 
     /** Floor-space X of a column center (world X for SceneCamera.project). */
     public float floorX(int col) { return GRID_LEFT_3D + (col + 0.5f) * panelFloorWidth(); }

@@ -10,13 +10,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.particles.Channel;
-import com.silverignis.particles.EffectDef;
-import com.silverignis.particles.EmitterHandle;
-import com.silverignis.particles.Vfx;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
-import com.silverignis.skills.elements.Element;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 
@@ -31,8 +26,6 @@ public class BeamInstance extends SkillInstance {
     private Phase phase = Phase.CHARGE;
     private float phaseTime = 0f;
     private boolean hitApplied = false;
-
-    private EmitterHandle embers;
 
     private final Sprite sprite;
     private final Animation<TextureRegion> animation;
@@ -83,8 +76,7 @@ public class BeamInstance extends SkillInstance {
         phase = Phase.FIRE;
         phaseTime = 0f;
         applyHit(ctx);
-        EffectDef fx = def.getElement() == Element.ICE ? Vfx.beamMist(tint, dir) : Vfx.beamEmbers(tint, dir);
-        embers = fx.play(ctx.particleEngine, this::beamPoint, this::intensity, Channel.COMBAT);
+        playVfx(this::beamPoint, this::intensity);   // layered effects listed in the skill def
     }
 
     private void enterFade() {
@@ -105,9 +97,6 @@ public class BeamInstance extends SkillInstance {
             }
         }
     }
-
-    @Override
-    protected void onFinish() { if(embers != null) embers.stop(); }
 
     public float intensity() {
         return switch(phase) {

@@ -86,6 +86,7 @@ public class StrikeInstance extends SkillInstance {
             spawnSlashVfx(ctx, col);
             applyHit(ctx, col);
         }
+        playVfx(tileAnchor(firstTargetCol, row));   // layered particle effects at the struck tile
     }
 
     private void enterDashBack(BattleContext ctx) {

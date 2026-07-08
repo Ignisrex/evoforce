@@ -3,7 +3,10 @@ package com.silverignis.particles;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Interpolation;
 import com.silverignis.assets.GameAssets;
+import com.silverignis.entities.Battlefield;
 import com.silverignis.skills.elements.Element;
+
+import java.util.Map;
 
 import static com.silverignis.particles.Val.of;
 import static com.silverignis.particles.Val.range;
@@ -11,10 +14,31 @@ import static com.silverignis.particles.Val.range;
 public final class Vfx {
 
     private Vfx() {}
-
-    /** Wired once at startup so the catalog can reference shared VFX textures directly. */
+    
     private static GameAssets assets;
     public static void init(GameAssets a) { assets = a; }
+
+    /** Skill-facing names → catalog factories. Referenced by the {@code "vfx"} list in skills.json. */
+    private static final Map<String, VfxFactory> CATALOG = Map.ofEntries(
+        Map.entry("beamEmbers",  (VfxFactory) (el, tint, dir) -> beamEmbers(tint, dir)),
+        Map.entry("beamIceMist", (VfxFactory) (el, tint, dir) -> beamIceMist(tint, dir)),
+        Map.entry("spark",       (VfxFactory) (el, tint, dir) -> spark(el)),
+        Map.entry("crackle",     (VfxFactory) (el, tint, dir) -> crackle(el)),
+        Map.entry("impact",      (VfxFactory) (el, tint, dir) -> impact(el)),
+        Map.entry("heal",        (VfxFactory) (el, tint, dir) -> heal()),
+        Map.entry("powerUp",     (VfxFactory) (el, tint, dir) -> powerUp()),
+        Map.entry("magicUp",     (VfxFactory) (el, tint, dir) -> magicUp()),
+        Map.entry("voidPull",    (VfxFactory) (el, tint, dir) -> voidPull()),
+        Map.entry("regen",       (VfxFactory) (el, tint, dir) -> regen()),
+        Map.entry("fireTrail",   (VfxFactory) (el, tint, dir) -> fireTrail(dir)));
+
+    /** Resolve a skill-def vfx name to its factory. Throws on an unknown name so bad data fails at load. */
+    public static VfxFactory byName(String name) {
+        VfxFactory f = CATALOG.get(name);
+        if (f == null) throw new IllegalArgumentException(
+            "Unknown vfx effect '" + name + "' (known: " + CATALOG.keySet() + ")");
+        return f;
+    }
 
     public static EffectDef ambientEmbers() {
         return EffectDef.effect()
@@ -32,7 +56,133 @@ public final class Vfx {
                 .burst(24, 0.1f)
                 .speed(range(2f, 5f)).life(range(0.4f,0.8f)).size(range(0.2f, 0.35f)).spread(180f)
                 .sizeOverLife(Interpolation.pow2In, 0f)
+                .texture(assets.star(4))
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .build();
+    }
+
+    /** Crackling electric discharge — each shard is a random spark_* sprite so the
+     *  lightning coming off isn't uniform. Continuous while driven (beam FIRE→FADE). */
+    public static EffectDef crackle(Element element) {
+        Color tint = tint(element);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(120f)
+                .speed(range(1.5f, 4f)).life(range(0.1f, 0.35f)).size(range(0.15f, 0.45f)).spread(180f)
+                .textures(
+                    assets.spark(1), assets.spark(2), assets.spark(3), assets.spark(4),
+                    assets.spark(5), assets.spark(6), assets.spark(7))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .build();
+    }
+
+    /** Layered projectile-impact burst — all six emitters fire simultaneously on one anchor
+     *  (the point where the projectiles meet). Read: flash → ring/sparks → sparkles/smoke. */
+    public static EffectDef impact(Element element) {
+        Color tint  = tint(element);
+        Color smoke = new Color(0.55f, 0.55f, 0.6f, 0.35f);   // cool grey, translucent
+        return EffectDef.effect()
+            // 1. Core flash — the main hit: one bright pop.
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.12f).size(1.1f)
+                .texture(assets.circle(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.25f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 2. Flare streak — lens-glint over the core, a touch longer.
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.18f).size(1.4f)
+                .texture(assets.flare(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.5f)
+                .color(Color.WHITE))
+            // 3. Shockwave ring — a firm but contained push.
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.3f).size(0.5f)
+                .texture(assets.circle(5))
+                .sizeOverLife(Interpolation.pow2Out, 2.4f)
+                .color(tint))
+            // 4. Debris sparks — jagged shards, tighter scatter.
+            .emitter(e -> e
+                .burst(10, 0.05f)
+                .speed(range(1.2f, 2.5f)).life(range(0.25f, 0.45f)).size(range(0.12f, 0.28f)).spread(180f)
+                .textures(
+                    assets.spark(1), assets.spark(2), assets.spark(3), assets.spark(4),
+                    assets.spark(5), assets.spark(6), assets.spark(7))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 5. Sparkles — a few twinkles hanging close after the flash.
+            .emitter(e -> e
+                .burst(6, 0.15f)
+                .speed(range(0.2f, 0.6f)).life(range(0.5f, 0.8f)).size(range(0.1f, 0.22f)).spread(180f)
+                .drift(0f, 0.25f, 0f)
+                .textures(assets.star(1), assets.star(4), assets.star(9))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 6. Smoke — soft lingering body, the slow tail of the read.
+            .emitter(e -> e
+                .burst(3, 0.1f)
+                .speed(range(0.15f, 0.4f)).life(range(0.7f, 1.2f)).size(range(0.35f, 0.55f)).spread(180f)
+                .drift(0f, 0.2f, 0f)
+                .alphaBlend()
+                .texturesOverLife(
+                    assets.smoke(1), assets.smoke(3), assets.smoke(5), assets.smoke(7), assets.smoke(9))
+                .sizeOverLife(Interpolation.pow2Out, 1.6f)
+                .colorOverLife(Interpolation.linear, smoke, new Color(smoke.r, smoke.g, smoke.b, 0f)))
+            .build();
+    }
+
+    /** Fire trail riding a projectile's travel anchor — the sprite stays the core; this is
+     *  everything coming off it. Read: glow + flare glint on the ball → flames licking
+     *  behind → embers → soft smoke tail. */
+    public static EffectDef fireTrail(int dir) {
+        Color orange = new Color(1f, 0.6f, 0.25f, 1f);
+        Color red    = new Color(1f, 0.3f, 0.15f, 1f);
+        Color smoke  = new Color(0.5f, 0.48f, 0.5f, 0.3f);
+        return EffectDef.effect()
+            // 1. Core glow — hugs the ball; short life so it doesn't smear (regen-halo trick).
+            .emitter(e -> e
+                .continuous(12f)
+                .speed(0f).life(range(0.15f, 0.25f)).size(range(0.45f, 0.6f))
+                .jitter(0.05f, 0.05f, 0f)
+                .texture(assets.light(1))
+                .color(new Color(1f, 0.65f, 0.3f, 0.7f)))
+            // 2. Flare glint — a bigger streak pulsing over the core.
+            .emitter(e -> e
+                .continuous(5f)
+                .speed(0f).life(range(0.15f, 0.25f)).size(range(0.75f, 0.95f))
+                .texture(assets.flare(1))
+                .color(new Color(1f, 0.7f, 0.35f, 0.8f)))
+            // 3. Flame tongues — lick backward off the ball.
+            .emitter(e -> e
+                .continuous(18f)
+                .speed(range(0.05f, 0.2f)).life(range(0.25f, 0.45f)).size(range(0.2f, 0.35f)).spread(30f)
+                .jitter(0.12f, 0.12f, 0f)
+                .drift(-dir * 1.2f, 0.2f, 0f)
+                .textures(
+                    assets.flame(1), assets.flame(2), assets.flame(3),
+                    assets.flame(4), assets.flame(5), assets.flame(6))
+                .sizeOverLife(Interpolation.linear, 1.25f)
+                .colorOverLife(Interpolation.linear, orange, red))
+            // 4. Ember sparks — falling back and up, snuffing out.
+            .emitter(e -> e
+                .continuous(12f)
+                .speed(range(0.1f, 0.3f)).life(range(0.3f, 0.5f)).size(range(0.06f, 0.14f)).spread(60f)
+                .jitter(0.1f, 0.1f, 0f)
+                .drift(-dir * 1.0f, 0.35f, 0f)
+                .texture(assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, orange))
+            // 5. Smoke wisps — the soft tail end.
+            .emitter(e -> e
+                .continuous(6f)
+                .speed(range(0.05f, 0.15f)).life(range(0.5f, 0.9f)).size(range(0.25f, 0.4f)).spread(40f)
+                .jitter(0.1f, 0.1f, 0f)
+                .drift(-dir * 0.8f, 0.3f, 0f)
+                .alphaBlend()
+                .texturesOverLife(
+                    assets.smoke(2), assets.smoke(4), assets.smoke(6), assets.smoke(8))
+                .sizeOverLife(Interpolation.pow2Out, 1.6f)
+                .colorOverLife(Interpolation.linear, smoke, new Color(smoke.r, smoke.g, smoke.b, 0f)))
             .build();
     }
 
@@ -42,22 +192,215 @@ public final class Vfx {
                 .continuous(300f)
                 .speed(range(1f, 2.5f)).life(range(0.5f, 0.1f)).size(range(0.1f, 0.4f)).spread(180f)
                 .drift(-dir * 1.5f, 0f, 0f)   // slight lean back toward the beam's origin (caster side)
-                .texture(assets.ember())
+                .texture(assets.star(8))   // ember glow
                 .sizeOverLife(Interpolation.pow2In, 0f)
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))
             .build();
     }
 
-    /** Icy vapor rolling off a beam — big, slow, billowing soft puffs instead of sharp embers. */
-    public static EffectDef beamMist(Color tint, int dir) {
+    /** Icy vapor rolling off a beam — soft translucent puffs that bloom and thin out, not glowing embers.
+     *  Each puff morphs through the smoke frames over its life; the order is authored right here. */
+    public static EffectDef beamIceMist(Color tint, int dir) {
+        Color near = new Color(0.85f, 0.92f, 1f, 0.4f);       // pale icy white, translucent
+        Color far  = new Color(tint.r, tint.g, tint.b, 0f);   // thin out toward the element tint, fully faded
         return EffectDef.effect()
             .emitter(e -> e
-                .continuous(70f)
-                .speed(range(0.2f, 1.0f)).life(range(0.7f, 1.4f)).size(range(0.4f, 0.9f)).spread(180f)
-                .drift(-dir * 0.5f, 0.25f, 0f)              // roll back toward the caster + slow rise
-                .sizeOverLife(Interpolation.linear, 1.7f)   // billow outward as it dissipates
-                .texture(assets.mist())
-                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+                .continuous(45f)
+                .speed(range(0.15f, 0.6f)).life(range(1.0f, 2.0f)).size(range(0.5f, 1.1f)).spread(180f)
+                .drift(-dir * 0.4f, 0.15f, 0f)                // roll back toward the caster + slow rise
+                .alphaBlend()                                 // soft translucent vapor, not additive glow
+                .sizeOverLife(Interpolation.pow2Out, 2.0f)    // bloom outward as it dissipates
+                .texturesOverLife(
+                    assets.smoke(1), assets.smoke(2), assets.smoke(3), assets.smoke(4), assets.smoke(5),
+                    assets.smoke(6), assets.smoke(7), assets.smoke(8), assets.smoke(9), assets.smoke(10))
+                .colorOverLife(Interpolation.linear, near, far))
+            .build();
+    }
+
+    /** Gentle green restoration — glow bloom + ground ring, then hearts and motes rising off the body. */
+    public static EffectDef heal() {
+Color green = new Color(0.5f, 1f, 0.6f, 1f);
+        Color heart = new Color(0.6f, 1f, 0.7f, 0.85f);
+        return EffectDef.effect()
+            // 1. Body glow bloom — centered on the caster's torso, not the feet
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.5f).size(1.2f)
+                .atBody()
+                .texture(assets.light(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.3f)
+                .color(new Color(0.7f, 1f, 0.8f, 1f)))
+            // 2. Ground ring — stays at the feet
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.4f).size(0.7f)
+                .texture(assets.circle(5))
+                .sizeOverLife(Interpolation.pow2Out, 2.0f)
+                .color(green))
+            // 3. Hearts drifting up across the body
+            .emitter(e -> e
+                .burst(6, 0.9f)
+                .speed(range(0.1f, 0.3f)).life(range(0.8f, 1.2f)).size(range(0.15f, 0.25f)).spread(40f)
+                .atBody()
+                .jitter(0.35f, 0.3f, 0.1f)
+                .drift(0f, 0.5f, 0f)
+                .alphaBlend()
+                .texture(assets.symbol(1))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .color(heart))
+            // 4. Sparkle motes
+            .emitter(e -> e
+                .burst(14, 1.0f)
+                .speed(range(0.1f, 0.4f)).life(range(0.6f, 1.0f)).size(range(0.1f, 0.2f)).spread(60f)
+                .atBody()
+                .jitter(0.4f, 0.35f, 0.1f)
+                .drift(0f, 0.6f, 0f)
+                .textures(assets.star(2), assets.star(4), assets.star(6))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, green))
+            .build();
+    }
+
+    /** Aggressive red-orange surge — flash + shockring intro, then flames/embers that burn
+     *  for the whole buff (continuous; the aura's handle stops them when it fades). */
+    public static EffectDef powerUp() {
+        Color red    = new Color(1f, 0.35f, 0.2f, 1f);
+        Color orange = new Color(1f, 0.6f, 0.25f, 1f);
+        return EffectDef.effect()
+            // 1. Power flash
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.15f).size(1.3f)
+                .texture(assets.circle(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.3f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, red))
+            // 2. Ground shockring
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.35f).size(0.7f)
+                .texture(assets.circle(5))
+                .sizeOverLife(Interpolation.pow2Out, 2.5f)
+                .color(orange))
+            // 3. Rising flames — burn while buffed
+            .emitter(e -> e
+                .continuous(14f)
+                .speed(range(0.2f, 0.5f)).life(range(0.4f, 0.7f)).size(range(0.25f, 0.45f)).spread(30f)
+                .jitter(0.35f, 0.25f, 0.1f)
+                .drift(0f, 1.0f, 0f)
+                .textures(
+                    assets.flame(1), assets.flame(2), assets.flame(3),
+                    assets.flame(4), assets.flame(5), assets.flame(6))
+                .sizeOverLife(Interpolation.linear, 1.4f)
+                .colorOverLife(Interpolation.linear, orange, red))
+            // 4. Ember sparks — burn while buffed
+            .emitter(e -> e
+                .continuous(8f)
+                .speed(range(0.4f, 0.9f)).life(range(0.3f, 0.6f)).size(range(0.08f, 0.16f)).spread(40f)
+                .jitter(0.3f, 0.2f, 0.1f)
+                .drift(0f, 1.2f, 0f)
+                .texture(assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, orange, red))
+            .build();
+    }
+
+    /** Arcane purple attunement — one big sigil stamp + swirl veil, then glints while buffed. */
+    public static EffectDef magicUp() {
+        Color purple = new Color(0.7f, 0.4f, 1f, 1f);
+        return EffectDef.effect()
+            // 1. Sigil stamp — ONE big pentagram
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.9f).size(1.1f)
+                .texture(assets.magic(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.4f)
+                .color(purple))
+            // 2. Swirl veil
+            .emitter(e -> e
+                .burst(2, 0.3f)
+                .speed(0f).life(range(0.5f, 0.8f)).size(range(0.8f, 1.1f))
+                .jitter(0.15f, 0.2f, 0.05f)
+                .alphaBlend()
+                .textures(assets.twirl(1), assets.twirl(2), assets.twirl(3))
+                .sizeOverLife(Interpolation.pow2Out, 1.5f)
+                .color(new Color(0.7f, 0.4f, 1f, 0.4f)))
+            // 3. Arcane glints — shimmer while buffed
+            .emitter(e -> e
+                .continuous(6f)
+                .speed(range(0.1f, 0.3f)).life(range(0.5f, 0.9f)).size(range(0.12f, 0.22f)).spread(50f)
+                .jitter(0.4f, 0.35f, 0.1f)
+                .drift(0f, 0.4f, 0f)
+                .textures(assets.magic(3), assets.magic(4), assets.star(9))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, purple))
+            // 4. Glow bloom
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.5f).size(1.2f)
+                .texture(assets.light(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.3f)
+                .color(purple))
+            .build();
+    }
+
+    /** Void suction on the zone tile — a contracting swirl, motes streaming in from the four
+     *  adjacent tiles (the pull directions) that get swallowed at the center, and a dark heart.
+     *  Deliberately restrained: ~27 live particles at steady state. */
+    public static EffectDef voidPull() {
+        Color purple = new Color(0.55f, 0.3f, 0.85f, 1f);
+        float tileW = Battlefield.panelFloorWidth();
+        float tileD = Battlefield.panelFloorDepth();
+        float avgLife = 1.1f;   // stream life midpoint; drift covers one tile in this time
+        EffectDef.Builder fx = EffectDef.effect()
+            // 1. Tile swirl — contracts inward, reads as the vortex. Additive so it glows
+            // over the dark void sprite instead of disappearing into it.
+            .emitter(e -> e
+                .continuous(3f)
+                .speed(0f).life(range(1.0f, 1.5f)).size(range(1.0f, 1.3f))
+                .textures(assets.twirl(1), assets.twirl(2), assets.twirl(3))
+                .sizeOverLife(Interpolation.pow2In, 0.35f)
+                .color(new Color(0.75f, 0.5f, 1f, 0.6f)))
+            // 3. Singularity glow — steady bright heart at the center.
+            .emitter(e -> e
+                .continuous(3f)
+                .speed(0f).life(0.9f).size(0.7f)
+                .texture(assets.light(1))
+                .color(new Color(0.6f, 0.35f, 1f, 0.7f)));
+        // 2. Inward streams — one emitter per pull direction; spawn a tile out, drift to center,
+        //    shrink to nothing on arrival (swallowed).
+        float[][] from = { {tileW, 0f}, {-tileW, 0f}, {0f, tileD}, {0f, -tileD} };
+        for (float[] o : from) {
+            fx.emitter(e -> e
+                .continuous(8f)
+                .speed(0f).life(range(0.9f, 1.3f)).size(range(0.12f, 0.22f))
+                .offset(o[0], 0f, o[1])
+                .jitter(0.15f, 0.1f, 0.1f)
+                .drift(-o[0] / avgLife, 0f, -o[1] / avgLife)
+                .texture(assets.star(5))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, purple));   // bright at spawn → corrupted as it's drawn in
+        }
+        return fx.build();
+    }
+
+    /** Slight persistent glow while REGEN ticks — a dim breathing halo + a few rising motes.
+     *  Deliberately quieter than heal's cast bloom. */
+    public static EffectDef regen() {
+        Color green = new Color(0.5f, 1f, 0.6f, 1f);
+        return EffectDef.effect()
+            // 1. Body glow — overlapping soft copies read as a steady halo on the sprite.
+            // Short life + higher rate: same density, but stale copies vanish fast when the caster moves.
+            .emitter(e -> e
+                .continuous(7f)
+                .speed(0f).life(0.35f).size(0.85f)
+                .atBody()
+                .texture(assets.light(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.15f)
+                .color(new Color(0.6f, 1f, 0.7f, 0.5f)))
+            // 2. Rising motes
+            .emitter(e -> e
+                .continuous(3f)
+                .speed(range(0.05f, 0.2f)).life(range(0.7f, 1.1f)).size(range(0.08f, 0.15f)).spread(40f)
+                .atBody()
+                .jitter(0.3f, 0.25f, 0.1f)
+                .drift(0f, 0.4f, 0f)
+                .textures(assets.star(2), assets.star(6))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, green))
             .build();
     }
 
@@ -67,7 +410,7 @@ public final class Vfx {
                 .continuous(3f)
                 .speed(range(0.02f, 0.20f)).life(range(4f, 8f)).size(range(0.08f, 0.2f)).spread(180f)
                 .drift(0f, 0.15f, 0f)   // gentle upward float
-                .texture(assets.dust())
+                .texture(assets.star(5))   // dust mote
                 .color(new Color(0.6f, 0.7f, 0.95f, 1f)))
             .build();
     }

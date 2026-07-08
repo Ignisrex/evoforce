@@ -1,6 +1,5 @@
 package com.silverignis.systems;
 
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
@@ -32,9 +31,6 @@ public class BattleContext {
      */
     public final List<BattleVfx> vfx;
 
-    /** Shared starburst texture for projectile-clash flourishes. Owned by {@code PlayState}. */
-    public final Texture clashTexture;
-
     public final DamageSystem damageSystem;
     public final TriggerBus triggerBus;
 
@@ -52,7 +48,6 @@ public class BattleContext {
                          List<Enemy> enemies,
                          List<BattleVfx> vfx,
                          GameEnvironment environment,
-                         Texture clashTexture,
                          DamageSystem damageSystem,
                          TriggerBus triggerBus,
                          MovementSystem movementSystem) {
@@ -61,7 +56,6 @@ public class BattleContext {
         this.enemies      = enemies;
         this.vfx          = vfx;
         this.environment  = environment;
-        this.clashTexture = clashTexture;
         this.damageSystem = damageSystem;
         this.triggerBus = triggerBus;
         this.movementSystem = movementSystem;

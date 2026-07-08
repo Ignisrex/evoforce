@@ -398,3 +398,123 @@ For M2 the engine is instantiated in `PlayState` (per-battle, GC'd with it). Per
 **one engine on the environment** (shared overworld+battle, persists across resets) for ambient, with
 combat spawning into it. Resolve the single `engine.update()` owner per screen before building channels
 (M7) — in battle it must tick after `combatSystem.update()`; the overworld has no `CombatSystem`.
+
+### Data-driven skill VFX — the `vfx` list
+
+Skills list their particle effects by name in `skills.json`; every shape layers them. The old hardcoded
+beam pick (`element == ICE ? beamMist : beamEmbers` in `BeamInstance`) is gone — it's now data.
+
+- **Catalog names.** `Vfx.byName(String)` maps a skill-facing name → `VfxFactory`
+  `(Element, Color tint, int dir) -> EffectDef`. Registered: `beamEmbers`, `beamIceMist`, `spark`, `crackle`. Unknown
+  names throw, and `SkillLoader.parseVfx` wraps that in the usual skill-id error → **bad data fails at
+  load, not mid-battle**. Ambient effects (`ambientDust`/`ambientEmbers`) are deliberately *not*
+  registered — they're environment, not skill-triggered.
+- **On the skill.** `Skill.vfx` is a resolved `List<VfxFactory>` (empty = no particle VFX), parsed from
+  `"vfx": ["beamIceMist", "spark"]`. Tint comes from the skill's `vfxTint`, element from its `element`,
+  direction from the firing instance.
+- **The shared hook.** `SkillInstance.playVfx(Anchor, Drive)` (+ `playVfx(Anchor)` = `Drive.FULL`) plays
+  every listed effect at `Channel.COMBAT`, stashing handles; base `onFinish()` stops them all (spawning
+  halts, live particles age out — so one path handles both continuous *and* burst effects). Subclasses
+  overriding `onFinish()` **must call `super`**. `tileAnchor(col,row)` is the shared ground-point anchor.
+- **Per-shape trigger + anchor** (each shape calls `playVfx` once, at its acting moment):
+  Beam → `beamPoint` scatter + `intensity` drive, on FIRE. Strike → struck tile, on HIT. Projectile →
+  **travel trail** on `trailPoint`, played at launch and handle-stopped at impact/edge/landing so the
+  tail ages out along the path. Aura → `Anchor.follow(caster)`, on ACTIVE. Zone → target tile, on
+  ACTIVE. All anchors are grid-world space (`GridPosition.worldPos`'s `(floorX, height, floorZ)`).
+
+### Screen → world: the unproject helpers
+
+Projectiles fly in *screen space* (`posX/posY` viewport units); particles anchor in *world* space.
+The bridge is `SceneCamera.unprojectX(viewportX, worldZ)` / `unprojectHeight(viewportY, worldX, worldZ)`
+(delegated via `GameEnvironment`) — the inverse of the **billboard convention** (`drawn = project(x,z)
++ height·depthScale(z)`), not of the raw camera. It lives on `SceneCamera` because forward and inverse
+of the same convention must change together; it's grid-agnostic (probe points, no tile cache — the
+`BattleContext` tile cache serves *many repeated identical* tile queries, the inverse serves *few
+continuous* ones; memoize probe pairs inside SceneCamera if it ever profiles hot). Consumers:
+`CombatSystem.spawnClash` (clash midpoint) and `ProjectileInstance.trailPoint` (the moving trail
+anchor — sprite center → world each spawn; lob arc height falls out of `unprojectHeight` naturally).
+
+### Texture sets — non-uniform particles
+
+An emitter draws from a **set** of textures, not one: `EmitterSpec.textures` is a `Texture[]`. How the
+set is used is a fluent builder choice, matching the `sizeOverLife`/`colorOverLife` idiom:
+
+- `texture(t)` — one texture, uniform effect (sugar for a list of one; the common case).
+- `textures(t1, t2, …)` — **random per particle**: each particle picks an index at spawn
+  (`Particle.texIndex`) and keeps it for life. Spatial variety — `crackle(Element)` scatters all seven
+  `spark_01..07` shards (`assets.spark(1..7)`) so the lightning off a thunder beam isn't one repeated
+  sprite.
+- `texturesOverLife(t1, t2, …)` — **ordered cycle**: each particle plays through the set *in the given
+  order* over its life (frame = `age/life`; `texIndex` is ignored). Temporal evolution —
+  `beamIceMist` morphs each puff through `smoke_01..10` as it blooms and fades.
+
+Conventions:
+
+- **The default texture is invisible.** `EmitterSpec.build()` substitutes a static default
+  (`EmitterSpec.init(generated.pixel())`, wired once in `Main.create()`) when no texture was set, so
+  `spec.textures` is *guaranteed* non-null/non-empty — no downstream null checks in `Emitter`,
+  `ParticleEngine`, or `Vfx`, ever. The engine no longer owns a fallback texture (constructor is
+  arg-less now).
+- **Order is authored at the effect build site.** `GameAssets` exposes the effect sets individually
+  (`spark(int)` / `star(int)` / `smoke(int)` / `circle(int)` / `flare(int)`, 1-based over their
+  `*_SET` arrays) rather than as pre-bundled arrays, so a catalog method picks *which* frames and
+  *in what order* right where the effect is defined (see `Vfx.beamIceMist`, `Vfx.crackle`). The old
+  semantic aliases (`dust`/`ember`/`star04`) are gone — the catalog names the role in a comment at
+  the call site.
+
+### The impact recipe — layered burst on one anchor
+
+`Vfx.impact(Element)` replaced the old `ClashEffect` sprite at the projectile-vs-projectile clash
+(`CombatSystem.spawnClash`). It's the house pattern for "big hit" effects: **six emitters in one
+`EffectDef`, all stamped onto the same anchor** (the meeting point), with staggered lifetimes doing
+the storytelling — flash (frames) → ring/sparks (beats) → sparkles/smoke (linger):
+
+1. Core flash — `burst(1)`, one huge `circle(1)` pop, ~0.12s, white→tint.
+2. Flare streak — `burst(1)`, `flare(1)` lens-glint, ~0.18s.
+3. Shockwave ring — `burst(1)`, `circle(5)` blowing out to 3.5× (`pow2Out`), ~0.3s.
+4. Debris sparks — `burst(18)`, random `spark(1..7)`, fast radial, shrink to 0.
+5. Sparkles — `burst(10)`, random `star(1/4/9)`, slow + up-drift, 0.5–0.9s.
+6. Smoke — `burst(5)`, `texturesOverLife(smoke …)`, alpha-blended, billows, 0.8–1.4s tail.
+
+Notes: the clash midpoint is screen-space (projectiles track screen x), but anchors are grid-world —
+at fixed z the projection is linear in x, so `spawnClash` inverts it from two known tiles. The burst
+centers at `IMPACT_HEIGHT` (~0.35) above the floor. `ClashEffect` the class survives only for
+`StrikeInstance`'s slash sprites; `clash.png`/`clashTexture` are gone.
+
+### Aura recipes — heal / powerUp / magicUp (sprite-less, on the caster)
+
+The three buff/heal auras are pure particles: their skills list `"vfx"` and **omit `vfxTexture`** —
+allowed only for AURA shape with a non-empty vfx list (`Skill.build()` enforces; every other shape
+still fails at load without a sprite, since Projectile/Beam/Zone build `Sprite`s from it).
+`AuraInstance` skips its sprite pass when the texture is null; timing/effects logic is untouched.
+
+- `heal` — glow bloom (`light(1)`) + ground ring (`circle(5)`) + hearts (`symbol(1)`, alpha-blended,
+  rising) + star motes. All bursts: a gentle ~1s cast moment.
+- `powerUp` — flash (`circle(1)`) + shockring intro, then **continuous** rising flames
+  (`textures(flame(1..6))`) and `star(8)` embers that burn for the whole 10s buff.
+- `magicUp` — ONE big `magic(1)` pentagram stamp + translucent `twirl` veil, then **continuous**
+  arcane glints (`magic(3)/magic(4)/star(9)`), plus a purple glow bloom.
+
+Two supporting pieces introduced here:
+- **`.jitter(hx, hy, hz)`** (`EmitterSpec.Builder`) — per-spawn random offset off the anchor point,
+  so body effects spread across the caster instead of fountaining from the feet-center. Default 0.
+- **`.offset(x, y, z)`** — constant shift off the anchor, per emitter — with **`.atBody()`** as the
+  named sugar (`offset(0, BODY_Y, 0)`, `BODY_Y = 0.45`): heal's glow/hearts/motes ride at mid-torso
+  while its ground-ring layer stays at the feet, all on one anchor.
+- **Continuous emitters ride the aura's lifetime for free**: `playVfx` stores the handles and base
+  `onFinish()` stops them, so a 10s buff emits for 10s and sputters out on fade — no timers needed.
+
+### voidPull & regen
+
+- `voidPull` (zone tile, rides the zone's 6s) — contracting `twirl` swirl + **four inward streams**
+  + a `light(1)` singularity heart. The streams are the house **suction idiom**: spawn `offset` one
+  tile out (real dims via the now-static `Battlefield.panelFloorWidth()/panelFloorDepth()`), `drift`
+  aimed at the center sized to cross one tile per average lifetime, and `sizeOverLife → 0` so motes
+  are swallowed exactly on arrival. Deliberately restrained (~27 live at steady state).
+- `regen` (sprite-less aura like powerUp/magicUp, rides the 4s REGEN status) — a dim breathing
+  `light(1)` halo `.atBody()` (overlapping soft copies read as a steady sprite glow) + a few rising
+  motes. Quieter than heal's cast bloom by design.
+- `fireTrail` (fire_blast — the sprite stays as the core; this is everything coming off it):
+  `light(1)` glow hugging the ball (short-life so it doesn't smear) + `flare(1)` glint pulses +
+  `flame(1..6)` tongues licking backward (`drift(-dir…)`) + `star(8)` embers + alpha-blended smoke
+  wisps at the tail end. Rides `trailPoint`, so the ball's motion draws the trail; ~30 live.

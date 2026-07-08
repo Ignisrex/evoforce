@@ -56,4 +56,21 @@ public class SceneCamera {
         float ny = (NEAR_FLOOR_Z - worldZ) / FLOOR_DEPTH;  // 0 near, 1 far
         return 1.0f - ny * DEPTH_SCALE_FAR;
     }
+
+    private final Vector2 probe0 = new Vector2(), probe1 = new Vector2();
+
+    /** Invert {@link #project} in x at a fixed floor depth: viewport x → world x.
+     *  The projection is linear in x for fixed z, so two probe points pin the line. */
+    public float unprojectX(float viewportX, float worldZ) {
+        project(0f, worldZ, probe0);
+        project(1f, worldZ, probe1);
+        return (viewportX - probe0.x) / (probe1.x - probe0.x);
+    }
+
+    /** Invert the billboard fake-height convention (drawn y = floor y + height·depthScale):
+     *  viewport y → world height above the floor at (worldX, worldZ). */
+    public float unprojectHeight(float viewportY, float worldX, float worldZ) {
+        project(worldX, worldZ, probe0);
+        return (viewportY - probe0.y) / depthScale(worldZ);
+    }
 }

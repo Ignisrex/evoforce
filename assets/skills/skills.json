@@ -22,10 +22,11 @@
     "element": "FIRE",
     "cooldown": 3.0,
     "vfxTexture": "effects/fireball.png",
+    "vfx": ["fireTrail"],
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
     "effects": [
       { "type": "DAMAGE", "value": 20 },
-      { "type":  "APPLY_STATUS", "statusType": "BURN", "value":5, "duration":5, "chance": 60}
+      { "type":  "APPLY_STATUS", "statusType": "BURN", "value":3, "duration":5, "chance": 60}
     ]
   },
   {
@@ -58,6 +59,7 @@
       "frameHeight": 128,
       "frameDuration": 0.1
     },
+    "vfx": ["beamIceMist"],
     "effects": [
       { "type": "DAMAGE", "value": 25 },
       { "type": "APPLY_STATUS",  "statusType":"FREEZE", "duration": 2, "chance": 100 }
@@ -85,7 +87,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 5.0,
-    "vfxTexture": "effects/aura.png",
+    "vfx": ["heal"],
     "effects": [
       {"type": "HEAL", "value": 15 }
     ]
@@ -98,7 +100,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 5.0,
-    "vfxTexture": "effects/aura.png",
+    "vfx": ["regen"],
     "effects": [
       {"type": "APPLY_STATUS", "statusType":"REGEN", "duration": 4, "value": 6 }
     ]
@@ -138,8 +140,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 12.0,
-    "vfxTexture": "effects/aura.png",
-    "vfxTint": "ff3030ff",
+    "vfx": ["powerUp"],
     "effects": [
       { "type": "APPLY_STATUS", "statusType": "POWER_UP", "duration": 10 }
     ]
@@ -152,8 +153,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 12.0,
-    "vfxTexture": "effects/aura.png",
-    "vfxTint": "9030ffff",
+    "vfx": ["magicUp"],
     "effects": [
       { "type": "APPLY_STATUS", "statusType": "MAGIC_UP", "duration": 10 }
     ]
@@ -175,9 +175,10 @@
       "frameDuration": 0.03
     },
     "shapeConfig": { "dashTiles": 1, "hitTiles": 2 },
+    "vfx": ["spark"],
     "effects": [
       { "type": "DAMAGE", "value": 22 },
-      { "type": "APPLY_STATUS", "statusType": "BURN", "duration": 5, "value": 4, "chance": 100 }
+      { "type": "APPLY_STATUS", "statusType": "BURN", "duration": 5, "value": 2, "chance": 100 }
     ]
   },
   {
@@ -196,6 +197,7 @@
       "frameHeight": 192,
       "frameDuration": 0.08
     },
+    "vfx": ["beamEmbers", "crackle"],
     "effects": [
       { "type": "DAMAGE", "value": 28 },
       { "type": "APPLY_STATUS", "statusType": "STUN", "duration": 1.0, "chance": 50 }
@@ -218,6 +220,7 @@
       "frameDuration": 0.08
     },
     "shapeConfig": { "pull": true, "duration": 6.0, "tickInterval": 1.0 },
+    "vfx": ["voidPull"],
     "effects": [
       { "type": "DAMAGE", "value": 6 }
     ]

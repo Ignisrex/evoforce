@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import com.silverignis.particles.Vfx;
+import com.silverignis.particles.VfxFactory;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.skills.effects.EffectType;
 import com.silverignis.skills.elements.Element;
@@ -51,14 +53,20 @@ public final class SkillLoader {
             .shape(shape)
             .element(parseEnum(Element.class, requireString(node, id, "element"), id, "element"))
             .cooldown(requireFloat(node, id, "cooldown"))
-            .icon(loadTexture(requireString(node, id, "icon"), id, "icon"))
-            .vfxTexture(loadTexture(requireString(node, id, "vfxTexture"), id, "vfxTexture"));
+            .icon(loadTexture(requireString(node, id, "icon"), id, "icon"));
+
+        // Optional here; Skill.build() enforces it for every shape except a particle-backed aura.
+        String vfxTexPath = node.getString("vfxTexture", null);
+        if (vfxTexPath != null) b.vfxTexture(loadTexture(vfxTexPath, id, "vfxTexture"));
 
         b.powerScale(node.getFloat("powerScale", 0f));
         b.magicScale(node.getFloat("magicScale", 0f));
 
         String tintHex = node.getString("vfxTint", null);
         if (tintHex != null) b.vfxTint(parseColor(tintHex, id));
+
+        JsonValue vfx = node.get("vfx");
+        if (vfx != null) b.vfx(parseVfx(vfx, id));
 
         JsonValue effects = node.get("effects");
         if (effects != null) {
@@ -90,6 +98,24 @@ public final class SkillLoader {
             throw new IllegalStateException(
                 "Skill '" + skillId + "' field 'vfxTint' has invalid color '" + hex + "'", ex);
         }
+    }
+
+    private static List<VfxFactory> parseVfx(JsonValue arr, String skillId) {
+        if (!arr.isArray()) {
+            throw new IllegalStateException(
+                "Skill '" + skillId + "' field 'vfx' must be a JSON array of effect names");
+        }
+        List<VfxFactory> out = new ArrayList<>();
+        for (JsonValue e = arr.child; e != null; e = e.next) {
+            String name = e.asString();
+            try {
+                out.add(Vfx.byName(name));
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalStateException(
+                    "Skill '" + skillId + "' field 'vfx' references " + ex.getMessage(), ex);
+            }
+        }
+        return out;
     }
 
     private static List<Effect> parseEffects(JsonValue arr, String skillId) {

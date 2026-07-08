@@ -13,11 +13,8 @@ import com.silverignis.render.RenderContext;
  *  Emitters own their particle lists + sort depth and delegate drawing back here. */
 public final class ParticleEngine {
 
-    private final Texture tex;
     private final Vector2 scratch = new Vector2();   // reused across every emitter's draw this frame
     private final Color   tmp     = new Color();
-
-    public ParticleEngine(Texture tex) { this.tex = tex; }
 
     private final Pool<Particle> pool = new Pool<Particle>() {
         @Override protected Particle newObject() { return new Particle(); }
@@ -34,10 +31,10 @@ public final class ParticleEngine {
     Particle obtain()          { return pool.obtain(); }
     void     free(Particle p)  { pool.free(p); }
 
-    void draw(Array<Particle> live, Texture tex, RenderContext rc) {
-        Texture texture = (tex != null) ? tex : this.tex;
+    void draw(Array<Particle> live, EmitterSpec spec, RenderContext rc) {
         SpriteBatch batch = rc.batch;
-        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);   // additive energy glow
+        // additive = glowing energy; alpha = soft translucent puffs (mist/smoke)
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, spec.additive ? GL20.GL_ONE : GL20.GL_ONE_MINUS_SRC_ALPHA);
         for (int i = 0; i < live.size; i++) {
             Particle p = live.get(i);
             float t = p.age / p.life;
@@ -46,8 +43,12 @@ public final class ParticleEngine {
             float size = p.sizeInterp.apply(p.sizeFrom, p.sizeFrom * p.sizeEndScale, t) * ds;
             float sy = scratch.y + p.pos.y * ds;
             tmp.set(p.colorFrom).lerp(p.colorTo, p.colorInterp.apply(t));
-            batch.setColor(tmp.r, tmp.g, tmp.b, 1f - t);
-            batch.draw(texture, scratch.x - size * 0.5f, sy - size * 0.5f, size, size);
+            batch.setColor(tmp.r, tmp.g, tmp.b, (1f - t) * tmp.a);   // color alpha caps peak opacity
+            int n = spec.textures.length;
+            Texture tx = spec.texturesOverLife
+                ? spec.textures[Math.min((int) (t * n), n - 1)]   // ordered cycle over life
+                : spec.textures[p.texIndex];                      // random pick made at spawn
+            batch.draw(tx, scratch.x - size * 0.5f, sy - size * 0.5f, size, size);
         }
         batch.setColor(Color.WHITE);
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);

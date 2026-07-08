@@ -3,6 +3,7 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.skills.ProjectileConfig;
@@ -71,6 +72,9 @@ public class ProjectileInstance extends SkillInstance {
                 posX = combatant.getVisualX() - w * 0.5f + w * dir;
             }
             sized = true;
+            // A projectile's vfx list is its travel trail: the anchor follows the sprite
+            // in flight and base onFinish() stops emission at impact/edge.
+            playVfx(this::trailPoint);
         }
 
         if (config.getMovementType() == MovementType.LOB) {
@@ -171,6 +175,18 @@ public class ProjectileInstance extends SkillInstance {
                 .build();
         ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row, ctx);
         ctx.combatSystem.spawn(cloud);
+    }
+
+    /** The sprite's current center converted to grid-world space — the anchor for the travel
+     *  trail. Uses SceneCamera's unproject helpers (the inverse of the billboard convention),
+     *  so lob arc height falls out naturally. */
+    private void trailPoint(Vector3 out) {
+        BattleContext ctx = battleContext();
+        float z  = ctx.battlefield.floorZ(row);
+        float cx = posX + sprite.getWidth()  * 0.5f;
+        float cy = posY + sprite.getHeight() * 0.5f;
+        float wx = ctx.environment.unprojectX(cx, z);
+        out.set(wx, ctx.environment.unprojectHeight(cy, wx, z), z);
     }
 
     @Override

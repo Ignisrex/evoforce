@@ -70,6 +70,13 @@ public final class Emitter implements SceneRenderable {
 
     public void spawnOne() {
         anchor.point(scratch);
+        scratch.add(spec.offsetX, spec.offsetY, spec.offsetZ);
+        if (spec.jitterX != 0f || spec.jitterY != 0f || spec.jitterZ != 0f) {
+            scratch.add(
+                MathUtils.random(-spec.jitterX, spec.jitterX),
+                MathUtils.random(-spec.jitterY, spec.jitterY),
+                MathUtils.random(-spec.jitterZ, spec.jitterZ));
+        }
         float sp = spec.speed.sample();
         float polar = MathUtils.random(-spec.spreadDeg, spec.spreadDeg) * MathUtils.degRad; //tilt off +Y
         float az = MathUtils.random(0f, MathUtils.PI2);
@@ -83,6 +90,8 @@ public final class Emitter implements SceneRenderable {
 
         p.age = 0f;
         p.life = spec.life.sample();
+        p.texIndex = (!spec.texturesOverLife && spec.textures.length > 1)
+            ? MathUtils.random(spec.textures.length - 1) : 0;   // over-life mode indexes by age instead
 
         p.sizeFrom = spec.size.sample();
         p.sizeEndScale = spec.sizeEndScale;
@@ -110,5 +119,5 @@ public final class Emitter implements SceneRenderable {
         return RenderLayer.BILLBOARD;
     }
 
-    public void render(RenderContext rc) { engine.draw(live, spec.texture, rc); }
+    public void render(RenderContext rc) { engine.draw(live, spec, rc); }
 }

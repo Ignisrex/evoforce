@@ -107,7 +107,7 @@ public class PlayState implements GameScreenState {
         DamageSystem damageSystem = new DamageSystem(triggerBus);
         MovementSystem movementSystem = new MovementSystem();
 
-        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash(), damageSystem, triggerBus, movementSystem);
+        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, damageSystem, triggerBus, movementSystem);
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
         battleContext.particleEngine = particles;

@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.silverignis.particles.VfxFactory;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.skills.elements.Element;
 
@@ -33,7 +34,8 @@ public final class Skill {
 
     private final float cooldown;
 
-    /** In-battle VFX sprite. Required — every {@link Skill} must supply one. */
+    /** In-battle VFX sprite. Required for every shape except a particle-backed
+     *  AURA (non-empty {@link #vfx}), which may be sprite-less ({@code null}). */
     private final Texture vfxTexture;
 
     /** Optional animated VFX. When present, renderers use this instead of
@@ -50,6 +52,10 @@ public final class Skill {
     /** VFX tint, applied multiplicatively to {@link #vfxTexture}/animation at render time.
      *  Defaults to white (no tint). */
     private final Color vfxTint;
+
+    /** Particle effects layered on top of the sprite VFX, played by the {@link SkillInstance}.
+     *  Resolved from the {@code "vfx"} name list in skills.json. Empty = none. */
+    private final List<VfxFactory> vfx;
 
     private final float powerScale;
     private final float magicScale;
@@ -68,6 +74,7 @@ public final class Skill {
         this.vfxAnimationSheet = b.vfxAnimationSheet;
         this.shapeConfig = b.shapeConfig;
         this.vfxTint = b.vfxTint;
+        this.vfx = Collections.unmodifiableList(new ArrayList<>(b.vfx));
         this.powerScale = b.powerScale;
         this.magicScale = b.magicScale;
     }
@@ -87,6 +94,7 @@ public final class Skill {
     public Texture      getVfxAnimationSheet() { return vfxAnimationSheet; }
     public ShapeConfig  getShapeConfig() { return shapeConfig; }
     public Color        getVfxTint()    { return vfxTint; }
+    public List<VfxFactory> getVfx()    { return vfx; }
     public float        getPowerScale() {return powerScale; }
     public float        getMagicScale() { return magicScale; }
 
@@ -106,6 +114,7 @@ public final class Skill {
         private Texture vfxAnimationSheet;
         private ShapeConfig shapeConfig;
         private Color vfxTint = Color.WHITE;
+        private final List<VfxFactory> vfx = new ArrayList<>();
         private float powerScale = 0f;
         private float magicScale = 0f;
 
@@ -121,6 +130,7 @@ public final class Skill {
         public Builder vfxTexture(Texture v)                        { this.vfxTexture = v; return this; }
         public Builder shapeConfig(ShapeConfig v)                   { this.shapeConfig = v; return this; }
         public Builder vfxTint(Color v)                             { this.vfxTint = v == null ? Color.WHITE : v; return this; }
+        public Builder vfx(List<VfxFactory> v)                      { this.vfx.clear(); if (v != null) this.vfx.addAll(v); return this; }
         public Builder powerScale(float v)                          { this.powerScale = v; return this; }
         public Builder magicScale(float v)                          { this.magicScale = v; return this; }
 
@@ -146,7 +156,11 @@ public final class Skill {
             require(icon,        "icon");
             require(shape,       "shape");
             require(element,     "element");
-            require(vfxTexture,  "vfxTexture");
+            // Non-aura shapes build sprites from vfxTexture, so it stays required there.
+            // A particle-backed aura (has a vfx list) may go sprite-less.
+            if (vfxTexture == null && !(shape == Shape.AURA && !vfx.isEmpty())) {
+                throw missing("vfxTexture");
+            }
             if (!cooldownSet) throw missing("cooldown");
             return new Skill(this);
         }

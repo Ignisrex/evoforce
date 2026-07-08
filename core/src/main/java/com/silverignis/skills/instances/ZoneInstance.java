@@ -96,6 +96,7 @@ public class ZoneInstance extends SkillInstance {
     private void enterActive() {
         phase = Phase.ACTIVE;
         phaseTime = 0f;
+        playVfx(tileAnchor(targetCol, targetRow));   // layered particle effects on the zone tile
     }
 
     private void enterFade() {

@@ -14,6 +14,7 @@ import com.silverignis.assets.GeneratedAssets;
 import com.silverignis.environment.GameEnvironment;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
+import com.silverignis.particles.EmitterSpec;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.particles.Vfx;
 import com.silverignis.registry.MonsterRegistry;
@@ -50,6 +51,7 @@ public class Main extends Game {
         Vfx.init(assets);
 
         this.generated = new GeneratedAssets();
+        EmitterSpec.init(generated.pixel());
         // Emissive is derived from the diffuse PNG once at startup, so the floor's
         // cyan crystal veins glow through bloom without managing a second asset file.
         this.generated.buildCaveFloorEmissive(GameAssets.CAVE_FLOOR);
@@ -58,7 +60,7 @@ public class Main extends Game {
         this.worldRenderer = new WorldRenderer();
         this.renderContext = new RenderContext(batch, font, environment);
 
-        this.particles = new ParticleEngine(generated.pixel());   // neutral default; effects set their own
+        this.particles = new ParticleEngine();
         Vfx.ambientDust().play(particles, Anchor.region(0f, 2.5f, -5f,  7f, 2.5f, 1.8f), Channel.AMBIENT);  // back
         Vfx.ambientDust().play(particles, Anchor.region(0f, 2.5f,  3.8f, 7f, 2.5f, 1.5f), Channel.AMBIENT); // fore
 

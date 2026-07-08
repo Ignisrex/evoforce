@@ -3,6 +3,7 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.silverignis.particles.Anchor;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.effects.Effect;
@@ -28,9 +29,14 @@ public class AuraInstance extends SkillInstance {
 
     public AuraInstance(Skill def, Combatant combatant, BattleContext ctx) {
         super(def, combatant, ctx);
-        this.sprite = new Sprite(def.getVfxTexture());
-        Color tint = def.getVfxTint();
-        if (tint != null) sprite.setColor(tint);
+        // Sprite-less when the skill is particle-backed (vfx list, no vfxTexture).
+        if (def.getVfxTexture() != null) {
+            this.sprite = new Sprite(def.getVfxTexture());
+            Color tint = def.getVfxTint();
+            if (tint != null) sprite.setColor(tint);
+        } else {
+            this.sprite = null;
+        }
         combatant.getAnimController().enterCast();
     }
 
@@ -62,6 +68,7 @@ public class AuraInstance extends SkillInstance {
         phaseTime = 0f;
         combatant.getAnimController().enterIdle();
         activeDuration = computeActiveDuration();
+        playVfx(Anchor.follow(combatant));   // layered particle effects centered on the caster
         if (combatant.isAlive()){
             applyEffectsTo(combatant);
             ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_TICK, combatant, null)); //might need move to status onTick??
@@ -100,7 +107,7 @@ public class AuraInstance extends SkillInstance {
 
     @Override
     public void render(SpriteBatch batch, BattleContext ctx) {
-        if (phase == Phase.DONE) return;
+        if (sprite == null || phase == Phase.DONE) return;
 
         float panelW = ctx.battlefield.getPanelWidth();
         float panelH = ctx.battlefield.getPanelHeight();
