@@ -12,6 +12,10 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.silverignis.assets.GameAssets;
 import com.silverignis.assets.GeneratedAssets;
 import com.silverignis.environment.GameEnvironment;
+import com.silverignis.particles.Anchor;
+import com.silverignis.particles.Channel;
+import com.silverignis.particles.ParticleEngine;
+import com.silverignis.particles.Vfx;
 import com.silverignis.registry.MonsterRegistry;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.WorldRenderer;
@@ -36,11 +40,14 @@ public class Main extends Game {
 
     public GameSession session;
 
+    public ParticleEngine particles;
+
     public void create(){
         batch = new SpriteBatch();
         font = new BitmapFont();
         viewport = new FitViewport(16, 9);
         loadAssets();
+        Vfx.init(assets);
 
         this.generated = new GeneratedAssets();
         // Emissive is derived from the diffuse PNG once at startup, so the floor's
@@ -50,6 +57,10 @@ public class Main extends Game {
         this.environment = new GameEnvironment(viewport, assets.caveWall(), assets.caveFloor(), generated.caveFloorEmissive());
         this.worldRenderer = new WorldRenderer();
         this.renderContext = new RenderContext(batch, font, environment);
+
+        this.particles = new ParticleEngine(generated.pixel());   // neutral default; effects set their own
+        Vfx.ambientDust().play(particles, Anchor.region(0f, 2.5f, -5f,  7f, 2.5f, 1.8f), Channel.AMBIENT);  // back
+        Vfx.ambientDust().play(particles, Anchor.region(0f, 2.5f,  3.8f, 7f, 2.5f, 1.5f), Channel.AMBIENT); // fore
 
         this.vfxManager = new VfxManager(Pixmap.Format.RGBA8888, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         this.bloomEffect = new BloomEffect();

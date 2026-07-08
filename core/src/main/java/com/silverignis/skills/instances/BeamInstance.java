@@ -5,11 +5,18 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
+import com.silverignis.particles.Channel;
+import com.silverignis.particles.EffectDef;
+import com.silverignis.particles.EmitterHandle;
+import com.silverignis.particles.Vfx;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
+import com.silverignis.skills.elements.Element;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 
@@ -24,6 +31,8 @@ public class BeamInstance extends SkillInstance {
     private Phase phase = Phase.CHARGE;
     private float phaseTime = 0f;
     private boolean hitApplied = false;
+
+    private EmitterHandle embers;
 
     private final Sprite sprite;
     private final Animation<TextureRegion> animation;
@@ -74,6 +83,8 @@ public class BeamInstance extends SkillInstance {
         phase = Phase.FIRE;
         phaseTime = 0f;
         applyHit(ctx);
+        EffectDef fx = def.getElement() == Element.ICE ? Vfx.beamMist(tint, dir) : Vfx.beamEmbers(tint, dir);
+        embers = fx.play(ctx.particleEngine, this::beamPoint, this::intensity, Channel.COMBAT);
     }
 
     private void enterFade() {
@@ -93,6 +104,24 @@ public class BeamInstance extends SkillInstance {
                 applyEffectsTo(target);
             }
         }
+    }
+
+    @Override
+    protected void onFinish() { if(embers != null) embers.stop(); }
+
+    public float intensity() {
+        return switch(phase) {
+            case FIRE -> 1f;
+            case FADE -> 1f - (phaseTime/FADE_TIME);
+            default -> 0f;
+        };
+    }
+
+    private void beamPoint(Vector3 out) {
+        int nearCol = originCol + dir;
+        int farCol = dir > 0 ? Battlefield.COLS - 1 : 0;
+        Battlefield bf = battleContext().battlefield;
+        out.set(MathUtils.random(bf.floorX(nearCol), bf.floorX(farCol)), 0f, bf.floorZ(row));
     }
 
     @Override

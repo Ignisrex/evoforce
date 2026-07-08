@@ -1,6 +1,7 @@
 package com.silverignis.particles;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
@@ -9,8 +10,12 @@ public final class Particle implements Poolable {
     public final Vector3 vel = new Vector3();
     public float age;
     public float life;
-    public float size;
-    public final Color color = new Color(1,1,1,1);
+    public float sizeFrom;
+    public float sizeEndScale = 1f;
+    public Interpolation sizeInterp = Interpolation.linear;
+    public final Color colorFrom = new Color(1,1,1,1);
+    public final Color colorTo = new Color(1,1,1,1);
+    public Interpolation colorInterp = Interpolation.linear;
 
     @Override
     public void reset() {
@@ -18,7 +23,13 @@ public final class Particle implements Poolable {
         vel.setZero();
         age = 0f;
         life = 0f;
-        size = 0f;
-        color.set(1,1,1,1);
+
+        sizeFrom = 0f;
+        sizeEndScale = 1f;
+        sizeInterp = Interpolation.linear;
+        
+        colorFrom.set(1,1,1,1);
+        colorTo.set(1,1,1,1);
+        colorInterp = Interpolation.linear;
     }
 }

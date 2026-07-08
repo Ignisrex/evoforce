@@ -2,6 +2,7 @@ package com.silverignis.systems;
 
 import com.silverignis.components.Caster;
 import com.silverignis.entities.ClashEffect;
+import com.silverignis.particles.Channel;
 import com.silverignis.render.WorldRenderer;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillFactory;
@@ -101,9 +102,10 @@ public class CombatSystem {
     public void finishAll() {
         for (SkillInstance inst : active) inst.finish();
         active.clear();
+        ctx.particleEngine.clear(Channel.COMBAT);
     }
 
-    public void fireSkill(Combatant combatant, Skill skill){
+    public void fireSkill(Combatant combatant, Skill skill) {
         combatant.getCaster().getDeck().onUsed(skill);
         spawn(skill, combatant);
     }

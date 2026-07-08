@@ -69,6 +69,7 @@ public class OverworldScreen implements Screen {
     public void render(float delta) {
         input.update();
         handleInput(delta);
+        game.particles.update(delta);
         checkDoors();
         if (transitioning) return;
 
@@ -86,6 +87,7 @@ public class OverworldScreen implements Screen {
         game.batch.begin();
         for (DoorRenderable d : doorRenderables) game.worldRenderer.submit(d);
         game.worldRenderer.submit(avatarRenderable);
+        game.worldRenderer.submit(game.particles.emitters());
         game.worldRenderer.flush(game.renderContext);
         game.batch.end();
 

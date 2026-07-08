@@ -38,6 +38,9 @@ public final class GameAssets implements Disposable {
     public static final String CAVE_WALL  = "cave_wall.png";
     public static final String CAVE_FLOOR = "cave_floor.png";
     public static final String CLASH      = "effects/clash.png";
+    public static final String DUST       = "effects/star_05.png";
+    public static final String EMBER      = "effects/star_08.png";
+    public static final String MIST       = "effects/smoke_04.png";
 
 
     private final AssetManager mgr = new AssetManager();
@@ -51,6 +54,9 @@ public final class GameAssets implements Disposable {
         floorParams.genMipMaps = true;
         mgr.load(CAVE_FLOOR, Texture.class, floorParams);
         mgr.load(CLASH,      Texture.class);
+        mgr.load(DUST,       Texture.class);
+        mgr.load(EMBER,      Texture.class);
+        mgr.load(MIST,       Texture.class);
 
         for (Monster m : Monster.values()) {
             for (AnimSheet.Row r : m.animSheet().rows()) {
@@ -70,6 +76,9 @@ public final class GameAssets implements Disposable {
         caveWall().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         caveFloor().setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
         caveFloor().setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        dust().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        ember().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        mist().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         for (Monster m: Monster.values()) {
             EnumMap<Team, AnimSet> byFacing = new EnumMap<>(Team.class);
@@ -119,6 +128,9 @@ public final class GameAssets implements Disposable {
     public Texture caveWall()  { return texture(CAVE_WALL); }
     public Texture caveFloor() { return texture(CAVE_FLOOR); }
     public Texture clash()     { return texture(CLASH); }
+    public Texture dust()      { return texture(DUST); }
+    public Texture ember()     { return texture(EMBER); }
+    public Texture mist()      { return texture(MIST); }
     public TextureRegion avatar()    { return avatarRegion; }
 
     public AnimSet animSet(Monster m, Team facing) { return animSets.get(m).get(facing); }

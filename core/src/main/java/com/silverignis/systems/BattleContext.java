@@ -7,6 +7,7 @@ import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.environment.GameEnvironment;
+import com.silverignis.particles.ParticleEngine;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
@@ -39,6 +40,7 @@ public class BattleContext {
 
     /** Post-set: CombatSystem constructor needs the context, so this is a cycle. */
     public CombatSystem combatSystem;
+    public ParticleEngine particleEngine;
 
     public final MovementSystem movementSystem;
 

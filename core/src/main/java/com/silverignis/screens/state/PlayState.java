@@ -15,10 +15,7 @@ import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.environment.BattlefieldDecor;
-import com.silverignis.particles.Anchor;
-import com.silverignis.particles.Emitter;
 import com.silverignis.particles.ParticleEngine;
-import com.silverignis.particles.Val;
 import com.silverignis.registry.Monster;
 import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
@@ -83,16 +80,7 @@ public class PlayState implements GameScreenState {
         float panelHeight = 4f  / Battlefield.ROWS;
         battlefield = new Battlefield(3f, 1f, panelWidth, panelHeight, PanelGenerator.generatePanels());
         this.worldRenderer = screen.game.worldRenderer;
-        this.particles = new ParticleEngine(screen.game.generated.pixel());
-        this.particles.depth = battlefield.floorZ(2);
-        particles.add(Emitter.continuous(
-            Anchor.at(battlefield.floorX(5), 0f, battlefield.floorZ(2)),
-            60f,                              // particles/sec
-            Val.range(2f, 3f),                // speed
-            Val.of(0.8f),                     // lifetime
-            Val.of(0.25f),                    // size
-            25f,                              // spread half-angle (deg)
-            new Color(1f, 0.6f, 0.2f, 1f)));  // ember orange
+        this.particles = screen.game.particles;
         this.environment = screen.game.environment;
         BattlefieldDecor.apply(environment, battlefield);
 
@@ -122,6 +110,7 @@ public class PlayState implements GameScreenState {
         battleContext = new BattleContext(battlefield, player, enemies, effects, environment, assets.clash(), damageSystem, triggerBus, movementSystem);
         combatSystem  = new CombatSystem(battleContext);
         battleContext.combatSystem = combatSystem;
+        battleContext.particleEngine = particles;
 
         vfxManager = screen.game.vfxManager;
     }
@@ -259,7 +248,7 @@ public class PlayState implements GameScreenState {
         }
         combatSystem.submitRenderables(worldRenderer);
         worldRenderer.submit(effects);
-        worldRenderer.submit(particles);
+        worldRenderer.submit(particles.emitters());
         worldRenderer.flush(renderContext);
     }
 

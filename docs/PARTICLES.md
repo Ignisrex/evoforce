@@ -337,9 +337,26 @@ Verified visually by a temporary debug fountain (`PlayState.spawnDebugFountain()
 `continuous(...)`/`burst(...)` factories, ranged `speed`/`life`/`size`, cone velocity around +Y by
 `spreadDeg`, fractional-accumulator scheduling). `ParticleEngine` now owns an `Array<Emitter>`
 (`add(Emitter)`), ticks them at the top of `update(dt)` (spawn-before-integrate), and drops finished
-burst emitters. `PlayState`'s debug fountain replaced by a continuous `Emitter`. Emitter timing
-covered by a `java -ea` self-check in `Emitter.main`. **`Anchor.alongBeam` not built yet** (needs a
-beam instance handle — arrives with M5).
+burst emitters. `PlayState`'s debug fountain replaced by a continuous `Emitter`. **`Anchor.alongBeam`
+not built yet** (needs a beam instance handle — arrives with M5).
+
+Fixed post-hoc: `Anchor.at` wrote `out.set(x, y, x)` (z arg dropped) — corrected to `(x, y, z)`. (The
+`Emitter.main` self-check claimed here was never committed; emitter scheduling is now covered by the
+M4 `EffectDef.main` check below instead.)
+
+**Milestone 4 — fluent builder + curves + catalog.** Split the M3 `Emitter` into an immutable
+build-time template `particles/EmitterSpec.java` (mode/rate/count/window, ranged `speed`/`life`/`size`,
+`spreadDeg`, size + color over-life curves — no anchor, no runtime state) and a runtime
+`particles/Emitter.java` = `(spec, anchor)` holding the accumulator/emitted scheduling. `EffectDef.java`
+is the immutable, layered bundle: `EffectDef.effect().emitter(e -> …).build()` (the single construction
+path — the old public `Emitter.continuous`/`burst` factories are **deleted**), and `play(engine, anchor)`
+stamps out one fresh runtime `Emitter` per spec so an effect replays anywhere. `Vfx.java` is the catalog:
+`ambientEmbers()` (continuous, now what `PlayState` plays) + `spark(Element)` (burst, white-hot → element
+tint, shrinking to nothing) + `tint(Element)`. Over-life curves ride libGDX `Interpolation` — evaluated
+in `ParticleEngine.render` (`t = age/life`; size via `sizeInterp.apply(from, from*endScale, t)`; RGB via
+one reused `tmp` `Color` lerped `colorFrom`→`colorTo`; alpha still linear `1 − t`). Covered by a `java -ea`
+self-check in `EffectDef.main` (burst emits exactly 24 then self-drops; continuous 60/s over 0.5s = 30 live;
+size/color curve endpoints).
 
 ### Deviations from the plan above (deliberate)
 
@@ -352,13 +369,23 @@ beam instance handle — arrives with M5).
   hardcodes `y=0`). Tune the constant; upgrade to a projected elevated point only if it reads wrong.
 - **M1 assert self-check (`main`) was dropped** when M2 landed. The sim loop (integrate + recycle) has
   no runnable check now — re-add a `java -ea` self-check or a small test if regressions appear.
+- **Size over-life is `endScale`-relative, not absolute** (`sizeOverLife(interp, endScale)` ramps the
+  *sampled* initial size → `initial × endScale`), unlike the §4 sketch's absolute `from,to`. Chosen so a
+  ranged initial size still shrinks proportionally; `endScale = 0` = shrink to nothing.
+- **Color over-life is RGB-only; alpha stays the engine's linear `1 − age/life` fade.** Avoids a
+  double-fade (curve alpha × engine fade) — author catalog colors opaque. Multi-stop `gradient` from §4 is
+  **not built** (YAGNI for two effects); 2-stop `colorOverLife` covers the catalog. No bespoke `Curve`
+  class — libGDX `Interpolation` is the curve helper.
+- **The per-frame lerped color lives on the engine, not the particle.** M1's scratch `Particle.color` was
+  removed; `ParticleEngine` reuses one `tmp` `Color` across the render loop (compute → draw → reuse).
 
-### Next: Milestone 4 — fluent builder + curves + catalog
+### Next: Milestone 5 — Drive + envelope
 
-`effect()...build()` producing an immutable `EffectDef` (several emitters layered), the
-`Interpolation`-backed curve helpers (`constant`/`lerp`/`gradient`), a `Vfx`/`ParticleEffects`
-catalog of 1–2 named effects, and the `spark(Element)` parametric variant factory. The `Emitter`
-static factories (`continuous`/`burst`) become what the builder emits, not a second route.
+Wire a beam/charge `SkillInstance.intensity()` to an emitter and prove sync via the FADE ramp-down
+sputter and the §7 update-order rule (instance clocks advance before the engine reads drives). Needs:
+`play(...)` returning an `EmitterHandle` (so the instance can `stop()` on phase exit — deferred from M4,
+which returns void), a `Drive` (`0..1` supplier) input threaded into the emitter envelope (drive → spawn
+params), and `Anchor.alongBeam(BeamInstance)` (the one anchor M3 left unbuilt).
 
 **Still deferred — per-emitter rendering.** Each emitter owning its particle list and submitting its
 own `SceneRenderable` at its own `depth()` (replacing the single whole-engine renderable) is not done.

@@ -67,7 +67,10 @@ public abstract class SkillInstance implements SceneRenderable {
         if (finished) return;
         finished = true;
         releaseInputLock();
+        onFinish();
     }
+
+    protected void onFinish() {}
 
     public final boolean isFinished() { return finished; }
 
