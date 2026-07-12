@@ -89,9 +89,26 @@ public final class GameAssets implements Disposable {
         "effects/twirl_01.png", "effects/twirl_02.png", "effects/twirl_03.png",
     };
 
+    public static final String[] EFFECT_A_SET = {
+        "effects/effect_01_a.png", "effects/effect_02_a.png", "effects/effect_03_a.png",
+    };
+
+    public static final String[] STAR_A_SET = {
+        "effects/star_01_a.png", "effects/star_02_a.png", "effects/star_03_a.png",
+        "effects/star_04_a.png", "effects/star_05_a.png", "effects/star_06_a.png",
+        "effects/star_07_a.png", "effects/star_08_a.png", "effects/star_09_a.png",
+    };
+
+    public static final String[] SPOTLIGHT_A_SET = {
+        "effects/spotlight_01_a.png", "effects/spotlight_02_a.png", "effects/spotlight_03_a.png",
+        "effects/spotlight_04_a.png", "effects/spotlight_05_a.png", "effects/spotlight_06_a.png",
+        "effects/spotlight_07_a.png", "effects/spotlight_08_a.png",
+    };
+
     private static final String[][] EFFECT_SETS = {
         SPARK_SET, STAR_SET, SMOKE_SET, CIRCLE_SET, FLARE_SET,
         FLAME_SET, MAGIC_SET, LIGHT_SET, SYMBOL_SET, TWIRL_SET,
+        EFFECT_A_SET, STAR_A_SET, SPOTLIGHT_A_SET,
     };
 
 
@@ -187,6 +204,9 @@ public final class GameAssets implements Disposable {
     public Texture light(int n)  { return texture(LIGHT_SET[n - 1]); }
     public Texture symbol(int n) { return texture(SYMBOL_SET[n - 1]); }
     public Texture twirl(int n)  { return texture(TWIRL_SET[n - 1]); }
+    public Texture effectA(int n) { return texture(EFFECT_A_SET[n - 1]); }
+    public Texture starA(int n)   { return texture(STAR_A_SET[n - 1]); }
+    public Texture spotlightA(int n) { return texture(SPOTLIGHT_A_SET[n - 1]); }
     public TextureRegion avatar()    { return avatarRegion; }
 
     public AnimSet animSet(Monster m, Team facing) { return animSets.get(m).get(facing); }

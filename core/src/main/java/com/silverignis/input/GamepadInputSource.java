@@ -36,6 +36,7 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
      * keyboard NUM_1/2/3 bindings.
      */
     private boolean slotX, slotY, slotB;
+    private boolean bumperL, bumperR;
 
     public GamepadInputSource() {
         for (GameAction action : GameAction.values()) {
@@ -57,6 +58,8 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
         currentPressed.put(GameAction.TRIGGER_RIGHT,        triggerRight);
         currentPressed.put(GameAction.SKILL_SELECT_CONFIRM, confirmA);
         currentPressed.put(GameAction.SKILL_SELECT_CANCEL,  cancelBack);
+        currentPressed.put(GameAction.SKILL_SELECT_UNDO,    bumperL);
+        currentPressed.put(GameAction.SKILL_SELECT_TUCK,    bumperR);
         currentPressed.put(GameAction.SKILL_X,              slotX);
         currentPressed.put(GameAction.SKILL_Y,              slotY);
         currentPressed.put(GameAction.SKILL_B,              slotB);
@@ -99,6 +102,7 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
         triggerLeft = triggerRight = false;
         confirmA = cancelBack = false;
         slotX = slotY = slotB = false;
+        bumperL = bumperR = false;
     }
 
     private void setButton(ControllerMapping map, int buttonCode, boolean pressed) {
@@ -119,6 +123,8 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
         else if (buttonCode == map.buttonY)         slotY        = pressed;
         else if (buttonCode == map.buttonB)         slotB        = pressed;
         else if (buttonCode == map.buttonBack)      cancelBack   = pressed;
+        else if (buttonCode == map.buttonL1)        bumperL      = pressed;
+        else if (buttonCode == map.buttonR1)        bumperR      = pressed;
         else if (buttonCode == map.buttonL2)        triggerLeft  = pressed;
         else if (buttonCode == map.buttonR2)        triggerRight = pressed;
     }

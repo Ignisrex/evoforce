@@ -19,4 +19,14 @@ public interface Anchor {
             cy + MathUtils.random(-hy, hy),
             cz + MathUtils.random(-hz, hz));
     }
+
+    /** Random point on the edge of an x/z rectangle (center ± half-extents) — spawn from a frame, not its middle. */
+    static Anchor rim(float cx, float cy, float cz, float hx, float hz) {
+        return out -> {
+            boolean topOrBottom = MathUtils.randomBoolean();
+            float x = topOrBottom ? MathUtils.random(-hx, hx) : (MathUtils.randomBoolean() ? hx : -hx);
+            float z = topOrBottom ? (MathUtils.randomBoolean() ? hz : -hz) : MathUtils.random(-hz, hz);
+            out.set(cx + x, cy, cz + z);
+        };
+    }
 }

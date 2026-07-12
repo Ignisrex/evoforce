@@ -73,6 +73,11 @@ public final class SkillLoader {
             b.effects(parseEffects(effects, id));
         }
 
+        String zoneTexPath = node.getString("zoneTexture", null);
+        if (zoneTexPath != null) {
+            b.zoneTexture(loadTexture(zoneTexPath, id, "zoneTexture"));
+        }
+
         JsonValue anim = node.get("vfxAnimation");
         if (anim != null) {
             Texture sheet = loadTexture(requireString(anim, id, "vfxAnimation.spritesheet"),
@@ -80,7 +85,9 @@ public final class SkillLoader {
             int frameW = requireInt(anim, id, "vfxAnimation.frameWidth");
             int frameH = requireInt(anim, id, "vfxAnimation.frameHeight");
             float frameDuration = requireFloat(anim, id, "vfxAnimation.frameDuration");
-            b.vfxAnimation(buildAnimation(sheet, frameW, frameH, frameDuration), sheet);
+            Animation<TextureRegion> built = buildAnimation(sheet, frameW, frameH, frameDuration);
+            if (anim.getBoolean("loop", false)) built.setPlayMode(Animation.PlayMode.LOOP);
+            b.vfxAnimation(built, sheet);
         }
 
         JsonValue shapeCfg = node.get("shapeConfig");
@@ -179,7 +186,9 @@ public final class SkillLoader {
             case LOB:
                 return ProjectileConfig.lob(
                     requireInt(node, skillId, "shapeConfig.targetRange"),
-                    requireFloat(node, skillId, "shapeConfig.arcHeight"));
+                    requireFloat(node, skillId, "shapeConfig.arcHeight"),
+                    node.getFloat("zoneDuration", 3.0f),
+                    node.getFloat("zoneTickInterval", 0.5f));
             default:
                 throw new IllegalStateException(
                     "Skill '" + skillId + "' has unsupported movementType '" + movement + "'");

@@ -36,5 +36,11 @@ public enum GameAction {
     SKILL_SELECT_CONFIRM,
 
     /** Close the staging menu without committing (slots revert, charge kept). */
-    SKILL_SELECT_CANCEL
+    SKILL_SELECT_CANCEL,
+
+    /** In the staging menu, pull the last-added skill out of the hovered slot. */
+    SKILL_SELECT_UNDO,
+
+    /** In the staging menu, tuck/untuck the overlay to view the frozen field. */
+    SKILL_SELECT_TUCK
 }

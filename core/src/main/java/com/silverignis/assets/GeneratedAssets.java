@@ -30,15 +30,21 @@ public final class GeneratedAssets implements Disposable {
 
     private final Texture pixel;
     private final Texture shadow;
+    private final Texture card;
+    private final Texture cardFrame;
     private Texture caveFloorEmissive;
 
     public GeneratedAssets() {
-        this.pixel  = buildPixel();
-        this.shadow = buildShadow();
+        this.pixel     = buildPixel();
+        this.shadow    = buildShadow();
+        this.card      = buildCard();
+        this.cardFrame = buildCardFrame();
     }
 
     public Texture pixel()             { return pixel; }
     public Texture shadow()            { return shadow; }
+    public Texture card()              { return card; }
+    public Texture cardFrame()         { return cardFrame; }
     public Texture caveFloorEmissive() { return caveFloorEmissive; }
 
     private static Texture buildPixel() {
@@ -71,6 +77,61 @@ public final class GeneratedAssets implements Disposable {
         tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         pm.dispose();
         return tex;
+    }
+
+    // Card textures share these dimensions; drawn white so HUDs tint freely.
+    private static final int CARD_W = 96, CARD_H = 92, CARD_R = 12;
+
+    /** Filled rounded rect — the dark card body behind a skill icon (drawn tinted). */
+    private static Texture buildCard() {
+        Pixmap pm = new Pixmap(CARD_W, CARD_H, Pixmap.Format.RGBA8888);
+        pm.setColor(0f, 0f, 0f, 0f);
+        pm.fill();
+        pm.setColor(Color.WHITE);
+        fillRoundedRect(pm, 0, 0, CARD_W, CARD_H, CARD_R);
+        Texture tex = new Texture(pm);
+        tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        pm.dispose();
+        return tex;
+    }
+
+    /**
+     * Rounded border-only overlay for the front card: thin light outline, charcoal
+     * band, thin light inner line, transparent interior. Drawn over the icon.
+     */
+    private static Texture buildCardFrame() {
+        Pixmap pm = new Pixmap(CARD_W, CARD_H, Pixmap.Format.RGBA8888);
+        pm.setColor(0f, 0f, 0f, 0f);
+        pm.fill();
+
+        Color light    = new Color(0.62f, 0.65f, 0.72f, 1f);
+        Color charcoal = new Color(0.16f, 0.17f, 0.22f, 1f);
+
+        pm.setColor(light);
+        fillRoundedRect(pm, 0, 0, CARD_W, CARD_H, CARD_R);
+        pm.setColor(charcoal);
+        fillRoundedRect(pm, 2, 2, CARD_W - 4, CARD_H - 4, CARD_R - 2);
+        pm.setColor(light);
+        fillRoundedRect(pm, 7, 7, CARD_W - 14, CARD_H - 14, CARD_R - 6);
+
+        // Punch out the interior so the frame overlays the icon without hiding it.
+        pm.setBlending(Pixmap.Blending.None);
+        pm.setColor(0f, 0f, 0f, 0f);
+        fillRoundedRect(pm, 9, 9, CARD_W - 18, CARD_H - 18, CARD_R - 8);
+
+        Texture tex = new Texture(pm);
+        tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        pm.dispose();
+        return tex;
+    }
+
+    private static void fillRoundedRect(Pixmap pm, int x, int y, int w, int h, int r) {
+        pm.fillRectangle(x + r, y, w - 2 * r, h);
+        pm.fillRectangle(x, y + r, w, h - 2 * r);
+        pm.fillCircle(x + r, y + r, r);
+        pm.fillCircle(x + w - r - 1, y + r, r);
+        pm.fillCircle(x + r, y + h - r - 1, r);
+        pm.fillCircle(x + w - r - 1, y + h - r - 1, r);
     }
 
     /**
@@ -108,6 +169,8 @@ public final class GeneratedAssets implements Disposable {
     public void dispose() {
         pixel.dispose();
         shadow.dispose();
+        card.dispose();
+        cardFrame.dispose();
         if (caveFloorEmissive != null) caveFloorEmissive.dispose();
     }
 }

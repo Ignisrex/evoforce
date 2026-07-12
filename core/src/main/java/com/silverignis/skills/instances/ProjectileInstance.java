@@ -7,16 +7,16 @@ import com.badlogic.gdx.math.Vector3;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.skills.ProjectileConfig;
-import com.silverignis.skills.ProjectileConfig.MovementType;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 
+/** Straight-flying projectile: travels along its row until it hits an opposing
+ *  combatant or leaves the grid. Lobbed (arcing) projectiles are {@link LobInstance}. */
 public class ProjectileInstance extends SkillInstance {
 
-    private static final float DEFAULT_SPEED   = 8f;
-    private static final float LOB_FLIGHT_TIME = 0.50f;
+    private static final float DEFAULT_SPEED = 8f;
 
     private final ProjectileConfig config;
     private final Sprite sprite;
@@ -26,16 +26,8 @@ public class ProjectileInstance extends SkillInstance {
     /** Set on the first update tick once {@link BattleContext} is available. */
     private boolean sized = false;
 
-    // Straight movement
     private float posX;
     private float posY;
-
-    // Lob movement
-    private float startX, startY;
-    private float endX, endY;
-    private float arcHeight;
-    private float flightElapsed = 0f;
-    private boolean landed = false;
 
     public ProjectileInstance(Skill def, Combatant combatant, BattleContext ctx) {
         super(def, combatant, ctx);
@@ -49,42 +41,27 @@ public class ProjectileInstance extends SkillInstance {
         this.sprite = new Sprite(def.getVfxTexture());
         if (dir < 0) this.sprite.setFlip(true, false);
 
-        if (config.getMovementType() == MovementType.LOB) {
-            this.startX    = combatant.getVisualX();
-            this.startY    = combatant.getVisualY();
-            this.arcHeight = config.getArcHeight();
-        } else {
-            this.posX = combatant.getVisualX();
-            this.posY = combatant.getVisualY();
-        }
+        this.posX = combatant.getVisualX();
+        this.posY = combatant.getVisualY();
         combatant.getAnimController().enterAttack();
     }
 
     @Override
     public void update(float delta) {
+        BattleContext ctx = battleContext();
         if (!sized) {
-            float w = battleContext().battlefield.getPanelWidth();
-            float h = battleContext().battlefield.getPanelRenderHeight();
+            float w = ctx.battlefield.getPanelWidth();
+            float h = ctx.battlefield.getPanelRenderHeight();
             sprite.setSize(w, h);
 
             //adjusted to deal with enemy fire projectile
-            if (config.getMovementType() == MovementType.STRAIGHT) {
-                posX = combatant.getVisualX() - w * 0.5f + w * dir;
-            }
+            posX = combatant.getVisualX() - w * 0.5f + w * dir;
             sized = true;
             // A projectile's vfx list is its travel trail: the anchor follows the sprite
             // in flight and base onFinish() stops emission at impact/edge.
             playVfx(this::trailPoint);
         }
 
-        if (config.getMovementType() == MovementType.LOB) {
-            updateLob(delta, battleContext());
-        } else {
-            updateStraight(delta, battleContext());
-        }
-    }
-
-    private void updateStraight(float delta, BattleContext ctx) {
         posX += config.getSpeed() * dir * delta;
 
         if (dir > 0) {
@@ -97,38 +74,10 @@ public class ProjectileInstance extends SkillInstance {
             if (posX + sprite.getWidth() < gridLeft) { finish(); return; }
         }
 
-        checkHitStraight(ctx);
+        checkHit(ctx);
     }
 
-    private void updateLob(float delta, BattleContext ctx) {
-        if (landed) return;
-
-        // Lazily resolve end position on first update (needs ctx).
-        if (flightElapsed == 0f) {
-            int landCol = Math.min(originCol + config.getTargetRange() * dir, Battlefield.COLS - 1);
-            landCol = Math.max(landCol, 0);
-            Vector2 landPos = ctx.projectedTileWorld(landCol, row);
-            endX = landPos.x - sprite.getWidth() * 0.5f;
-            endY = landPos.y;
-        }
-
-        flightElapsed += delta;
-        float t = Math.min(flightElapsed / LOB_FLIGHT_TIME, 1f);
-
-        posX = startX + (endX - startX) * t;
-        posY = startY + (endY - startY) * t + arcHeight * 4f * t * (1f - t);
-
-        if (t >= 1f) {
-            landed = true;
-            posX = endX;
-            posY = endY;
-            applyLandingDamage(ctx);
-            spawnLandingEffect(ctx);
-            finish();
-        }
-    }
-
-    private void checkHitStraight(BattleContext ctx) {
+    private void checkHit(BattleContext ctx) {
         float halfW      = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
         float projCenter = posX + sprite.getWidth() * 0.5f;
 
@@ -142,44 +91,8 @@ public class ProjectileInstance extends SkillInstance {
         }
     }
 
-    private void applyLandingDamage(BattleContext ctx) {
-        int landCol = originCol + config.getTargetRange() * dir;
-        Combatant target = ctx .combatantAt(landCol, row);
-
-        if (target == null) return;
-        if (target.getTeam() == combatant.getTeam()) return;
-        applyEffectsTo(target);
-    }
-
-    private void spawnLandingEffect(BattleContext ctx) {
-        if (config.getMovementType() != MovementType.LOB) return;
-        if (ctx.combatSystem == null) return;
-
-        int landCol = originCol + config.getTargetRange() * dir;
-        landCol = Math.min(landCol, Battlefield.COLS - 1);
-        landCol = Math.max(landCol, 0);
-
-        // Build a zone skill that lingers on the landing tile. This is a
-        // runtime-only synthetic — it never enters the library or the staging
-        // menu, so it borrows the parent's icon just to satisfy the builder.
-        Skill zoneDef = Skill.builder()
-                .id(def.getId() + "_cloud")
-                .displayName(def.getDisplayName() + " Cloud")
-                .description("Lingering toxic cloud.")
-                .icon(def.getIcon())
-                .shape(Skill.Shape.ZONE)
-                .element(def.getElement())
-                .effects(def.getEffects())
-                .cooldown(0f)
-                .vfxTexture(def.getVfxTexture())
-                .build();
-        ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row, ctx);
-        ctx.combatSystem.spawn(cloud);
-    }
-
     /** The sprite's current center converted to grid-world space — the anchor for the travel
-     *  trail. Uses SceneCamera's unproject helpers (the inverse of the billboard convention),
-     *  so lob arc height falls out naturally. */
+     *  trail. Uses SceneCamera's unproject helpers (the inverse of the billboard convention). */
     private void trailPoint(Vector3 out) {
         BattleContext ctx = battleContext();
         float z  = ctx.battlefield.floorZ(row);
@@ -197,5 +110,4 @@ public class ProjectileInstance extends SkillInstance {
 
     public int getRow()         { return row; }
     public float getCenterX()   { return posX + sprite.getWidth() * 0.5f; }
-    public boolean isStraight() { return config.getMovementType() == MovementType.STRAIGHT; }
 }

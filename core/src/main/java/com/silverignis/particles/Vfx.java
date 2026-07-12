@@ -14,13 +14,14 @@ import static com.silverignis.particles.Val.range;
 public final class Vfx {
 
     private Vfx() {}
-    
+
     private static GameAssets assets;
     public static void init(GameAssets a) { assets = a; }
 
     /** Skill-facing names → catalog factories. Referenced by the {@code "vfx"} list in skills.json. */
     private static final Map<String, VfxFactory> CATALOG = Map.ofEntries(
         Map.entry("beamEmbers",  (VfxFactory) (el, tint, dir) -> beamEmbers(tint, dir)),
+        Map.entry("beamFlames",  (VfxFactory) (el, tint, dir) -> beamFlames(dir)),
         Map.entry("beamIceMist", (VfxFactory) (el, tint, dir) -> beamIceMist(tint, dir)),
         Map.entry("spark",       (VfxFactory) (el, tint, dir) -> spark(el)),
         Map.entry("crackle",     (VfxFactory) (el, tint, dir) -> crackle(el)),
@@ -30,7 +31,10 @@ public final class Vfx {
         Map.entry("magicUp",     (VfxFactory) (el, tint, dir) -> magicUp()),
         Map.entry("voidPull",    (VfxFactory) (el, tint, dir) -> voidPull()),
         Map.entry("regen",       (VfxFactory) (el, tint, dir) -> regen()),
-        Map.entry("fireTrail",   (VfxFactory) (el, tint, dir) -> fireTrail(dir)));
+        Map.entry("fireTrail",   (VfxFactory) (el, tint, dir) -> fireTrail(dir)),
+        Map.entry("darkTrail",   (VfxFactory) (el, tint, dir) -> darkTrail(dir)),
+        Map.entry("electricArcs",(VfxFactory) (el, tint, dir) -> electricArcs(el)),
+        Map.entry("energyMotes", (VfxFactory) (el, tint, dir) -> energyMotes(el)));
 
     /** Resolve a skill-def vfx name to its factory. Throws on an unknown name so bad data fails at load. */
     public static VfxFactory byName(String name) {
@@ -83,37 +87,35 @@ public final class Vfx {
         Color tint  = tint(element);
         Color smoke = new Color(0.55f, 0.55f, 0.6f, 0.35f);   // cool grey, translucent
         return EffectDef.effect()
-            // 1. Core flash — the main hit: one bright pop.
+            // 1. Shockwave ring
             .emitter(e -> e
-                .burst(1).speed(0f).life(0.12f).size(1.1f)
+                .burst(1).speed(0f).life(0.2f).size(0.4f)
                 .texture(assets.circle(1))
                 .sizeOverLife(Interpolation.pow2Out, 1.25f)
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))
             // 2. Flare streak — lens-glint over the core, a touch longer.
             .emitter(e -> e
-                .burst(1).speed(0f).life(0.18f).size(1.4f)
+                .burst(1).speed(0f).life(0.18f).size(0.8f)
                 .texture(assets.flare(1))
                 .sizeOverLife(Interpolation.pow2Out, 1.5f)
                 .color(Color.WHITE))
-            // 3. Shockwave ring — a firm but contained push.
+            // 3. Main Flash
             .emitter(e -> e
-                .burst(1).speed(0f).life(0.3f).size(0.5f)
-                .texture(assets.circle(5))
+                .burst(1).speed(0f).life(0.3f).size(0.7f)
+                .textures(assets.star(8), assets.starA(8))
                 .sizeOverLife(Interpolation.pow2Out, 2.4f)
                 .color(tint))
-            // 4. Debris sparks — jagged shards, tighter scatter.
+            // 4. Clash
             .emitter(e -> e
                 .burst(10, 0.05f)
                 .speed(range(1.2f, 2.5f)).life(range(0.25f, 0.45f)).size(range(0.12f, 0.28f)).spread(180f)
-                .textures(
-                    assets.spark(1), assets.spark(2), assets.spark(3), assets.spark(4),
-                    assets.spark(5), assets.spark(6), assets.spark(7))
+                .texturesOverLife(assets.effectA(1), assets.effectA(2), assets.effectA(3))
                 .sizeOverLife(Interpolation.pow2In, 0f)
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))
             // 5. Sparkles — a few twinkles hanging close after the flash.
             .emitter(e -> e
-                .burst(6, 0.15f)
-                .speed(range(0.2f, 0.6f)).life(range(0.5f, 0.8f)).size(range(0.1f, 0.22f)).spread(180f)
+                .burst(3, 0.15f)
+                .speed(range(0.2f, 0.6f)).life(range(0.5f, 1.5f)).size(range(0.1f, 0.14f)).spread(180f)
                 .drift(0f, 0.25f, 0f)
                 .textures(assets.star(1), assets.star(4), assets.star(9))
                 .sizeOverLife(Interpolation.pow2In, 0f)
@@ -186,6 +188,102 @@ public final class Vfx {
             .build();
     }
 
+    /** Void trail riding a projectile's travel anchor — fireTrail's dark twin. The drama
+     *  lives ON the ball (flickering violet arcs + a tight halo) and in chaotic motes
+     *  leaking in every direction; nothing long-lived sits still at the moving anchor,
+     *  because stationary long-life emitters smear into a horizontal line behind it. */
+    public static EffectDef darkTrail(int dir) {
+        Color violet = new Color(0.75f, 0.45f, 1f, 1f);
+        Color deep   = new Color(0.35f, 0.1f, 0.6f, 1f);
+        Color smoke  = new Color(0.28f, 0.16f, 0.4f, 0.35f);
+        return EffectDef.effect()
+            // 1. Core halo — very short life so stale copies vanish before they can streak.
+            .emitter(e -> e
+                .continuous(20f)
+                .speed(0f).life(of(0.1f)).size(range(0.5f, 0.65f))
+                .jitter(0.04f, 0.04f, 0f)
+                .texture(assets.light(1))
+                .color(new Color(0.6f, 0.3f, 1f, 0.75f)))
+            // 2. Dark lightning — violet arcs flickering over the ball, each shard morphing
+            // through spark frames. Anchored and brief: crackle, not spray.
+            .emitter(e -> e
+                .continuous(10f)
+                .speed(0f).life(range(0.12f, 0.2f)).size(range(0.3f, 0.5f))
+                .jitter(0.15f, 0.15f, 0f)
+                .texturesOverLife(assets.spark(1), assets.spark(3), assets.spark(5), assets.spark(7))
+                .colorOverLife(Interpolation.linear, violet, deep))
+            // 3. Unstable motes — energy leaking off in ALL directions, not a neat tail.
+            .emitter(e -> e
+                .continuous(16f)
+                .speed(range(0.15f, 0.45f)).life(range(0.3f, 0.55f)).size(range(0.1f, 0.2f)).spread(180f)
+                .jitter(0.15f, 0.15f, 0f)
+                .drift(-dir * 0.8f, 0.05f, 0f)
+                .textures(assets.magic(3), assets.magic(4), assets.star(9))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, violet, deep))
+            // 4. Void smoke wisps — the soft tail end.
+            .emitter(e -> e
+                .continuous(8f)
+                .speed(range(0.05f, 0.15f)).life(range(0.5f, 0.9f)).size(range(0.25f, 0.4f)).spread(40f)
+                .jitter(0.1f, 0.1f, 0f)
+                .drift(-dir * 0.9f, 0.15f, 0f)
+                .alphaBlend()
+                .texturesOverLife(
+                    assets.smoke(2), assets.smoke(4), assets.smoke(6), assets.smoke(8))
+                .sizeOverLife(Interpolation.pow2Out, 1.5f)
+                .colorOverLife(Interpolation.linear, smoke, new Color(smoke.r, smoke.g, smoke.b, 0f)))
+            .build();
+    }
+
+    /** Electric field: lightning striking outward FROM the anchor — bolts are pinned in
+     *  place (no velocity) and point out in every direction, each one morphing through
+     *  the spark frames over its life; a separate layer of free-moving radical motes
+     *  supplies the motion so the bolts themselves never fly off. Works on the tile
+     *  (electro zone) and on the ball in flight. */
+    public static EffectDef electricArcs(Element element) {
+        Color tint = tint(element);
+        return EffectDef.effect()
+            // 1. Striking bolts — anchored around the tile, flickering through spark frames.
+            .emitter(e -> e
+                .continuous(10f)
+                .speed(0f).life(range(0.15f, 0.25f)).size(range(0.35f, 0.6f))
+                .jitter(0.35f, 0.15f, 0.25f)
+                .texturesOverLife(
+                    assets.spark(1), assets.spark(2), assets.spark(3), assets.spark(4),
+                    assets.spark(5), assets.spark(6), assets.spark(7))
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 2. Free radicals — small charged motes zipping off chaotically.
+            .emitter(e -> e
+                .continuous(12f)
+                .speed(range(0.3f, 0.8f)).life(range(0.3f, 0.6f)).size(range(0.08f, 0.16f)).spread(180f)
+                .jitter(0.2f, 0.1f, 0.15f)
+                .textures(assets.star(4), assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 3. Center glow — brief pulse so the field has a bright heart; short life, no smear.
+            .emitter(e -> e
+                .continuous(8f)
+                .speed(0f).life(of(0.15f)).size(range(0.45f, 0.6f))
+                .texture(assets.light(1))
+                .color(new Color(tint.r, tint.g, tint.b, 0.5f)))
+            .build();
+    }
+
+    /** Small glowing motes rising off an energized surface. */
+    public static EffectDef energyMotes(Element element) {
+        Color tint = tint(element);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(14f)
+                .speed(range(0.1f, 0.3f)).life(range(0.4f, 0.8f)).size(range(0.06f, 0.14f)).spread(180f)
+                .jitter(0.3f, 0.05f, 0.2f)
+                .drift(0f, 0.8f, 0f)
+                .textures(assets.star(4), assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .build();
+    }
+
     public static EffectDef beamEmbers(Color tint, int dir) {
         return EffectDef.effect()
             .emitter(e -> e
@@ -195,6 +293,35 @@ public final class Vfx {
                 .texture(assets.star(8))   // ember glow
                 .sizeOverLife(Interpolation.pow2In, 0f)
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .build();
+    }
+
+    /** Red flames licking off a beam + sooty smoke — fire's answer to beamEmbers */
+    public static EffectDef beamFlames(int dir) {
+        Color red   = new Color(1f, 0.35f, 0.15f, 1f);
+        Color deep  = new Color(0.7f, 0.1f, 0.05f, 1f);
+        Color smoke = new Color(0.35f, 0.3f, 0.3f, 0.35f);
+        return EffectDef.effect()
+            // 1. Flame tongues
+            .emitter(e -> e
+                .continuous(150f)
+                .speed(range(0.2f, 0.6f)).life(range(0.25f, 0.5f)).size(range(0.2f, 0.45f)).spread(60f)
+                .drift(-dir * 0.8f, 0.6f, 0f)
+                .textures(
+                    assets.flame(1), assets.flame(2), assets.flame(3),
+                    assets.flame(4), assets.flame(5), assets.flame(6))
+                .sizeOverLife(Interpolation.linear, 1.3f)
+                .colorOverLife(Interpolation.linear, red, deep))
+            // 2. Smoke wisps
+            .emitter(e -> e
+                .continuous(30f)
+                .speed(range(0.1f, 0.3f)).life(range(0.6f, 1.1f)).size(range(0.3f, 0.55f)).spread(50f)
+                .drift(-dir * 0.5f, 0.5f, 0f)
+                .alphaBlend()
+                .texturesOverLife(
+                    assets.smoke(2), assets.smoke(4), assets.smoke(6), assets.smoke(8))
+                .sizeOverLife(Interpolation.pow2Out, 1.8f)
+                .colorOverLife(Interpolation.linear, smoke, new Color(smoke.r, smoke.g, smoke.b, 0f)))
             .build();
     }
 
@@ -401,6 +528,73 @@ Color green = new Color(0.5f, 1f, 0.6f, 1f);
                 .textures(assets.star(2), assets.star(6))
                 .sizeOverLife(Interpolation.pow2In, 0f)
                 .colorOverLife(Interpolation.linear, Color.WHITE, green))
+            .build();
+    }
+
+    // ── staging-menu effects (screen-space engine; x/z are stage coords, y is rise) ──
+
+    /** Element-tinted spark puff when a card lands in a queue slot — spark()'s
+     *  little sibling, sized for a 0.66-unit card. Pair with an
+     *  {@code Anchor.rim} so the sparks release from the card's frame. */
+    public static EffectDef menuAssignBurst(Element element) {
+        Color tint = tint(element);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .burst(20, 0.05f)
+                .speed(range(0.8f, 1.8f)).life(range(0.3f, 0.6f)).size(range(0.15f, 0.3f)).spread(180f)
+                .textures(
+                    assets.spotlightA(1), assets.spotlightA(2), assets.spotlightA(3), assets.spotlightA(4),
+                    assets.spotlightA(5), assets.spotlightA(6), assets.spotlightA(7), assets.spotlightA(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .build();
+    }
+
+    /** Sparse cyan motes drifting up while the staging menu is open — atmosphere,
+     *  not a fountain; pair with a wide region anchor. */
+    public static EffectDef menuMotes() {
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(8f)
+                .speed(range(0.02f, 0.1f)).life(range(2f, 4f)).size(range(0.08f, 0.16f)).spread(180f)
+                .drift(0f, 0.3f, 0f)
+                .textures(assets.star(4), assets.star(5))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .color(new Color(0.5f, 0.85f, 0.95f, 0.8f)))
+            .build();
+    }
+
+    /** Chill confirm send-off — a few teal wisps rising off a locked-in slot,
+     *  corrupting toward soft purple as they fade. Deliberately no flash/ring. */
+    public static EffectDef menuConfirmWisp() {
+        Color teal   = new Color(0.3f, 0.85f, 0.9f, 0.85f);
+        Color purple = new Color(0.7f, 0.45f, 1f, 0f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .burst(8, 0.12f)
+                .speed(range(0.15f, 0.4f)).life(range(0.6f, 1.0f)).size(range(0.15f, 0.28f)).spread(50f)
+                .drift(0f, 0.35f, 0f)
+                .textures(assets.star(2), assets.star(6), assets.magic(4))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, teal, purple))
+            .build();
+    }
+
+    /** energyMotes' lazier cousin for the staging menu's detail portrait —
+     *  same element-tinted motes, drifting at a fraction of the pace. Wears the
+     *  element color for its whole life (just a touch of white at spawn). */
+    public static EffectDef menuElementWisps(Element element) {
+        Color tint = tint(element);
+        Color bright = tint.cpy().lerp(Color.WHITE, 0.25f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(16f)
+                .speed(range(0.03f, 0.12f)).life(range(0.8f, 1.4f)).size(range(0.09f, 0.2f)).spread(180f)
+                .jitter(0.3f, 0.05f, 0.2f)
+                .drift(0f, 0.25f, 0f)
+                .textures(assets.star(4), assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, bright, tint))
             .build();
     }
 

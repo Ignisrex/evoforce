@@ -38,6 +38,10 @@ public final class Skill {
      *  AURA (non-empty {@link #vfx}), which may be sprite-less ({@code null}). */
     private final Texture vfxTexture;
 
+    /** Optional ground-effect sprite for a lob's landing zone. When absent the
+     *  cloud falls back to {@link #vfxTexture} (the projectile ball). */
+    private final Texture zoneTexture;
+
     /** Optional animated VFX. When present, renderers use this instead of
      *  the static {@code vfxTexture}. */
     private final Animation<TextureRegion> vfxAnimation;
@@ -70,6 +74,7 @@ public final class Skill {
         this.effects = Collections.unmodifiableList(new ArrayList<>(b.effects));
         this.cooldown = b.cooldown;
         this.vfxTexture = b.vfxTexture;
+        this.zoneTexture = b.zoneTexture;
         this.vfxAnimation = b.vfxAnimation;
         this.vfxAnimationSheet = b.vfxAnimationSheet;
         this.shapeConfig = b.shapeConfig;
@@ -90,6 +95,7 @@ public final class Skill {
     public List<Effect> getEffects()     { return effects; }
     public float        getCooldown()    { return cooldown; }
     public Texture      getVfxTexture()  { return vfxTexture; }
+    public Texture      getZoneTexture() { return zoneTexture; }
     public Animation<TextureRegion> getVfxAnimation() { return vfxAnimation; }
     public Texture      getVfxAnimationSheet() { return vfxAnimationSheet; }
     public ShapeConfig  getShapeConfig() { return shapeConfig; }
@@ -110,6 +116,7 @@ public final class Skill {
         private float cooldown;
         private boolean cooldownSet;
         private Texture vfxTexture;
+        private Texture zoneTexture;
         private Animation<TextureRegion> vfxAnimation;
         private Texture vfxAnimationSheet;
         private ShapeConfig shapeConfig;
@@ -128,6 +135,7 @@ public final class Skill {
         public Builder element(Element v)                           { this.element = v; return this; }
         public Builder cooldown(float v)                            { this.cooldown = v; this.cooldownSet = true; return this; }
         public Builder vfxTexture(Texture v)                        { this.vfxTexture = v; return this; }
+        public Builder zoneTexture(Texture v)                       { this.zoneTexture = v; return this; }
         public Builder shapeConfig(ShapeConfig v)                   { this.shapeConfig = v; return this; }
         public Builder vfxTint(Color v)                             { this.vfxTint = v == null ? Color.WHITE : v; return this; }
         public Builder vfx(List<VfxFactory> v)                      { this.vfx.clear(); if (v != null) this.vfx.addAll(v); return this; }

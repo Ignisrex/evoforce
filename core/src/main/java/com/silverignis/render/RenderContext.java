@@ -17,7 +17,14 @@ public final class RenderContext {
         this.font = font;
     }
 
+    /** Identity projection for flat UI stages: (x, z) pass through as screen coords. */
+    public static RenderContext screenSpace(SpriteBatch batch) {
+        return new RenderContext(batch, null, null);
+    }
+
     public Vector2 project(float worldX, float worldZ) { return env.project(worldX, worldZ); }
-    public Vector2 project(float worldX, float worldZ, Vector2 out) { return env.project(worldX, worldZ, out); }
-    public float depthScale(float worldZ){ return env.depthScale(worldZ); }
+    public Vector2 project(float worldX, float worldZ, Vector2 out) {
+        return env == null ? out.set(worldX, worldZ) : env.project(worldX, worldZ, out);
+    }
+    public float depthScale(float worldZ){ return env == null ? 1f : env.depthScale(worldZ); }
 }

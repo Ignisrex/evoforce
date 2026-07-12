@@ -1,3 +1,3 @@
 package com.silverignis.particles;
 
-public enum Channel { AMBIENT, COMBAT }
+public enum Channel { AMBIENT, COMBAT, MENU }

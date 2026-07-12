@@ -3,10 +3,8 @@ package com.silverignis.screens;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Texture;
 import com.silverignis.Main;
-import com.silverignis.entities.Enemy;
 import com.silverignis.input.InputManager;
 import com.silverignis.skills.ChargeMeter;
-import com.silverignis.skills.Skill;
 import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
 import com.silverignis.screens.state.SkillSelectState;
@@ -40,9 +38,9 @@ public class GameScreen implements Screen {
 
         Texture pixel = game.generated.pixel();
         this.chargeHud      = new ChargeBarHud(pixel);
-        this.slotsHud       = new SlotsHud(pixel);
+        this.slotsHud       = new SlotsHud(game.generated);
         this.lifeBarHud     = new LifeBarHud(pixel);
-        this.basicAttackHud = new BasicAttackHud(pixel);
+        this.basicAttackHud = new BasicAttackHud(game.generated);
 
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
@@ -71,12 +69,17 @@ public class GameScreen implements Screen {
         currentState.update(delta);
         currentState.render(game.batch);
 
-        // HUD draws on top of whichever state is active.
+        // HUD draws on top of whichever state is active — except the bottom-left
+        // stack, which the staging overlay owns while it's open and untucked.
+        boolean overlayUp = currentState == skillSelectState && !skillSelectState.isTucked();
+
         game.batch.begin();
-        chargeHud.render(game.batch, game.viewport, charge);
-        slotsHud.render(game.batch, game.viewport, playState.getPlayer().getSlots());
-        basicAttackHud.render(game.batch, game.viewport, playState.getPlayer());
-        lifeBarHud.render(game.batch, game.viewport, playState.getPlayer());
+        if (!overlayUp) {
+            chargeHud.render(game.batch, game.viewport, charge);
+            slotsHud.render(game.batch, game.viewport, playState.getPlayer().getSlots());
+            basicAttackHud.render(game.batch, game.viewport, playState.getPlayer());
+            lifeBarHud.render(game.batch, game.viewport, playState.getPlayer());
+        }
         fpsHud.render(game.batch, game.viewport, game.font, delta);
         game.batch.end();
     }

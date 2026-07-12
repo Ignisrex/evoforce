@@ -46,6 +46,7 @@ public class SkillLibrary {
         for (Skill s : all) {
             if (s.getIcon() != null) s.getIcon().dispose();
             if (s.getVfxTexture() != null) s.getVfxTexture().dispose();
+            if (s.getZoneTexture() != null) s.getZoneTexture().dispose();
             if (s.getVfxAnimationSheet() != null) s.getVfxAnimationSheet().dispose();
         }
     }

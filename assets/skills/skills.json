@@ -74,6 +74,7 @@
     "element": "ICE",
     "cooldown": 3.5,
     "vfxTexture": "effects/zone.png",
+    "shapeConfig": { "duration": 5.0 },
     "effects": [
       { "type": "DAMAGE", "value": 5 },
       { "type": "APPLY_STATUS",  "statusType":"FREEZE", "duration": 3, "chance": 100 }
@@ -223,6 +224,63 @@
     "vfx": ["voidPull"],
     "effects": [
       { "type": "DAMAGE", "value": 6 }
+    ]
+  },
+  {
+    "id": "dark_blast",
+    "displayName": "Dark Blast",
+    "description": "Hurl a sphere of void energy down the row.",
+    "icon": "skills/dark_blast.png",
+    "shape": "PROJECTILE",
+    "element": "DARK",
+    "cooldown": 3.0,
+    "powerScale": 0.1,
+    "magicScale": 0.8,
+    "vfxTexture": "effects/dark_blast.png",
+    "vfx": ["darkTrail"],
+    "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
+    "effects": [
+      { "type": "DAMAGE", "value": 18 }
+    ]
+  },
+  {
+    "id": "flame_torrent",
+    "displayName": "Flame Torrent",
+    "description": "Unleash a roaring stream of fire across the row.",
+    "icon": "skills/flame_torrent.png",
+    "shape": "BEAM",
+    "element": "FIRE",
+    "cooldown": 5.0,
+    "magicScale": 0.6,
+    "vfxTexture": "effects/flame_torrent_beam.png",
+    "vfxAnimation": {
+      "spritesheet": "skills/animations/flame_torrent_spritesheet.png",
+      "frameWidth": 256,
+      "frameHeight": 128,
+      "frameDuration": 0.09,
+      "loop": true
+    },
+    "vfx": ["beamFlames"],
+    "effects": [
+      { "type": "DAMAGE", "value": 16 },
+      { "type": "APPLY_STATUS", "statusType": "BURN", "value": 3, "duration": 4, "chance": 15 }
+    ]
+  },
+  {
+    "id": "electro_ball",
+    "displayName": "Electro Ball",
+    "description": "Lob a crackling ball two tiles forward, leaving a stunning electric field.",
+    "icon": "skills/electro_ball.png",
+    "shape": "PROJECTILE",
+    "element": "LIGHTNING",
+    "cooldown": 6.0,
+    "vfxTexture": "effects/electro_ball.png",
+    "zoneTexture": "effects/electro_zone.png",
+    "vfx": ["electricArcs", "energyMotes"],
+    "shapeConfig": { "movementType": "LOB", "targetRange": 2, "arcHeight": 2.0, "zoneDuration": 3.0, "zoneTickInterval": 1.0 },
+    "effects": [
+      { "type": "DAMAGE", "value": 10 },
+      { "type": "APPLY_STATUS", "statusType": "STUN", "duration": 1.5, "chance": 35 }
     ]
   }
 ]

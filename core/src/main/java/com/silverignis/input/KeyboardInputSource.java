@@ -37,6 +37,8 @@ public class KeyboardInputSource implements InputSource {
 
         bindings.put(GameAction.SKILL_SELECT_CONFIRM, Keys.ENTER);
         bindings.put(GameAction.SKILL_SELECT_CANCEL,  Keys.ESCAPE);
+        bindings.put(GameAction.SKILL_SELECT_UNDO,    Keys.BACKSPACE);
+        bindings.put(GameAction.SKILL_SELECT_TUCK,    Keys.TAB);
     }
 
     @Override

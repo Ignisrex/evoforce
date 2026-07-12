@@ -65,13 +65,11 @@ public class CombatSystem {
             SkillInstance ai = active.get(i);
             if (ai.isFinished() || !(ai instanceof ProjectileInstance)) continue;
             ProjectileInstance a = (ProjectileInstance) ai;
-            if (!a.isStraight()) continue;
 
             for (int j = i + 1; j < active.size(); j++) {
                 SkillInstance bi = active.get(j);
                 if (bi.isFinished() || !(bi instanceof ProjectileInstance)) continue;
                 ProjectileInstance b = (ProjectileInstance) bi;
-                if (!b.isStraight()) continue;
                 if (a.getCaster().getTeam() == b.getCaster().getTeam()) continue;
                 if (a.getRow() != b.getRow()) continue;
 

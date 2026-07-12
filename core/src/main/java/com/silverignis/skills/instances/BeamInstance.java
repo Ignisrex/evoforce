@@ -148,17 +148,24 @@ public class BeamInstance extends SkillInstance {
                 // Full beam, full alpha — animation loops here
                 break;
             case FADE:
-                alpha = 1f - (phaseTime / FADE_TIME);
+                // The stream runs out: the tail sweeps downrange toward the far edge
+                // (the near end recedes) while the remainder thins out — no hard cut.
+                float fadeProgress = Math.min(phaseTime / FADE_TIME, 1f);
+                w     = fullW * (1f - fadeProgress);
+                alpha = 1f - fadeProgress * fadeProgress;
                 break;
             default:
                 break;
         }
 
-        // Anchor at the caster so the beam grows outward toward the far edge.
-        float drawX = dir > 0 ? leftX : rightX - w;
+        // Anchor at the caster so the beam grows outward toward the far edge —
+        // except in FADE, where the far end stays pinned and the tail recedes.
+        float drawX;
+        if (phase == Phase.FADE) drawX = dir > 0 ? rightX - w : leftX;
+        else                     drawX = dir > 0 ? leftX : rightX - w;
 
         if (animation != null) {
-            TextureRegion frame = animation.getKeyFrame(stateTime, false);
+            TextureRegion frame = animation.getKeyFrame(stateTime);
             batch.setColor(tint.r, tint.g, tint.b, tint.a * alpha);
             if (dir < 0) batch.draw(frame, drawX + w, y, -w, h); // mirror for westward beams
             else         batch.draw(frame, drawX, y, w, h);

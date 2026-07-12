@@ -19,7 +19,7 @@ import com.silverignis.systems.combat.Combatant;
 public class ZoneInstance extends SkillInstance {
 
     private static final float APPEAR_TIME       = 0.15f;
-    private static final float DEFAULT_ACTIVE    = 1.00f;
+    private static final float DEFAULT_ACTIVE    = 3.00f;
     private static final float FADE_TIME         = 0.25f;
     private static final float DEFAULT_TICK      = 0.33f;
 

@@ -16,8 +16,8 @@ public class ChargeBarHud {
     // Positioned to sit just above the SlotsHud column. Width matches the
     // span of the three X/Y/B slot panels so the two HUDs read as one stack.
     private static final float BAR_X      = 0.34f;   // world units (slot panel left edge)
-    private static final float BAR_Y      = 1.82f;   // world units (just above slot panel top)
-    private static final float BAR_WIDTH  = 2.62f;
+    private static final float BAR_Y      = 2.45f;   // world units (just above the raised Y slot card)
+    private static final float BAR_WIDTH  = 2.92f;
     private static final float BAR_HEIGHT = 0.18f;
 
     private static final Color BG    = new Color(0f, 0f, 0f, 0.6f);
