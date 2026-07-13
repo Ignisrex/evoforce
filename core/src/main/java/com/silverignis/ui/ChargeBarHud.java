@@ -1,61 +1,42 @@
 package com.silverignis.ui;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.silverignis.skills.ChargeMeter;
 
 /**
- * A small loading bar drawn just above the {@link SlotsHud} in the bottom-left,
- * gating access to the staging menu when full. Tinted via {@link SpriteBatch#setColor}
- * on a 1x1 white pixel so we don't need any art assets.
+ * The staging-menu charge meter, tucked directly under the {@link LifeBarHud}
+ * in the top-left (it borrows that bar's geometry so the pair reads as one
+ * cluster). Cyan while filling, gold once full — the same meter recipe as the
+ * staging overlay's operator panel. Lives on the GameScreen's HUD stage.
  */
-public class ChargeBarHud {
+public class ChargeBarHud extends Group {
 
-    // Positioned to sit just above the SlotsHud column. Width matches the
-    // span of the three X/Y/B slot panels so the two HUDs read as one stack.
-    private static final float BAR_X      = 0.34f;   // world units (slot panel left edge)
-    private static final float BAR_Y      = 2.45f;   // world units (just above the raised Y slot card)
-    private static final float BAR_WIDTH  = 2.92f;
     private static final float BAR_HEIGHT = 0.18f;
+    private static final float GAP_BELOW_LIFE = 0.1f;
 
-    private static final Color BG    = new Color(0f, 0f, 0f, 0.6f);
-    private static final Color FILL  = new Color(0.2f, 0.8f, 1f, 1f);
-    private static final Color FULL  = new Color(1f, 0.9f, 0.2f, 1f);
+    private final Bezel fill;
 
-    private final Texture pixel;
+    public ChargeBarHud(RoundedRectShader shader, Viewport viewport) {
+        setPosition(LifeBarHud.MARGIN_LEFT,
+                viewport.getWorldHeight() - LifeBarHud.MARGIN_TOP - LifeBarHud.BAR_HEIGHT
+                        - GAP_BELOW_LIFE - BAR_HEIGHT);
 
-    public ChargeBarHud(Texture pixel) {
-        this.pixel = pixel;
+        Bezel bg = new Bezel(shader).fill(UiTheme.SURF_LOW).radius(UiTheme.CORNER_RADIUS);
+        bg.setBounds(0f, 0f, LifeBarHud.BAR_WIDTH, BAR_HEIGHT);
+        addActor(bg);
+
+        fill = new Bezel(shader).radius(UiTheme.CORNER_RADIUS);
+        addActor(fill);
+
+        Bezel frame = new Bezel(shader).border(UiTheme.OUTLINE_80, UiTheme.BORDER_THIN).radius(UiTheme.CORNER_RADIUS);
+        frame.setBounds(0f, 0f, LifeBarHud.BAR_WIDTH, BAR_HEIGHT);
+        addActor(frame);
     }
 
-    public void render(SpriteBatch batch, Viewport viewport, ChargeMeter meter) {
-        float x = BAR_X;
-        float y = BAR_Y;
-        float w = BAR_WIDTH;
-        float h = BAR_HEIGHT;
-
-        boolean wasDrawing = batch.isDrawing();
-        if (!wasDrawing) {
-            batch.setProjectionMatrix(viewport.getCamera().combined);
-            batch.begin();
-        }
-
-        Color prev = batch.getColor().cpy();
-
-        // Background
-        batch.setColor(BG);
-        batch.draw(pixel, x, y, w, h);
-
-        // Fill
-        float ratio = meter.getFillRatio();
-        batch.setColor(meter.isFull() ? FULL : FILL);
-        batch.draw(pixel, x, y, w * ratio, h);
-
-        batch.setColor(prev);
-
-        if (!wasDrawing) batch.end();
+    /** Update the fill from the meter; call once per frame before the stage draws. */
+    public void refresh(ChargeMeter meter) {
+        fill.fill(meter.isFull() ? UiTheme.GOLD : UiTheme.CYAN_HI);
+        fill.setBounds(0f, 0f, LifeBarHud.BAR_WIDTH * meter.getFillRatio(), BAR_HEIGHT);
     }
-
 }

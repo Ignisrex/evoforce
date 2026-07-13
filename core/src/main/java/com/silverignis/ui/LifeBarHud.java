@@ -1,56 +1,50 @@
 package com.silverignis.ui;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.silverignis.entities.Player;
 
 /**
- * Horizontal player HP bar anchored to the top-left of the viewport. Width is
- * fixed; fill ratio is {@code player.getHp() / player.getMaxHp()}. Tint shifts
- * green → yellow → red as HP drops. Uses a 1x1 white pixel + {@link SpriteBatch#setColor}
- * for chrome so no art asset is needed.
+ * Player HP bar anchored top-left, on the GameScreen's HUD stage. Fill ratio
+ * is {@code hp / maxHp}; tint shifts green → yellow → red as HP drops (these
+ * are functional colors, deliberately not {@link UiTheme}). The pill frame
+ * matches the staging overlay's meter recipe. {@link ChargeBarHud} hangs its
+ * geometry off this bar's constants so the cluster moves together.
  */
-public class LifeBarHud {
+public class LifeBarHud extends Group {
 
-    private static final float MARGIN_LEFT = 0.4f;     // world units from left edge
-    private static final float MARGIN_TOP  = 0.3f;     // world units from top edge
-    private static final float BAR_WIDTH   = 4.0f;
-    private static final float BAR_HEIGHT  = 0.4f;
-    private static final float BORDER      = 0.04f;    // outer frame thickness
+    static final float MARGIN_LEFT = 0.4f;   // world units from left edge
+    static final float MARGIN_TOP  = 0.3f;   // world units from top edge
+    static final float BAR_WIDTH   = 4.0f;
+    static final float BAR_HEIGHT  = 0.4f;
 
-    private static final Color FRAME = new Color(0f, 0f, 0f, 0.85f);
-    private static final Color BG    = new Color(0.15f, 0.05f, 0.05f, 0.85f);
-    private static final Color HIGH  = new Color(0.25f, 0.85f, 0.30f, 1f);
-    private static final Color MID   = new Color(1.00f, 0.85f, 0.20f, 1f);
-    private static final Color LOW   = new Color(0.95f, 0.25f, 0.20f, 1f);
+    private static final Color HIGH = new Color(0.25f, 0.85f, 0.30f, 1f);
+    private static final Color MID  = new Color(1.00f, 0.85f, 0.20f, 1f);
+    private static final Color LOW  = new Color(0.95f, 0.25f, 0.20f, 1f);
 
-    private final Texture pixel;
+    private final Bezel fill;
 
-    public LifeBarHud(Texture pixel) {
-        this.pixel = pixel;
+    public LifeBarHud(RoundedRectShader shader, Viewport viewport) {
+        setPosition(MARGIN_LEFT, viewport.getWorldHeight() - MARGIN_TOP - BAR_HEIGHT);
+
+        Bezel bg = new Bezel(shader).fill(UiTheme.SURF_LOW).radius(UiTheme.CORNER_RADIUS);
+        bg.setBounds(0f, 0f, BAR_WIDTH, BAR_HEIGHT);
+        addActor(bg);
+
+        fill = new Bezel(shader).radius(UiTheme.CORNER_RADIUS);
+        addActor(fill);
+
+        Bezel frame = new Bezel(shader).border(UiTheme.OUTLINE_80, UiTheme.BORDER_THIN).radius(UiTheme.CORNER_RADIUS);
+        frame.setBounds(0f, 0f, BAR_WIDTH, BAR_HEIGHT);
+        addActor(frame);
     }
 
-    public void render(SpriteBatch batch, Viewport viewport, Player player) {
-        float x = MARGIN_LEFT;
-        float y = viewport.getWorldHeight() - MARGIN_TOP - BAR_HEIGHT;
-
+    /** Update the fill from the player's HP; call once per frame before the stage draws. */
+    public void refresh(Player player) {
         int maxHp = Math.max(1, player.getMaxHp());
-        float ratio = Math.max(0f, Math.min(1f, player.getHp() / (float) maxHp));
-
-        Color prev = batch.getColor().cpy();
-
-        batch.setColor(FRAME);
-        batch.draw(pixel, x - BORDER, y - BORDER, BAR_WIDTH + 2 * BORDER, BAR_HEIGHT + 2 * BORDER);
-
-        batch.setColor(BG);
-        batch.draw(pixel, x, y, BAR_WIDTH, BAR_HEIGHT);
-
-        batch.setColor(ratio > 0.5f ? HIGH : ratio > 0.25f ? MID : LOW);
-        batch.draw(pixel, x, y, BAR_WIDTH * ratio, BAR_HEIGHT);
-
-        batch.setColor(prev);
+        float ratio = Math.clamp(player.getHp() / (float) maxHp, 0f, 1f);
+        fill.fill(ratio > 0.5f ? HIGH : ratio > 0.25f ? MID : LOW);
+        fill.setBounds(0f, 0f, BAR_WIDTH * ratio, BAR_HEIGHT);
     }
-
 }

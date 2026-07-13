@@ -19,13 +19,13 @@ import com.badlogic.gdx.utils.Disposable;
  * ponytail: per-draw uniforms; pack params into vertex attributes if this
  * ever draws hundreds of rects per frame.
  */
-final class RoundedRectShader implements Disposable {
+public final class RoundedRectShader implements Disposable {
     private static final Color TRANSPARENT = new Color(0f, 0f, 0f, 0f);
 
     private final ShaderProgram program;
     private final Texture pixel;
 
-    RoundedRectShader(Texture pixel) {
+    public RoundedRectShader(Texture pixel) {
         this.pixel = pixel;
         program = new ShaderProgram(
                 Gdx.files.internal("ui/shaders/rounded_rect.vert"),

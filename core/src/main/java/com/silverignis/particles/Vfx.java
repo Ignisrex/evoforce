@@ -533,7 +533,7 @@ Color green = new Color(0.5f, 1f, 0.6f, 1f);
 
     // ── staging-menu effects (screen-space engine; x/z are stage coords, y is rise) ──
 
-    /** Element-tinted spark puff when a card lands in a queue slot — spark()'s
+    /** Element-tinted spark puff when a card lands in a slot — spark()'s
      *  little sibling, sized for a 0.66-unit card. Pair with an
      *  {@code Anchor.rim} so the sparks release from the card's frame. */
     public static EffectDef menuAssignBurst(Element element) {

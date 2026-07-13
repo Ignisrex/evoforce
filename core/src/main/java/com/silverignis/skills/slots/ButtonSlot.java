@@ -8,54 +8,49 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * A single button's queue. FIFO: skills assigned first fire first.
- * Capacity is fixed at {@link #CAPACITY}; once full,
- * {@link #add(Skill)} returns {@code false}.
+ * A single button's stack. LIFO: the last skill staged sits on top and
+ * fires first; earlier picks sink underneath. Capacity is fixed at
+ * {@link #CAPACITY}; once full, {@link #add(Skill)} returns {@code false}.
  */
 public class ButtonSlot {
 
     public static final int CAPACITY = 2;
 
     private final SlotKey key;
-    private final Deque<Skill> queue = new ArrayDeque<>(CAPACITY);
+    private final Deque<Skill> stack = new ArrayDeque<>(CAPACITY);
 
     public ButtonSlot(SlotKey key) {
         this.key = key;
     }
 
     public SlotKey getKey()     { return key; }
-    public boolean isEmpty()    { return queue.isEmpty(); }
-    public boolean isFull()     { return queue.size() >= CAPACITY; }
-    public int     size()       { return queue.size(); }
+    public boolean isEmpty()    { return stack.isEmpty(); }
+    public boolean isFull()     { return stack.size() >= CAPACITY; }
+    public int     size()       { return stack.size(); }
 
-    /** Front of the queue without consuming. */
+    /** Top of the stack without consuming. */
     public Skill peek() {
-        return queue.peekFirst();
+        return stack.peekFirst();
     }
 
-    /** Pop the front. Returns {@code null} if empty. */
+    /** Pop the top. Returns {@code null} if empty. */
     public Skill pop() {
-        return queue.pollFirst();
+        return stack.pollFirst();
     }
 
-    /** Add to the back. Returns {@code false} if the slot is already full. */
+    /** Push on top. Returns {@code false} if the slot is already full. */
     public boolean add(Skill skill) {
         if (isFull()) return false;
-        queue.addLast(skill);
+        stack.addFirst(skill);
         return true;
     }
 
-    /** Pop the most recently added. Used by the staging menu's "undo". */
-    public Skill removeLast() {
-        return queue.pollLast();
-    }
-
     public void clear() {
-        queue.clear();
+        stack.clear();
     }
 
     /** Read-only snapshot for HUD rendering. */
     public List<Skill> view() {
-        return Collections.unmodifiableList(new java.util.ArrayList<>(queue));
+        return Collections.unmodifiableList(new java.util.ArrayList<>(stack));
     }
 }

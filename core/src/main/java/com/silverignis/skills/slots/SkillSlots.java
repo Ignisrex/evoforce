@@ -23,7 +23,7 @@ public class SkillSlots {
         return slots.get(key);
     }
 
-    /** {@code true} if the given skill is currently queued in any slot. */
+    /** {@code true} if the given skill is currently staged in any slot. */
     public boolean contains(Skill skill) {
         for (ButtonSlot slot : slots.values()) {
             for (Skill s : slot.view()) {

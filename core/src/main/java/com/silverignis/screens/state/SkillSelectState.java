@@ -91,7 +91,7 @@ public class SkillSelectState implements GameScreenState {
     private void tryUndo() {
         if (!inSlots) return;
         SlotKey key = SlotKey.values()[slotCursor];
-        Skill s = screen.playState.getPlayer().getSlots().get(key).removeLast();
+        Skill s = screen.playState.getPlayer().getSlots().get(key).pop(); // top = most recently staged
         if (s == null) return;
         hand.add(s);
     }
@@ -121,7 +121,7 @@ public class SkillSelectState implements GameScreenState {
     private Skill highlighted() {
         if (inSlots) {
             List<Skill> q = screen.playState.getPlayer().getSlots().get(SlotKey.values()[slotCursor]).view();
-            return q.isEmpty() ? null : q.get(q.size() - 1);
+            return q.isEmpty() ? null : q.get(0); // top of the stack
         }
         return (cursor >= 0 && cursor < hand.size()) ? hand.get(cursor) : null;
     }
@@ -139,8 +139,11 @@ public class SkillSelectState implements GameScreenState {
         for (SlotKey key: SlotKey.values()) {
             ButtonSlot slot = slots.get(key);
             slot.clear();
-            for (Skill s : slotsSnapshot.get(key)){
-                slot.add(s);
+            // Snapshot is in top→bottom order; add() pushes on top, so
+            // re-stack bottom-up to reproduce the original order.
+            List<Skill> saved = slotsSnapshot.get(key);
+            for (int i = saved.size() - 1; i >= 0; i--) {
+                slot.add(saved.get(i));
             }
         }
     }

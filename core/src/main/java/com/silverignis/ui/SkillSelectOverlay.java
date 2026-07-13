@@ -42,43 +42,42 @@ import java.util.List;
  * glass panels with cyan borders + corner brackets, gold for the selected
  * item, JetBrains Mono / Space Grotesk type. Built on a Scene2D {@link Stage};
  * panel interiors are laid out with {@link Table}, while the gliding cursor,
- * card cascade/pop groups, and queue stacking stay hand-positioned. The
+ * card cascade/pop groups, and slot stacking stay hand-positioned. The
  * center stays clear so the frozen battlefield reads behind. Presentational
  * only — cursor/zone logic lives in {@code SkillSelectState}, pushed in each
  * frame via {@link #refresh}.
  */
 public class SkillSelectOverlay {
 
-    // ── palette ─────────────────────────────────────────────────────────────
-    private static final Color CYAN      = rgb(0x00, 0xdb, 0xe7);
-    private static final Color CYAN_HI   = rgb(0x00, 0xf2, 0xff);
-    private static final Color GOLD      = rgb(0xff, 0xd8, 0x1d);
-    private static final Color TEXT      = rgb(0xdf, 0xe2, 0xeb);
-    private static final Color TEXT_DIM  = rgb(0xb9, 0xca, 0xcb);
-    private static final Color OUTLINE   = rgb(0x84, 0x94, 0x95);
-    private static final Color OUTLINE_V = rgb(0x3a, 0x49, 0x4b);
-    private static final Color PANEL     = rgba(0x18, 0x1c, 0x22, 0.86f);
-    private static final Color CARD      = rgba(0x26, 0x2a, 0x31, 0.90f);
-    private static final Color CARD_HI   = rgb(0x31, 0x35, 0x3c);
-    private static final Color SURF_LOW  = rgba(0x0a, 0x0e, 0x14, 0.85f);
-    private static final Color STATBOX   = rgba(0x1c, 0x20, 0x26, 0.9f);
-    private static final Color DIM       = rgba(0x00, 0x00, 0x00, 0.45f);
+    // ── palette + shared metrics (single-sourced in UiTheme) ────────────────
+    private static final Color CYAN      = UiTheme.CYAN;
+    private static final Color CYAN_HI   = UiTheme.CYAN_HI;
+    private static final Color GOLD      = UiTheme.GOLD;
+    private static final Color TEXT      = UiTheme.TEXT;
+    private static final Color TEXT_DIM  = UiTheme.TEXT_DIM;
+    private static final Color OUTLINE   = UiTheme.OUTLINE;
+    private static final Color OUTLINE_V = UiTheme.OUTLINE_V;
+    private static final Color PANEL     = UiTheme.PANEL;
+    private static final Color CARD      = UiTheme.CARD;
+    private static final Color CARD_HI   = UiTheme.CARD_HI;
+    private static final Color SURF_LOW  = UiTheme.SURF_LOW;
+    private static final Color STATBOX   = UiTheme.STATBOX;
+    private static final Color DIM       = UiTheme.DIM;
 
-    private static final Color CYAN_45      = withA(CYAN, 0.45f);
-    private static final Color OUTLINE_80   = withA(OUTLINE, 0.8f);
-    private static final Color OUTLINE_60   = withA(OUTLINE, 0.6f);
-    private static final Color OUTLINE_V_60 = withA(OUTLINE_V, 0.6f);
-    private static final Color CARD_70      = withA(CARD, 0.7f);
+    private static final Color CYAN_45      = UiTheme.CYAN_45;
+    private static final Color OUTLINE_80   = UiTheme.OUTLINE_80;
+    private static final Color OUTLINE_60   = UiTheme.OUTLINE_60;
+    private static final Color OUTLINE_V_60 = UiTheme.OUTLINE_V_60;
+    private static final Color CARD_70      = UiTheme.CARD_70;
 
-    // ── metrics (shared — tweak these to move everything together) ──────────
-    private static final float BORDER       = 0.02f;
-    private static final float BORDER_THIN  = BORDER * 0.4f;  // dividers, stat boxes, charge bar
-    private static final float BORDER_HEAVY = BORDER * 0.8f;  // corner brackets, cursor
-    private static final float CORNER_RADIUS = 0.07f; // rounded corners on panels/cards/boxes
-    private static final float GLOW_WIDTH        = 0.10f; // neon spill past panel/card borders
+    private static final float BORDER        = UiTheme.BORDER;
+    private static final float BORDER_THIN   = UiTheme.BORDER_THIN;
+    private static final float BORDER_HEAVY  = UiTheme.BORDER_HEAVY;
+    private static final float CORNER_RADIUS = UiTheme.CORNER_RADIUS;
+    private static final float GLOW_WIDTH    = UiTheme.GLOW_WIDTH;
     private static final float CURSOR_GLOW_WIDTH = 0.18f;
     private static final float PANEL_PAD    = 0.28f;
-    private static final float GAP          = 0.14f;          // queue slots + tray chips
+    private static final float GAP          = 0.14f;          // slot stacks + tray chips
     private static final float PULSE_SPEED  = 4f;             // tab + cursor glow
 
     // ── layout anchors (16x9 world units) ───────────────────────────────────
@@ -87,8 +86,8 @@ public class SkillSelectOverlay {
     private static final float DETAIL_X = 0.30f, DETAIL_Y = 1.95f, DETAIL_W = 3.55f, DETAIL_H = 5.05f;
     private static final float DETAIL_IMAGE_H = 1.7f;
     private static final float STAT_BOX_H = 0.72f, STAT_BOX_GAP = 0.15f;
-    private static final float QUEUE_CENTER_X = 14.55f, QUEUE_Y = 5.0f, QUEUE_SLOT = 0.66f;
-    private static final float CARD_ICON_INSET = 0.16f; // fraction of QUEUE_SLOT
+    private static final float STACKS_CENTER_X = 14.55f, STACKS_Y = 5.0f, SLOT_SIZE = 0.66f;
+    private static final float CARD_ICON_INSET = 0.16f; // fraction of SLOT_SIZE
     private static final float TRAY_Y = 0.28f, TRAY_H = 1.62f;
     private static final float TRAY_CENTER_X = 8.0f, TRAY_CHIP_W = 1.05f, TRAY_MAX_W = 9.6f;
     private static final float TAB_X = 15.55f, TAB_Y = 3.9f, TAB_W = 0.45f, TAB_H = 1.2f;
@@ -248,7 +247,7 @@ public class SkillSelectOverlay {
         rect(hud, 0f, 0f, viewport.getWorldWidth(), viewport.getWorldHeight()).fill(DIM);
         buildOperator(slots, charge);
         buildDetail(highlighted);
-        buildQueue(slots, inSlots, slotCursor);
+        buildStacks(slots, inSlots, slotCursor);
         buildTray(hand, handCursor, inSlots);
         updateCursor();
     }
@@ -332,62 +331,62 @@ public class SkillSelectOverlay {
         return box;
     }
 
-    private void buildQueue(SkillSlots slots, boolean inSlots, int slotCursor) {
+    private void buildStacks(SkillSlots slots, boolean inSlots, int slotCursor) {
         SlotKey[] keys = SlotKey.values();
         int n = keys.length;
-        float rowWidth = n * QUEUE_SLOT + (n - 1) * GAP;
-        float firstX = QUEUE_CENTER_X - rowWidth / 2f;
+        float rowWidth = n * SLOT_SIZE + (n - 1) * GAP;
+        float firstX = STACKS_CENTER_X - rowWidth / 2f;
 
         int used = 0;
         for (SlotKey k : keys) if (!slots.get(k).isEmpty()) used++;
-        placeLabel(hud, labelStyle, "QUEUE [" + used + "/" + n + "]", TEXT_DIM,
-                   QUEUE_CENTER_X, QUEUE_Y + QUEUE_SLOT + 0.35f, Align.center);
-        rect(hud, firstX, QUEUE_Y + QUEUE_SLOT + 0.14f, rowWidth, BORDER_THIN).fill(OUTLINE_V);
+        placeLabel(hud, labelStyle, "STACKS [" + used + "/" + n + "]", TEXT_DIM,
+                   STACKS_CENTER_X, STACKS_Y + SLOT_SIZE + 0.35f, Align.center);
+        rect(hud, firstX, STACKS_Y + SLOT_SIZE + 0.14f, rowWidth, BORDER_THIN).fill(OUTLINE_V);
 
         boolean firstSync = slotSizesUnsynced;
         slotSizesUnsynced = false;
         for (int i = 0; i < n; i++) {
-            float x = firstX + i * (QUEUE_SLOT + GAP);
+            float x = firstX + i * (SLOT_SIZE + GAP);
             ButtonSlot slot = slots.get(keys[i]);
-            List<Skill> queued = slot.view();
-            boolean filled = !queued.isEmpty();
+            List<Skill> stacked = slot.view();
+            boolean filled = !stacked.isEmpty();
 
             // Pop the slot when it gains a card since last frame (not on open).
-            if (!firstSync && queued.size() > lastSlotSize[i]) {
+            if (!firstSync && stacked.size() > lastSlotSize[i]) {
                 popAge[i] = 0f;
                 Vfx.menuAssignBurst(slot.peek().getElement()).play(particles,
-                        Anchor.rim(x + QUEUE_SLOT / 2f, 0f, QUEUE_Y + QUEUE_SLOT / 2f,
-                                   QUEUE_SLOT / 2f, QUEUE_SLOT / 2f),
+                        Anchor.rim(x + SLOT_SIZE / 2f, 0f, STACKS_Y + SLOT_SIZE / 2f,
+                                   SLOT_SIZE / 2f, SLOT_SIZE / 2f),
                         Drive.FULL, Channel.MENU);
             }
-            lastSlotSize[i] = queued.size();
+            lastSlotSize[i] = stacked.size();
 
-            Group card = cardGroup(x, QUEUE_Y, QUEUE_SLOT / 2f, QUEUE_SLOT / 2f, i, popAge[i]);
+            Group card = cardGroup(x, STACKS_Y, SLOT_SIZE / 2f, SLOT_SIZE / 2f, i, popAge[i]);
 
-            // Extra queued cards stack below the front (local coords), drawn
+            // Extra stacked cards stack below the front (local coords), drawn
             // deepest-first so the front card sits on top.
-            float iconInset = QUEUE_SLOT * CARD_ICON_INSET;
-            for (int depth = queued.size() - 1; depth >= 1; depth--) {
+            float iconInset = SLOT_SIZE * CARD_ICON_INSET;
+            for (int depth = stacked.size() - 1; depth >= 1; depth--) {
                 float stackY = -depth * 0.56f;
-                rect(card, 0f, stackY, QUEUE_SLOT, QUEUE_SLOT).fill(CARD_70).border(OUTLINE_V_60, BORDER).radius(CORNER_RADIUS);
-                Skill back = queued.get(depth);
+                rect(card, 0f, stackY, SLOT_SIZE, SLOT_SIZE).fill(CARD_70).border(OUTLINE_V_60, BORDER).radius(CORNER_RADIUS);
+                Skill back = stacked.get(depth);
                 if (back.getIcon() != null) {
                     icon(card, back.getIcon(), iconInset, stackY + iconInset,
-                         QUEUE_SLOT - 2 * iconInset, QUEUE_SLOT - 2 * iconInset, 0.75f);
+                         SLOT_SIZE - 2 * iconInset, SLOT_SIZE - 2 * iconInset, 0.75f);
                 }
             }
 
-            Bezel face = rect(card, 0f, 0f, QUEUE_SLOT, QUEUE_SLOT).fill(filled ? CARD : SURF_LOW)
+            Bezel face = rect(card, 0f, 0f, SLOT_SIZE, SLOT_SIZE).fill(filled ? CARD : SURF_LOW)
                 .border(filled ? GOLD : OUTLINE_V_60, BORDER).radius(CORNER_RADIUS);
             if (filled) face.glow(withA(GOLD, 0.4f), GLOW_WIDTH);
             if (filled && slot.peek().getIcon() != null) {
                 icon(card, slot.peek().getIcon(), iconInset, iconInset,
-                     QUEUE_SLOT - 2 * iconInset, QUEUE_SLOT - 2 * iconInset, 1f);
+                     SLOT_SIZE - 2 * iconInset, SLOT_SIZE - 2 * iconInset, 1f);
             }
             placeLabel(card, tinyStyle, keys[i].name(), filled ? GOLD : OUTLINE,
-                       QUEUE_SLOT - 0.06f, 0.16f, Align.right);
+                       SLOT_SIZE - 0.06f, 0.16f, Align.right);
 
-            if (inSlots && i == Math.clamp(slotCursor, 0, n - 1)) target(x, QUEUE_Y, QUEUE_SLOT, QUEUE_SLOT);
+            if (inSlots && i == Math.clamp(slotCursor, 0, n - 1)) target(x, STACKS_Y, SLOT_SIZE, SLOT_SIZE);
         }
     }
 
@@ -482,15 +481,15 @@ public class SkillSelectOverlay {
     }
 
     // ── menu particles ──────────────────────────────────────────────────────
-    /** Chill teal→purple send-off over each filled queue slot; play before the exit fade. */
+    /** Chill teal→purple send-off over each filled slot; play before the exit fade. */
     public void confirmFlourish(SkillSlots slots) {
         SlotKey[] keys = SlotKey.values();
         int n = keys.length;
-        float firstX = QUEUE_CENTER_X - (n * QUEUE_SLOT + (n - 1) * GAP) / 2f;
+        float firstX = STACKS_CENTER_X - (n * SLOT_SIZE + (n - 1) * GAP) / 2f;
         for (int i = 0; i < n; i++) {
             if (slots.get(keys[i]).isEmpty()) continue;
             Vfx.menuConfirmWisp().play(particles,
-                    Anchor.at(firstX + i * (QUEUE_SLOT + GAP) + QUEUE_SLOT / 2f, 0f, QUEUE_Y + QUEUE_SLOT / 2f),
+                    Anchor.at(firstX + i * (SLOT_SIZE + GAP) + SLOT_SIZE / 2f, 0f, STACKS_Y + SLOT_SIZE / 2f),
                     Drive.FULL, Channel.MENU);
         }
     }
