@@ -66,6 +66,7 @@ public class PlayState implements GameScreenState {
     private final SceneRenderable playerShadow;
     private final SceneRenderable[] enemyShadows;
     private final SceneRenderable[] enemyHpLabels;
+    private final BattlefieldDecor battlefieldDecor;
 
     private final SpawnSystem spawnSystem;
 
@@ -82,7 +83,7 @@ public class PlayState implements GameScreenState {
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
-        BattlefieldDecor.apply(environment, battlefield);
+        this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
 
         this.spawnSystem = new SpawnSystem(
             screen.game.session.spawnTable,
@@ -146,6 +147,8 @@ public class PlayState implements GameScreenState {
         enemyAi();
         combatSystem.tickStatuses(delta);
         combatSystem.update(delta);
+        combatSystem.collectCoveredTiles(battlefieldDecor::glow);
+        battlefieldDecor.update(delta);
 
         particles.update(delta);
         if (checkBattleOver()) return;

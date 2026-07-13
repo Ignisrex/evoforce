@@ -160,12 +160,13 @@ public class GameEnvironment implements Disposable {
         return sceneCamera.unprojectHeight(viewportY, worldX, worldZ);
     }
 
-    public void addDecor(Material mat, float w, float h, float d, float x, float y, float z) {
+    public ModelInstance addDecor(Material mat, float w, float h, float d, float x, float y, float z) {
         Model m = modelBuilder.createBox(w, h, d, mat, Usage.Position | Usage.Normal);
         decorModels.add(m);
         ModelInstance inst = new ModelInstance(m);
         inst.transform.setToTranslation(x, y, z);
         decorInstances.add(inst);
+        return inst;
     }
 
     public void clearDecor() {
