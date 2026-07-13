@@ -141,6 +141,13 @@ public class LobInstance extends SkillInstance {
     }
 
     @Override
+    public void coveredTiles(TileSink sink) {
+        if (landed || flightElapsed <= 0f) return;
+        int col = battleContext().colAtX(posX + sprite.getWidth() * 0.5f, row);
+        if(col >= 0) sink.tile(col, row);
+    }
+
+    @Override
     public void render(SpriteBatch batch, BattleContext ctx) {
         sprite.setPosition(posX, posY);
         sprite.draw(batch);

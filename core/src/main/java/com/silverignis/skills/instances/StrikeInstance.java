@@ -115,4 +115,9 @@ public class StrikeInstance extends SkillInstance {
         if (target.getTeam() == combatant.getTeam()) return;
         applyEffectsTo(target);
     }
+
+    public void coveredTiles(TileSink sink) {
+        if (phase != Phase.DASH_FORWARD && phase != Phase.HIT) return;
+        for (int i = 0; i < hitTiles; i++) sink.tile(firstTargetCol + dir * i, row);
+    }
 }

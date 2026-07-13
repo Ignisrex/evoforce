@@ -178,4 +178,10 @@ public class BeamInstance extends SkillInstance {
             sprite.setAlpha(1f);
         }
     }
+
+    @Override
+    public void coveredTiles(TileSink sink) {
+        if(phase != Phase.FIRE) return;
+        for (int c = originCol + dir; c >= 0 && c < Battlefield.COLS; c += dir) sink.tile(c, row);
+    }
 }

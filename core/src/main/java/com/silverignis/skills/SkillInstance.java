@@ -144,6 +144,10 @@ public abstract class SkillInstance implements SceneRenderable {
         }
     }
 
+    public interface TileSink { void tile(int col, int row); }
+
+    public void coveredTiles(TileSink sink){}
+
     public BattleContext battleContext() {
         return battleContext;
     }

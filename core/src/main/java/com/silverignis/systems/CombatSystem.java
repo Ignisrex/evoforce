@@ -134,6 +134,12 @@ public class CombatSystem {
         }
     }
 
+    public void collectCoveredTiles(SkillInstance.TileSink sink) {
+        for (SkillInstance s : active) {
+            if (!s.isFinished()) s.coveredTiles(sink);
+        }
+    }
+
     public boolean hasActive(){
         return !active.isEmpty();
     }

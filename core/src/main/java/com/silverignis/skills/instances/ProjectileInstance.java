@@ -100,6 +100,12 @@ public class ProjectileInstance extends SkillInstance {
     }
 
     @Override
+    public void coveredTiles(TileSink sink) {
+        int col = battleContext().colAtX(getCenterX(), row);
+        if (col >= 0) sink.tile(col, row);
+    }
+
+    @Override
     public void render(SpriteBatch batch, BattleContext ctx) {
         sprite.setPosition(posX, posY);
         sprite.draw(batch);

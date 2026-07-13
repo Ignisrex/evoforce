@@ -211,6 +211,11 @@ public class ZoneInstance extends SkillInstance {
         }
     }
 
+    @Override
+    public void coveredTiles(TileSink sink) {
+        if (phase == Phase.APPEAR) sink.tile(targetCol, targetRow);
+    }
+
     public RenderLayer layer() {
         return isRenderUnder() ? RenderLayer.GROUND : RenderLayer.BILLBOARD;
     }
