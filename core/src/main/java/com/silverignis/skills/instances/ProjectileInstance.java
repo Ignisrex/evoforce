@@ -41,8 +41,9 @@ public class ProjectileInstance extends SkillInstance {
         this.sprite = new Sprite(def.getVfxTexture());
         if (dir < 0) this.sprite.setFlip(true, false);
 
-        this.posX = combatant.getVisualX();
-        this.posY = combatant.getVisualY();
+        Vector2 origin = ctx.projectedTileWorld(originCol, row);
+        this.posX = origin.x;
+        this.posY = origin.y;
         combatant.getAnimController().enterAttack();
     }
 
@@ -55,7 +56,7 @@ public class ProjectileInstance extends SkillInstance {
             sprite.setSize(w, h);
 
             //adjusted to deal with enemy fire projectile
-            posX = combatant.getVisualX() - w * 0.5f + w * dir;
+            posX = ctx.projectedTileWorld(originCol, row).x - w * 0.5f + w * dir;
             sized = true;
             // A projectile's vfx list is its travel trail: the anchor follows the sprite
             // in flight and base onFinish() stops emission at impact/edge.
@@ -78,17 +79,13 @@ public class ProjectileInstance extends SkillInstance {
     }
 
     private void checkHit(BattleContext ctx) {
-        float halfW      = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
-        float projCenter = posX + sprite.getWidth() * 0.5f;
+        int col = ctx.colAtX(getCenterX(), row);
+        if (col<0) return;
 
-        for (Combatant target : ctx.opposingOnRow(combatant, row)){
-            float targetX =ctx.projectedTileWorld(target.getCol(), row).x;
-            if (projCenter >= targetX - halfW && projCenter<=targetX + halfW){
-                applyEffectsTo(target);
-                finish();
-                return;
-            }
-        }
+        Combatant target = ctx.combatantAt(col, row);
+        if (target==null || target.getTeam() == combatant.getTeam()) return;
+        applyEffectsTo(target);
+        finish();
     }
 
     /** The sprite's current center converted to grid-world space — the anchor for the travel

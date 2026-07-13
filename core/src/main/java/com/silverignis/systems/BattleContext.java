@@ -118,4 +118,14 @@ public class BattleContext {
 
         return out;
     }
+
+    //Column whose projected band contains screen x on this row, or -1 if off-grid;
+    public int colAtX(float x, int row) {
+        float halfW = battlefield.getPanelWidth() * tileDepthScale(row) * 0.5f;
+        for(int c = 0; c < Battlefield.COLS; c++) {
+            float cx = projectedTileWorld(c, row).x;
+            if( x>= cx - halfW && x <= cx + halfW) return c;
+        }
+        return -1;
+    }
 }
