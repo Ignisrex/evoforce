@@ -86,43 +86,32 @@ public class BattleContext {
         return environment.depthScale(battlefield.floorZ(row));
     }
 
-    /** First alive enemy standing exactly on (col,row), or null. */
-    public Enemy enemyAt(int col, int row) {
-        for (Enemy e : enemies) {
-            if (!e.isAlive()) continue;
-            if (e.getCol() == col && e.getRow() == row) return e;
+    public boolean tilesOccupied(int col, int row) {
+        if (player.isAlive() && player.getCol() == col && player.getRow() == row) return true;
+        for (Enemy e: enemies){
+            if (e.isAlive() && e.getCol() == col && e.getRow() == row) return  true;
         }
-        return null;
-    }
-
-    /** Alive enemies on a row. Fresh list; callers may iterate freely. */
-    public List<Enemy> enemiesOnRow(int row) {
-        List<Enemy> out = new ArrayList<>(enemies.size());
-        for (Enemy e : enemies) {
-            if (!e.isAlive()) continue;
-            if (e.getRow() == row) out.add(e);
-        }
-        return out;
+        return false;
     }
 
     public Combatant combatantAt(int col, int  row){
-        if(player.isAlive() && player.getCol() == col && player.getRow() == row ) return player;
+        if(player.isAlive() && player.hittableAt(col, row) ) return player;
         for(Enemy e:  enemies){
             if (!e.isAlive()) continue;
-            if (e.getCol() == col && e.getRow() == row) return e;
+            if (e.hittableAt(col, row)) return e;
         }
         return null;
     }
 
     public List<Combatant> opposingOnRow(Combatant attacker, int row){
         List<Combatant> out = new ArrayList<>();
-        if (player.isAlive() && player.getRow() == row && player.getTeam() != attacker.getTeam()){
+        if (player.isAlive() && player.hittableOnRow(row) && player.getTeam() != attacker.getTeam()){
             out.add(player);
         }
 
         for (Enemy e : enemies){
             if(!e.isAlive()) continue;
-            if(e.getRow() != row) continue;
+            if(!e.hittableOnRow(row)) continue;
             if(e.getTeam() == attacker.getTeam()) continue;
             out.add(e);
         }

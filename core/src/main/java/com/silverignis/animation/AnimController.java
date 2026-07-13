@@ -122,4 +122,9 @@ public final class AnimController {
     public boolean isDeathComplete() {
         return current == AnimState.DEATH && getRenderAlpha()<= 0f;
     }
+
+    public float moveProgress() {
+        if (current != AnimState.MOVE) return 1f;
+        return Math.min(stateTime / MOVE_DURATION, 1f);
+    }
 }

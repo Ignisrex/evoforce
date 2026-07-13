@@ -16,6 +16,12 @@ public interface Combatant {
 
     int getCol();
     int getRow();
+    default boolean hittableAt(int col, int row) {
+        if(getAnimController().moveProgress() < 0.5f) return false;
+        return col == getCol() && row == getRow();
+    }
+
+    default boolean hittableOnRow(int row) {return hittableAt(getCol(), row); }
     float getVisualX();
     float getVisualY();
     float getDepthScale();

@@ -142,7 +142,7 @@ public class ZoneInstance extends SkillInstance {
                 int nr = row + inward.dRow;
                 // applyDisplacement bypasses the tryGridStep occupancy guard, so
                 // only pull when the inward tile is free to avoid stacking.
-                if (ctx.combatantAt(nc, nr) == null) {
+                if (!ctx.tilesOccupied(nc, nr)) {
                     ctx.movementSystem.applyDisplacement(c, 1, inward);
                 }
                 applyEffectsTo(c);

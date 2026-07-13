@@ -26,7 +26,7 @@ public final class MovementSystem {
         int newRow = MathUtils.clamp(pos.getRow() + dir.dRow, bounds.minRow, bounds.maxRow);
         if (newCol == pos.getCol() && newRow == pos.getRow()) return false;
 
-        if (this.ctx.combatantAt(newCol, newRow) != null) return false;
+        if (this.ctx.tilesOccupied(newCol, newRow)) return false;
 
         pos.setTile(newCol, newRow);
         AnimController ac = combatant.getAnimController();
