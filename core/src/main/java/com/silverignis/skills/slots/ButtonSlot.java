@@ -9,8 +9,8 @@ import java.util.List;
 
 /**
  * A single button's stack. LIFO: the last skill staged sits on top and
- * fires first; earlier picks sink underneath. Capacity is fixed at
- * {@link #CAPACITY}; once full, {@link #add(Skill)} returns {@code false}.
+ * fires first; earlier picks sink underneath. Unbounded — the shared
+ * pool limit lives on {@link SkillSlots}.
  */
 public class ButtonSlot {
 
@@ -35,7 +35,7 @@ public class ButtonSlot {
         return stack.pollFirst();
     }
 
-    /** Push on top. Returns {@code false} if the slot is already full. */
+    /** Push on top. */
     public boolean add(Skill skill) {
         stack.addFirst(skill);
         return true;
