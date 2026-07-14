@@ -43,7 +43,13 @@
       "Bash(rm -rf fenrir_ex)",
       "Bash(unzip -q fenrir.zip -d fenrir_ex)",
       "mcp__pixellab__delete_animation",
-      "PowerShell($cmds = @\\('python','py'\\); foreach\\($c in $cmds\\){ $p = \\(Get-Command $c -ErrorAction SilentlyContinue\\); if\\($p\\){ \"$c -> $\\($p.Source\\)\"; & $c --version } }; python -c \"import PIL; print\\('Pillow', PIL.__version__\\)\")"
+      "PowerShell($cmds = @\\('python','py'\\); foreach\\($c in $cmds\\){ $p = \\(Get-Command $c -ErrorAction SilentlyContinue\\); if\\($p\\){ \"$c -> $\\($p.Source\\)\"; & $c --version } }; python -c \"import PIL; print\\('Pillow', PIL.__version__\\)\")",
+      "mcp__pixellab__get_ui_asset",
+      "Bash(mkdir -p assets/ui)",
+      "Bash(file assets/ui/*)",
+      "WebFetch(domain:kenney.nl)",
+      "Bash(cd /tmp)",
+      "Bash(unzip -o -q kenney_scifi.zip -d kenney_scifi)"
     ]
   }
 }

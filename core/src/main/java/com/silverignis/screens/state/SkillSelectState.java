@@ -8,6 +8,7 @@ import com.silverignis.input.GameAction;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.slots.ButtonSlot;
+import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.ui.SkillSelectOverlay;
 
@@ -153,8 +154,10 @@ public class SkillSelectState implements GameScreenState {
         // can't accept more. NOTE: do NOT bail when the slot is empty —
         // that's exactly when we most; need to put a skill into it.
         if (hand.isEmpty()) return;
-        ButtonSlot slot = screen.playState.getPlayer().getSlots().get(key);
-        if (slot.isFull()) return;
+        SkillSlots slots = screen.playState.getPlayer().getSlots();
+        if (slots.isFull()) return;
+
+        ButtonSlot slot = slots.get(key);
 
         Skill picked = hand.remove(cursor);
         slot.add(picked);

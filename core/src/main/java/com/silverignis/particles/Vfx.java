@@ -114,9 +114,9 @@ public final class Vfx {
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))
             // 5. Sparkles — a few twinkles hanging close after the flash.
             .emitter(e -> e
-                .burst(3, 0.15f)
-                .speed(range(0.2f, 0.6f)).life(range(0.5f, 1.5f)).size(range(0.1f, 0.14f)).spread(180f)
-                .drift(0f, 0.25f, 0f)
+                .burst(5, 0.1f)
+                .speed(range(0.2f, 1.5f)).life(range(0.5f, 0.8f)).size(range(0.1f, 0.14f)).spread(180f)
+                .drift(0.1f, 0.25f, 0f)
                 .textures(assets.star(1), assets.star(4), assets.star(9))
                 .sizeOverLife(Interpolation.pow2In, 0f)
                 .colorOverLife(Interpolation.linear, Color.WHITE, tint))

@@ -253,9 +253,8 @@ public class SkillSelectOverlay {
     }
 
     private void buildOperator(SkillSlots slots, float charge) {
-        int used = 0;
-        for (SlotKey k : SlotKey.values()) used += slots.get(k).size();
-        int max = SlotKey.values().length * ButtonSlot.CAPACITY;
+        int used = slots.getSlotsUsed();
+        int max = slots.getSlotCapacity();
 
         Table avatar = newTable();
         avatar.setBackground(avatarBg);

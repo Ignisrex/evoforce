@@ -14,10 +14,8 @@ import java.util.List;
  */
 public class ButtonSlot {
 
-    public static final int CAPACITY = 2;
-
     private final SlotKey key;
-    private final Deque<Skill> stack = new ArrayDeque<>(CAPACITY);
+    private final Deque<Skill> stack = new ArrayDeque<>();
 
     public ButtonSlot(SlotKey key) {
         this.key = key;
@@ -25,7 +23,6 @@ public class ButtonSlot {
 
     public SlotKey getKey()     { return key; }
     public boolean isEmpty()    { return stack.isEmpty(); }
-    public boolean isFull()     { return stack.size() >= CAPACITY; }
     public int     size()       { return stack.size(); }
 
     /** Top of the stack without consuming. */
@@ -40,7 +37,6 @@ public class ButtonSlot {
 
     /** Push on top. Returns {@code false} if the slot is already full. */
     public boolean add(Skill skill) {
-        if (isFull()) return false;
         stack.addFirst(skill);
         return true;
     }
