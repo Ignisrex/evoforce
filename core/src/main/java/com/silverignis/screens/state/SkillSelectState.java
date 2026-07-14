@@ -12,10 +12,7 @@ import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.ui.SkillSelectOverlay;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SkillSelectState implements GameScreenState {
 
@@ -32,6 +29,7 @@ public class SkillSelectState implements GameScreenState {
     private boolean exiting; // overlay is playing its exit animation; input is done
 
     private final Map<SlotKey, List<Skill>> slotsSnapshot = new EnumMap<>(SlotKey.class);
+    private final Deque<SlotKey> selectHistory = new ArrayDeque<SlotKey>();
 
     public SkillSelectState(GameScreen screen) {
         this.screen = screen;
@@ -54,6 +52,7 @@ public class SkillSelectState implements GameScreenState {
 
     @Override
     public void onExit() {
+        selectHistory.clear();
         slotsSnapshot.clear();
     }
 
@@ -90,10 +89,18 @@ public class SkillSelectState implements GameScreenState {
     }
 
     private void tryUndo() {
-        if (!inSlots) return;
-        SlotKey key = SlotKey.values()[slotCursor];
+        SlotKey key;
+        if (inSlots) {
+            key = SlotKey.values()[slotCursor];
+        } else if(!selectHistory.isEmpty()) {
+            key = selectHistory.pop();
+        }else{
+            return;
+        }
+
         Skill s = screen.playState.getPlayer().getSlots().get(key).pop(); // top = most recently staged
         if (s == null) return;
+        if (inSlots) selectHistory.removeFirstOccurrence(key);
         hand.add(s);
     }
 
@@ -161,6 +168,7 @@ public class SkillSelectState implements GameScreenState {
 
         Skill picked = hand.remove(cursor);
         slot.add(picked);
+        selectHistory.push(key);
 
         if (cursor >= hand.size()) cursor = Math.max(0, hand.size() - 1);
     }
