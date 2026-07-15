@@ -7,6 +7,7 @@
     "shape": "STRIKE",
     "element": "NONE",
     "cooldown": 2.0,
+    "manaCost": 1,
     "powerScale": 0.5,
     "vfxTexture": "effects/slash.png",
     "effects": [
@@ -21,6 +22,7 @@
     "shape": "PROJECTILE",
     "element": "FIRE",
     "cooldown": 3.0,
+    "manaCost": 1,
     "vfxTexture": "effects/fireball.png",
     "vfx": ["fireTrail"],
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
@@ -37,6 +39,7 @@
     "shape": "PROJECTILE",
     "element": "POISON",
     "cooldown": 3.5,
+    "manaCost": 1,
     "vfxTexture": "effects/venom_ball.png",
     "shapeConfig": { "movementType": "LOB", "targetRange": 2, "arcHeight": 2.0 },
     "effects": [
@@ -52,6 +55,7 @@
     "shape": "BEAM",
     "element": "ICE",
     "cooldown": 4.0,
+    "manaCost": 2,
     "vfxTexture": "effects/ice_beam_vfx.png",
     "vfxAnimation": {
       "spritesheet": "skills/animations/icebeam_spritesheet.png",
@@ -73,6 +77,7 @@
     "shape": "ZONE",
     "element": "ICE",
     "cooldown": 3.5,
+    "manaCost": 2,
     "vfxTexture": "effects/zone.png",
     "shapeConfig": { "duration": 5.0 },
     "effects": [
@@ -88,6 +93,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 5.0,
+    "manaCost": 2,
     "vfx": ["heal"],
     "effects": [
       {"type": "HEAL", "value": 15 }
@@ -101,6 +107,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 5.0,
+    "manaCost": 1,
     "vfx": ["regen"],
     "effects": [
       {"type": "APPLY_STATUS", "statusType":"REGEN", "duration": 4, "value": 6 }
@@ -114,6 +121,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 4.0,
+    "manaCost": 1,
     "vfxTexture": "effects/aura.png",
     "effects": [
       {"type":"APPLY_STATUS", "statusType":"SHIELD", "duration": 6}
@@ -127,6 +135,7 @@
     "shape": "PROJECTILE",
     "element": "NONE",
     "cooldown": 0.5,
+    "manaCost": 1,
     "vfxTexture": "attacks/wind_slash.png",
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 12.0 },
     "effects": [
@@ -141,6 +150,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 12.0,
+    "manaCost": 1,
     "vfx": ["powerUp"],
     "effects": [
       { "type": "APPLY_STATUS", "statusType": "POWER_UP", "duration": 10 }
@@ -154,6 +164,7 @@
     "shape": "AURA",
     "element": "NONE",
     "cooldown": 12.0,
+    "manaCost": 1,
     "vfx": ["magicUp"],
     "effects": [
       { "type": "APPLY_STATUS", "statusType": "MAGIC_UP", "duration": 10 }
@@ -167,6 +178,7 @@
     "shape": "STRIKE",
     "element": "FIRE",
     "cooldown": 3.0,
+    "manaCost": 1,
     "powerScale": 0.6,
     "vfxTexture": "effects/slash.png",
     "vfxAnimation": {
@@ -190,6 +202,7 @@
     "shape": "BEAM",
     "element": "LIGHTNING",
     "cooldown": 4.5,
+    "manaCost": 2,
     "magicScale": 0.7,
     "vfxTexture": "effects/beam.png",
     "vfxAnimation": {
@@ -212,6 +225,7 @@
     "shape": "ZONE",
     "element": "DARK",
     "cooldown": 8.0,
+    "manaCost": 2,
     "vfxTexture": "effects/void_zone.png",
     "vfxTint": "8a2be2ff",
     "vfxAnimation": {
@@ -234,6 +248,7 @@
     "shape": "PROJECTILE",
     "element": "DARK",
     "cooldown": 3.0,
+    "manaCost": 1,
     "powerScale": 0.1,
     "magicScale": 0.8,
     "vfxTexture": "effects/dark_blast.png",
@@ -251,6 +266,7 @@
     "shape": "BEAM",
     "element": "FIRE",
     "cooldown": 5.0,
+    "manaCost": 2,
     "magicScale": 0.6,
     "vfxTexture": "effects/flame_torrent_beam.png",
     "vfxAnimation": {
@@ -274,6 +290,7 @@
     "shape": "PROJECTILE",
     "element": "LIGHTNING",
     "cooldown": 6.0,
+    "manaCost": 2,
     "vfxTexture": "effects/electro_ball.png",
     "zoneTexture": "effects/electro_zone.png",
     "vfx": ["electricArcs", "energyMotes"],

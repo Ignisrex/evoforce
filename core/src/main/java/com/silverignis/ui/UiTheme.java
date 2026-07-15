@@ -15,6 +15,7 @@ final class UiTheme {
     static final Color CYAN      = rgb(0x00, 0xdb, 0xe7);
     static final Color CYAN_HI   = rgb(0x00, 0xf2, 0xff);
     static final Color GOLD      = rgb(0xff, 0xd8, 0x1d);
+    static final Color MANA = rgb(0x3d, 0x8b, 0xff);
     static final Color TEXT      = rgb(0xdf, 0xe2, 0xeb);
     static final Color TEXT_DIM  = rgb(0xb9, 0xca, 0xcb);
     static final Color OUTLINE   = rgb(0x84, 0x94, 0x95);

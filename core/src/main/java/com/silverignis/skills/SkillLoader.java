@@ -61,6 +61,7 @@ public final class SkillLoader {
 
         b.powerScale(node.getFloat("powerScale", 0f));
         b.magicScale(node.getFloat("magicScale", 0f));
+        b.manaCost(node.getInt("manaCost", 1));
 
         String tintHex = node.getString("vfxTint", null);
         if (tintHex != null) b.vfxTint(parseColor(tintHex, id));

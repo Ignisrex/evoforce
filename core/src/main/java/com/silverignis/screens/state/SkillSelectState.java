@@ -30,6 +30,7 @@ public class SkillSelectState implements GameScreenState {
 
     private final Map<SlotKey, List<Skill>> slotsSnapshot = new EnumMap<>(SlotKey.class);
     private final Deque<SlotKey> selectHistory = new ArrayDeque<SlotKey>();
+    private int pendingCost;
 
     public SkillSelectState(GameScreen screen) {
         this.screen = screen;
@@ -42,6 +43,7 @@ public class SkillSelectState implements GameScreenState {
         slotCursor = 0;
         tucked = false;
         exiting = false;
+        pendingCost = 0;
 
         snapshotSlots();
         Player p = screen.playState.getPlayer();
@@ -98,8 +100,10 @@ public class SkillSelectState implements GameScreenState {
             return;
         }
 
-        Skill s = screen.playState.getPlayer().getSlots().get(key).pop(); // top = most recently staged
+        ButtonSlot slot = screen.playState.getPlayer().getSlots().get(key);
+        Skill s = slot.pop(); // top = most recently staged
         if (s == null) return;
+        if (!isPrepaid(s)) pendingCost -= s.getManaCost();
         if (inSlots) selectHistory.removeFirstOccurrence(key);
         hand.add(s);
     }
@@ -111,7 +115,8 @@ public class SkillSelectState implements GameScreenState {
         if (!exiting) {
             Player p = screen.playState.getPlayer();
             overlay.refresh(hand, cursor, inSlots, slotCursor, p.getSlots(),
-                    highlighted(), tucked, screen.charge.getFillRatio());
+                    highlighted(), tucked,
+                    screen.mana.getCurrent() - pendingCost, screen.mana.getMax());
         }
         overlay.act(delta);
     }
@@ -142,6 +147,13 @@ public class SkillSelectState implements GameScreenState {
         }
     }
 
+    private boolean isPrepaid(Skill s) {
+        for (List<Skill> saved : slotsSnapshot.values()){
+            if (saved.contains(s)) return true;
+        }
+        return false;
+    }
+
     private void restoreSnapshot() {
         var slots = screen.playState.getPlayer().getSlots();
         for (SlotKey key: SlotKey.values()) {
@@ -166,20 +178,26 @@ public class SkillSelectState implements GameScreenState {
 
         ButtonSlot slot = slots.get(key);
 
-        Skill picked = hand.remove(cursor);
+        Skill picked = hand.get(cursor);
+        int cost = isPrepaid(picked) ? 0 : picked.getManaCost();
+        if (pendingCost + cost > screen.mana.getCurrent()) return;
+
+        hand.remove(cursor);
         slot.add(picked);
         selectHistory.push(key);
+        pendingCost += cost;
 
         if (cursor >= hand.size()) cursor = Math.max(0, hand.size() - 1);
     }
 
     private void cancel(){
+        screen.mana.drain();
         restoreSnapshot();
         exit();
     }
 
     private void confirm() {
-        screen.charge.consume();
+        screen.mana.spendMana(pendingCost);
         overlay.confirmFlourish(screen.playState.getPlayer().getSlots());
         exit();
     }

@@ -197,9 +197,7 @@ public class PlayState implements GameScreenState {
     }
 
     private void tickMeters(float delta) {
-        screen.charge.update(delta);
-        // Per-caster cooldowns tick inside the deck, driven by Player.update / Enemy.update
-        // (see Caster.update). Nothing to do here for them anymore.
+        screen.mana.update(delta);
     }
 
     private void tickAndCullEffects(float delta) {
@@ -301,9 +299,6 @@ public class PlayState implements GameScreenState {
     }
 
     private void handleSkillSelectOpen() {
-        // The charge meter gates *menu access*, not individual casts:
-        // you can only stage new skills once the bar is full.
-        if (!screen.charge.isFull()) return;
         if (input.isActionPressed(GameAction.TRIGGER_LEFT)
             && input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
             screen.setState(screen.skillSelectState);

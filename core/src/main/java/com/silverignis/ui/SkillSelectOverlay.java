@@ -146,8 +146,8 @@ public class SkillSelectOverlay {
         titleFont = genFont(grotesk,  30, worldScale);
         bodyFont  = genFont(monoBold, 17, worldScale);
         statFont  = genFont(monoBold, 22, worldScale);
-        labelFont = genFont(monoMed,  14, worldScale);
-        tinyFont  = genFont(monoBold, 13, worldScale);
+        labelFont = genFont(monoMed,  16, worldScale);
+        tinyFont  = genFont(monoBold, 16, worldScale);
         grotesk.dispose(); monoBold.dispose(); monoMed.dispose();
 
         titleStyle = new Label.LabelStyle(titleFont, Color.WHITE);
@@ -225,7 +225,8 @@ public class SkillSelectOverlay {
     // Static content is rebuilt each frame (paused menu); the cursor + entrance
     // are persistent so their Actions animate.
     public void refresh(List<Skill> hand, int handCursor, boolean inSlots, int slotCursor,
-                        SkillSlots slots, Skill highlighted, boolean tucked, float charge) {
+                        SkillSlots slots, Skill highlighted, boolean tucked,
+                        float mana, int manaMax) {
         if (tucked) {
             hud.setVisible(false);
             cursorBezel.setVisible(false);
@@ -245,14 +246,14 @@ public class SkillSelectOverlay {
         refreshDetailWisps(highlighted);
 
         rect(hud, 0f, 0f, viewport.getWorldWidth(), viewport.getWorldHeight()).fill(DIM);
-        buildOperator(slots, charge);
+        buildOperator(slots, mana, manaMax);
         buildDetail(highlighted);
         buildStacks(slots, inSlots, slotCursor);
         buildTray(hand, handCursor, inSlots);
         updateCursor();
     }
 
-    private void buildOperator(SkillSlots slots, float charge) {
+    private void buildOperator(SkillSlots slots, float mana, int manaMax) {
         int used = slots.getSlotsUsed();
         int max = slots.getSlotCapacity();
 
@@ -265,7 +266,8 @@ public class SkillSelectOverlay {
 
         Table info = newTable();
         info.add(label(labelStyle, "OPERATOR_01", CYAN)).left().expandX().row();
-        info.add(new ChargeBar(clamp01(charge))).growX().height(0.16f).padTop(0.08f).row();
+        info.add(new ChargeBar(clamp01(mana / manaMax))).growX().height(0.16f).padTop(0.08f).row();
+        info.add(label(tinyStyle, (int) mana + "/" + manaMax + " MP", UiTheme.MANA)).right().padTop(0.04f).row();
         info.add(slotsRow).growX().expandY().bottom();
 
         Table panel = glassPanel(OPERATOR_X, OPERATOR_TOP - OPERATOR_H, OPERATOR_W, OPERATOR_H, OPERATOR_PAD);
@@ -287,6 +289,7 @@ public class SkillSelectOverlay {
         Table meta = newTable();
         meta.add(label(labelStyle, "CD " + String.format("%.1fs", s.getCooldown()), TEXT_DIM)).width(1.4f).left();
         meta.add(label(labelStyle, s.getShape().name(), GOLD)).left().expandX();
+        meta.add(label(labelStyle, s.getManaCost() + " MP", UiTheme.MANA)).right();
         panel.add(meta).growX().padTop(0.06f).row();
 
         panel.add(divider()).growX().height(BORDER_THIN).padTop(0.10f).row();
@@ -440,7 +443,8 @@ public class SkillSelectOverlay {
         rect(chip, 0f, 0f, w, h).fill(CARD).border(OUTLINE_60, BORDER).radius(CORNER_RADIUS);
         placeLabel(chip, tinyStyle, elementLetter(s.getElement()), elementColor(s.getElement()),
                    0.1f, h - 0.12f, Align.left);
-        placeLabel(chip, tinyStyle, String.valueOf(damageOf(s)), TEXT, w - 0.1f, h - 0.12f, Align.right);
+        placeLabel(chip, tinyStyle, s.getManaCost() + "MP", UiTheme.MANA, w - 0.1f, h - 0.12f, Align.right);
+        placeLabel(chip, tinyStyle, String.valueOf(damageOf(s)), TEXT, w - 0.1f, 0.42f, Align.right);
         if (s.getIcon() != null) {
             float iconSize = h * 0.55f;
             icon(chip, s.getIcon(), w / 2f - iconSize / 2f, h / 2f - iconSize / 2f + 0.05f, iconSize, iconSize, 1f);
@@ -655,7 +659,7 @@ public class SkillSelectOverlay {
             // Same radius on all three; the shader clamps it to h/2, so the
             // bar reads as a pill and the fill stays inside the outline.
             rect(this, 0f, 0f, w, h).fill(SURF_LOW).radius(CORNER_RADIUS);
-            rect(this, 0f, 0f, w * ratio, h).fill(CYAN_HI).radius(CORNER_RADIUS);
+            rect(this, 0f, 0f, w * ratio, h).fill(UiTheme.MANA).radius(CORNER_RADIUS);
             rect(this, 0f, 0f, w, h).border(OUTLINE_80, BORDER_THIN).radius(CORNER_RADIUS);
         }
     }

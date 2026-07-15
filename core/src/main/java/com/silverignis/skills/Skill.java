@@ -63,6 +63,7 @@ public final class Skill {
 
     private final float powerScale;
     private final float magicScale;
+    private final int manaCost;
 
     private Skill(Builder b) {
         this.id = b.id;
@@ -82,6 +83,7 @@ public final class Skill {
         this.vfx = Collections.unmodifiableList(new ArrayList<>(b.vfx));
         this.powerScale = b.powerScale;
         this.magicScale = b.magicScale;
+        this.manaCost = b.manaCost;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -103,6 +105,7 @@ public final class Skill {
     public List<VfxFactory> getVfx()    { return vfx; }
     public float        getPowerScale() {return powerScale; }
     public float        getMagicScale() { return magicScale; }
+    public int          getManaCost()   { return manaCost; }
 
 
     public static final class Builder {
@@ -124,6 +127,7 @@ public final class Skill {
         private final List<VfxFactory> vfx = new ArrayList<>();
         private float powerScale = 0f;
         private float magicScale = 0f;
+        private int manaCost = 1;
 
         private Builder() {}
 
@@ -141,6 +145,7 @@ public final class Skill {
         public Builder vfx(List<VfxFactory> v)                      { this.vfx.clear(); if (v != null) this.vfx.addAll(v); return this; }
         public Builder powerScale(float v)                          { this.powerScale = v; return this; }
         public Builder magicScale(float v)                          { this.magicScale = v; return this; }
+        public Builder manaCost(int v)                              { this.manaCost = v; return this; }
 
         public Builder effect(Effect e)                             { this.effects.add(e); return this; }
         public Builder effects(List<Effect> e) {

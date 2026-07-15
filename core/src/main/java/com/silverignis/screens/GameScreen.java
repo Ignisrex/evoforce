@@ -4,17 +4,12 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.silverignis.Main;
+import com.silverignis.components.ManaPool;
 import com.silverignis.input.InputManager;
-import com.silverignis.skills.ChargeMeter;
 import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
 import com.silverignis.screens.state.SkillSelectState;
-import com.silverignis.ui.BasicAttackHud;
-import com.silverignis.ui.ChargeBarHud;
-import com.silverignis.ui.FpsHud;
-import com.silverignis.ui.LifeBarHud;
-import com.silverignis.ui.RoundedRectShader;
-import com.silverignis.ui.SlotsHud;
+import com.silverignis.ui.*;
 
 public class GameScreen implements Screen {
 
@@ -26,13 +21,13 @@ public class GameScreen implements Screen {
     public final SkillSelectState skillSelectState;
     private GameScreenState currentState;
 
-    public final ChargeMeter charge = new ChargeMeter(/* max */ 1f, /* fillRate */ 0.20f);
+    public final ManaPool mana;
 
     //HUDs — Scene2D actors on hudStage sharing one SDF shader; BasicAttackHud
     //still draws immediate-mode, FpsHud owns nothing.
     private final RoundedRectShader hudShader;
     private final Stage hudStage;
-    private final ChargeBarHud chargeHud;
+    private final ManaBarHud manaBarHud;
     private final SlotsHud slotsHud;
     private final LifeBarHud lifeBarHud;
     private final FpsHud fpsHud = new FpsHud();
@@ -41,9 +36,12 @@ public class GameScreen implements Screen {
     public GameScreen(Main game){
         this.game = game;
 
+        this.mana = game.session.playerProfile.getMana();
+        mana.drain();
+
         Texture pixel = game.generated.pixel();
         this.hudShader      = new RoundedRectShader(pixel);
-        this.chargeHud      = new ChargeBarHud(hudShader, game.viewport);
+        this.manaBarHud     = new ManaBarHud(hudShader, game.viewport);
         this.slotsHud       = new SlotsHud(hudShader, game.viewport);
         this.lifeBarHud     = new LifeBarHud(hudShader, game.viewport);
         this.basicAttackHud = new BasicAttackHud(game.generated);
@@ -51,7 +49,7 @@ public class GameScreen implements Screen {
         this.hudStage = new Stage(game.viewport, game.batch);
         hudStage.addActor(slotsHud);
         hudStage.addActor(lifeBarHud);
-        hudStage.addActor(chargeHud);
+        hudStage.addActor(manaBarHud);
 
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
@@ -95,7 +93,7 @@ public class GameScreen implements Screen {
         if (!overlayUp) {
             slotsHud.refresh(playState.getPlayer().getSlots());
             lifeBarHud.refresh(playState.getPlayer());
-            chargeHud.refresh(charge);
+            manaBarHud.refresh(mana);
             hudStage.draw();
         }
     }

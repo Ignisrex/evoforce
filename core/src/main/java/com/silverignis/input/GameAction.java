@@ -32,10 +32,10 @@ public enum GameAction {
     SKILL_Y,
     SKILL_B,
 
-    /** Close the staging menu and commit the loaded slots (consumes charge). */
+    /** Close the staging menu and commit the loaded slots (spends the staged mana cost). */
     SKILL_SELECT_CONFIRM,
 
-    /** Close the staging menu without committing (slots revert, charge kept). */
+    /** Close the staging menu without committing (slots revert, all mana forfeited). */
     SKILL_SELECT_CANCEL,
 
     /** In the staging menu, pull the last-added skill out of the hovered slot. */
