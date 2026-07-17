@@ -18,6 +18,8 @@ final class UiTheme {
     static final Color MANA = rgb(0x3d, 0x8b, 0xff);
     static final Color TEXT      = rgb(0xdf, 0xe2, 0xeb);
     static final Color TEXT_DIM  = rgb(0xb9, 0xca, 0xcb);
+    static final Color BENEFIT   = rgb(0x40, 0xd9, 0x4d);
+    static final Color DETRIMENT = rgb(0xf2, 0x40, 0x33);
     static final Color OUTLINE   = rgb(0x84, 0x94, 0x95);
     static final Color OUTLINE_V = rgb(0x3a, 0x49, 0x4b);
     static final Color PANEL     = rgba(0x18, 0x1c, 0x22, 0.86f);

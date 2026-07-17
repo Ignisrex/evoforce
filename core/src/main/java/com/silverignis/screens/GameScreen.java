@@ -3,6 +3,7 @@ package com.silverignis.screens;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.silverignis.Main;
 import com.silverignis.components.ManaPool;
 import com.silverignis.input.InputManager;
@@ -30,6 +31,7 @@ public class GameScreen implements Screen {
     private final ManaBarHud manaBarHud;
     private final SlotsHud slotsHud;
     private final LifeBarHud lifeBarHud;
+    private final StatusHud statusHud;
     private final FpsHud fpsHud = new FpsHud();
     private final BasicAttackHud basicAttackHud;
 
@@ -41,15 +43,26 @@ public class GameScreen implements Screen {
 
         Texture pixel = game.generated.pixel();
         this.hudShader      = new RoundedRectShader(pixel);
-        this.manaBarHud     = new ManaBarHud(hudShader, game.viewport);
+        this.manaBarHud     = new ManaBarHud(hudShader);
         this.slotsHud       = new SlotsHud(hudShader, game.viewport);
-        this.lifeBarHud     = new LifeBarHud(hudShader, game.viewport);
+        this.lifeBarHud     = new LifeBarHud(hudShader);
+        this.statusHud      = new StatusHud(hudShader, game.viewport);
         this.basicAttackHud = new BasicAttackHud(game.generated);
 
         this.hudStage = new Stage(game.viewport, game.batch);
         hudStage.addActor(slotsHud);
-        hudStage.addActor(lifeBarHud);
-        hudStage.addActor(manaBarHud);
+
+        Table bars = new Table();
+        bars.setRound(false); // world-unit stage; see SkillSelectOverlay.newTable()
+        bars.setFillParent(true);
+        bars.top().left().padTop(LifeBarHud.MARGIN_TOP).padLeft(LifeBarHud.MARGIN_LEFT);
+        bars.defaults().left();
+        bars.add(lifeBarHud).size(LifeBarHud.BAR_WIDTH, LifeBarHud.BAR_HEIGHT).row();
+        bars.add(manaBarHud).size(LifeBarHud.BAR_WIDTH, ManaBarHud.BAR_HEIGHT)
+            .padTop(ManaBarHud.GAP_BELOW_LIFE).row();
+        bars.add(statusHud).size(LifeBarHud.BAR_WIDTH, StatusHud.BAR_HEIGHT)
+            .padTop(StatusHud.GAP_BELOW_MANA);
+        hudStage.addActor(bars);
 
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
@@ -94,6 +107,8 @@ public class GameScreen implements Screen {
             slotsHud.refresh(playState.getPlayer().getSlots());
             lifeBarHud.refresh(playState.getPlayer());
             manaBarHud.refresh(mana);
+            statusHud.refresh(playState.getPlayer());
+            hudStage.act(delta);
             hudStage.draw();
         }
     }
@@ -126,6 +141,7 @@ public class GameScreen implements Screen {
         skillSelectState.dispose();
         hudStage.dispose(); // external batch — stage doesn't dispose it
         slotsHud.dispose();
+        statusHud.dispose();
         hudShader.dispose();
     }
 }

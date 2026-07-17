@@ -1,22 +1,17 @@
 package com.silverignis.ui;
 
 import com.badlogic.gdx.scenes.scene2d.Group;
-import com.badlogic.gdx.utils.viewport.Viewport;
 import com.silverignis.components.ManaPool;
 
 public class ManaBarHud extends Group {
 
-    private static final float BAR_HEIGHT = 0.18f;
-    private static final float GAP_BELOW_LIFE = 0.1f;
+    public static final float BAR_HEIGHT = 0.18f;
+    public static final float GAP_BELOW_LIFE = 0.1f;
 
     private final Bezel fill;
     private final Bezel frame;
 
-    public ManaBarHud(RoundedRectShader shader, Viewport viewport) {
-        setPosition(LifeBarHud.MARGIN_LEFT,
-            viewport.getWorldHeight() - LifeBarHud.MARGIN_TOP - LifeBarHud.BAR_HEIGHT -
-            GAP_BELOW_LIFE - BAR_HEIGHT);
-
+    public ManaBarHud(RoundedRectShader shader) {
         Bezel bg = new Bezel(shader).fill(UiTheme.SURF_LOW).radius(UiTheme.CORNER_RADIUS);
         bg.setBounds(0f, 0f, LifeBarHud.BAR_WIDTH, BAR_HEIGHT);
         addActor(bg);

@@ -146,7 +146,7 @@ Every frame `GameScreen.render(delta)` runs:
 2. `currentState.input()` — dispatch `GameAction`s to handlers.
 3. `currentState.update(delta)` — game logic (see "PlayState tick order" below).
 4. `currentState.render(batch)` — clear, project, draw the world.
-5. HUD pass — `ManaBarHud` + `SlotsHud` + `BasicAttackHud` + `LifeBarHud` + `FpsHud` always draw on top of whichever state is active.
+5. HUD pass — `ManaBarHud` + `SlotsHud` + `BasicAttackHud` + `LifeBarHud` + `StatusHud` + `FpsHud` always draw on top of whichever state is active.
 
 **`PlayState.update` order matters.** It is, in sequence:
 `tickEntities (player.update → each enemy.update → re-project tile targets + depth scale onto entities) → tickMeters (mana regen only — per-caster cooldowns tick inside each entity's update via the composed Caster's update → deck.update) → enemyAi (loop over all enemies) → combatSystem.tickStatuses (advance per-combatant StatusContainers — DoTs/HoTs can damage or heal here, possibly killing the owner) → combatSystem.update (skill instances tick + clash resolution + finished cull) → checkBattleOver (early-exit on win/lose) → tickAndCullEffects`.
@@ -166,7 +166,7 @@ Status ticks happen *between* enemy AI and skill instance updates so a status Do
 
 **Post-FX:** `VfxManager` ends capture, applies `BloomEffect` (base 1.0, bloom 1.2, threshold 0.25), and blits to screen.
 
-**HUD pass** (`GameScreen.render`) draws `ManaBarHud`, `SlotsHud`, `BasicAttackHud`, `LifeBarHud`, and `FpsHud` on top of everything — outside the VFX capture, so HUD doesn't bloom.
+**HUD pass** (`GameScreen.render`) draws `ManaBarHud`, `SlotsHud`, `BasicAttackHud`, `LifeBarHud`, `StatusHud`, and `FpsHud` on top of everything — outside the VFX capture, so HUD doesn't bloom.
 
 `ZoneInstance.isRenderUnder()` is the single hook that splits combat-system draws across layers 1 and 5.
 
@@ -344,10 +344,12 @@ The `components/` package is for ECS-style role components — entities compose 
 - **`PositionSmoother`** — exponential easing toward a target `(x, y)`. Used by `Player` and `Enemy` to tween between tile centers.
 - **`PanelGenerator`** — static factories that produce the `PanelType[][]` grid handed to `Battlefield`. Two presets: `generatePanels()` (flat blue/red split, used today) and `generateMixedPanels()` (sprinkles hazard tiles).
 ### UI
-- **`ManaBarHud`** — the mana meter, tucked directly under the `LifeBarHud` in the top-left (it derives its geometry from that bar's constants so the pair moves together). Blue (`UiTheme.MANA`) fill; at full the frame gains a blue glow while the fill stays flat. Scene2D `Group` on the HUD stage; persistent bezels, `refresh(ManaPool)` updates the fill. (`ChargeBarHud` is its dormant predecessor, kept unreferenced.)
+- **`ManaBarHud`** — the mana meter, tucked directly under the `LifeBarHud` in the top-left. Blue (`UiTheme.MANA`) fill; at full the frame gains a blue glow while the fill stays flat. Scene2D `Group` on the HUD stage; persistent bezels, `refresh(ManaPool)` updates the fill. (`ChargeBarHud` is its dormant predecessor, kept unreferenced.)
+- **Top-left bar cluster** — `LifeBarHud`, `ManaBarHud`, and `StatusHud` no longer self-position; `GameScreen` stacks them in a single Scene2D `Table` (top-left anchored, `setRound(false)` for the world-unit stage, cells sized from each HUD's `BAR_*` constants with the `GAP_*` constants as row pads). Reordering or resizing the cluster means editing that one table.
+- **`StatusHud`** — third row of the cluster (0.5 units tall): a translucent `SURF_LOW` tray holding one `StatusIndicator` (icon + remaining-seconds text underneath) per active status on the player, in `StatusType` order. Timer text is green (`UiTheme.BENEFIT`) for buffs, red (`UiTheme.DETRIMENT`) for debuffs — polarity comes from `StatusType.isBeneficial()`. Indicators are laid out by a `HorizontalGroup` (membership = shown); the whole tray fades in when the first status lands and fades out (contents frozen) when the last expires via Scene2D Actions — `GameScreen` now runs `hudStage.act(delta)` before `draw()`. Icons are placeholder skill PNGs (`skills/frost_trap.png` for FREEZE, etc.), loaded and disposed by the hud itself until dedicated status art exists.
 - **`SlotsHud`** — bottom-left X/Y/B columns with stacked icons (top of column = top of stack, i.e. last staged / next to fire), placeholder for empty cells. A Scene2D `Group` on `GameScreen`'s HUD `Stage`, rebuilt per frame via `refresh(SkillSlots)` and drawn with the SDF bezels + shared `UiTheme` palette so it matches the staging overlay; the overlapping sliver compression stays hand-positioned inside the actor.
 - **`BasicAttackHud`** — bottom-left icon one slot-gap to the right of the X/Y/B column, showing the skill held in `player.getBasicAttack()`. Renders a translucent black "cooldown veil" over the top portion of the icon when on cooldown — the veil shrinks downward as `deck.remainingFor(skill)` ticks toward 0, the standard MOBA-HUD cooldown sweep. Borrows the shared 1×1 white pixel from `GeneratedAssets` (constructor-injected; not owned).
-- **`LifeBarHud`** — horizontal player HP bar anchored to the top-left of the viewport. Fill ratio is `player.getHp() / player.getMaxHp()`; tint shifts green → yellow → red as HP drops (functional colors, deliberately outside `UiTheme`). Scene2D `Group` on the HUD stage; persistent bezels, `refresh(Player)` updates the fill.
+- **`LifeBarHud`** — horizontal player HP bar, top row of the top-left cluster table. Fill ratio is `player.getHp() / player.getMaxHp()`; tint shifts green → yellow → red as HP drops (functional colors, deliberately outside `UiTheme`). Scene2D `Group` on the HUD stage; persistent bezels, `refresh(Player)` updates the fill.
 - **`FpsHud`** — top-right frame-rate readout. Samples `Gdx.graphics.getFramesPerSecond()` every 0.25s (so the text doesn't flicker each frame).
 - **`SkillSelectOverlay`** — card hand renderer used by `SkillSelectState`. Hand size is currently 6; horizontal layout was originally tuned for 4, so visual fit may need a pass.
 ## Viewport & Coordinates
