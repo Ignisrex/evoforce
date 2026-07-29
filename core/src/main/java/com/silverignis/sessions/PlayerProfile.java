@@ -4,8 +4,9 @@ import com.silverignis.components.Caster;
 import com.silverignis.components.ManaPool;
 import com.silverignis.components.Stats;
 import com.silverignis.components.Team;
-import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillLibrary;
+
+import java.util.List;
 
 public class PlayerProfile {
 
@@ -18,12 +19,10 @@ public class PlayerProfile {
         this.stats = new Stats(20, 10, 100, 10, 20);
         this.caster = new Caster(Team.PLAYER);
 
-        Skill windSlash = library.get("wind_slash");
-        for (Skill s : library.all()){
-            if ( s == windSlash) continue;
-            caster.getDeck().add(s);
+        caster.setBasicAttack(library.get("wind_slash"));
+        for (String id : List.of("wind_strike", "fire_blast", "heal")) {
+            caster.getDeck().add(library.get(id));
         }
-        caster.setBasicAttack(windSlash);
 
         this.progressionLevel = 0;
     }

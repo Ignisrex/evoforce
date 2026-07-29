@@ -598,6 +598,122 @@ Color green = new Color(0.5f, 1f, 0.6f, 1f);
             .build();
     }
 
+    // ── reward-screen effects (screen-space; sized for the 3.8x4.8 reward cards) ──
+
+    /** Card-landing burst — ring + flare glint + a spray of tinted sparks off the
+     *  card frame, with a few sparkles hanging after. impact()'s celebratory cousin:
+     *  all the layers, none of the smoke. */
+    public static EffectDef rewardRevealBurst(Color tint) {
+        return EffectDef.effect()
+            // 1. Shockwave ring
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.3f).size(1.2f)
+                .texture(assets.circle(5))
+                .sizeOverLife(Interpolation.pow2Out, 2.4f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 2. Flare glint over the card center
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.25f).size(1.1f)
+                .texture(assets.flare(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.8f)
+                .color(new Color(tint.r, tint.g, tint.b, 0.9f)))
+            // 3. Spark spray off the frame
+            .emitter(e -> e
+                .burst(26, 0.06f)
+                .speed(range(1.5f, 3.2f)).life(range(0.35f, 0.7f)).size(range(0.15f, 0.3f)).spread(180f)
+                .textures(
+                    assets.spotlightA(1), assets.spotlightA(3), assets.spotlightA(5), assets.spotlightA(7),
+                    assets.star(4), assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 4. Lingering sparkles drifting up
+            .emitter(e -> e
+                .burst(8, 0.15f)
+                .speed(range(0.2f, 0.6f)).life(range(0.6f, 1.0f)).size(range(0.1f, 0.18f)).spread(180f)
+                .drift(0f, 0.4f, 0f)
+                .textures(assets.star(1), assets.star(4), assets.star(9))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .build();
+    }
+
+    /** Livelier selected-card aura — tinted motes shimmering up the card face plus
+     *  occasional arcane glints. menuElementWisps with the volume turned up. */
+    public static EffectDef rewardSelectWisps(Color tint) {
+        Color bright = tint.cpy().lerp(Color.WHITE, 0.35f);
+        return EffectDef.effect()
+            // 1. Rising motes
+            .emitter(e -> e
+                .continuous(26f)
+                .speed(range(0.05f, 0.2f)).life(range(0.7f, 1.2f)).size(range(0.1f, 0.22f)).spread(180f)
+                .jitter(0.4f, 0.1f, 0.25f)
+                .drift(0f, 0.45f, 0f)
+                .textures(assets.star(4), assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, bright, tint))
+            // 2. Occasional glints
+            .emitter(e -> e
+                .continuous(5f)
+                .speed(range(0.02f, 0.1f)).life(range(0.4f, 0.7f)).size(range(0.18f, 0.3f))
+                .jitter(0.5f, 0.3f, 0.3f)
+                .textures(assets.magic(3), assets.magic(4), assets.star(9))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, bright))
+            .build();
+    }
+
+    /** Claim burst — the loudest beat on the screen, all of it on the chosen card:
+     *  double ring + star flash, a fountain of sparks, a soft twirl veil, and
+     *  slow-rising motes as the tail. No screen-wide flash. */
+    public static EffectDef rewardConfirmBurst(Color tint) {
+        Color bright = tint.cpy().lerp(Color.WHITE, 0.5f);
+        return EffectDef.effect()
+            // 1. Double shockring — second slightly delayed via longer life
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.25f).size(1.0f)
+                .texture(assets.circle(5))
+                .sizeOverLife(Interpolation.pow2Out, 3.0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.45f).size(0.6f)
+                .texture(assets.circle(1))
+                .sizeOverLife(Interpolation.pow2Out, 2.6f)
+                .color(new Color(tint.r, tint.g, tint.b, 0.7f)))
+            // 2. Star flash on the card
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.35f).size(1.0f)
+                .textures(assets.star(8), assets.starA(8))
+                .sizeOverLife(Interpolation.pow2Out, 2.2f)
+                .color(bright))
+            // 3. Spark fountain — up and out, gravity pulling them back
+            .emitter(e -> e
+                .burst(34, 0.08f)
+                .speed(range(1.2f, 3.0f)).life(range(0.45f, 0.9f)).size(range(0.14f, 0.3f)).spread(70f)
+                .drift(0f, -1.2f, 0f)
+                .textures(
+                    assets.spotlightA(2), assets.spotlightA(4), assets.spotlightA(6),
+                    assets.star(4), assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, tint))
+            // 4. Twirl veil — soft, translucent
+            .emitter(e -> e
+                .burst(2, 0.2f)
+                .speed(0f).life(range(0.5f, 0.8f)).size(range(1.2f, 1.6f))
+                .alphaBlend()
+                .textures(assets.twirl(1), assets.twirl(2), assets.twirl(3))
+                .sizeOverLife(Interpolation.pow2Out, 1.6f)
+                .color(new Color(tint.r, tint.g, tint.b, 0.35f)))
+            // 5. Rising tail motes
+            .emitter(e -> e
+                .burst(10, 0.5f)
+                .speed(range(0.1f, 0.3f)).life(range(0.8f, 1.3f)).size(range(0.1f, 0.2f)).spread(60f)
+                .drift(0f, 0.6f, 0f)
+                .textures(assets.star(2), assets.star(6))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, bright, tint))
+            .build();
+    }
+
     public static EffectDef ambientDust() {
         return EffectDef.effect()
             .emitter(e -> e

@@ -22,9 +22,11 @@ import com.silverignis.input.InputManager;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.SceneRenderable;
 import com.silverignis.render.WorldRenderer;
+import com.silverignis.rewards.RewardOffer;
 import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.screens.OverworldScreen;
+import com.silverignis.screens.RewardScreen;
 import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
@@ -163,7 +165,9 @@ public class PlayState implements GameScreenState {
             transitionScheduled = true;
             screen.game.session.playerProfile.progressPlayer();
             screen.game.session.playerProfile.getCaster().resetStaging();
-            screen.game.setScreen(new OverworldScreen(screen.game));
+            RewardOffer skills = RewardOffer.skillOffer(screen.game.session);
+            screen.game.setScreen(skills == null ? new OverworldScreen(screen.game)
+                    : new RewardScreen(screen.game, List.of(skills)));
             return true;
         }
         if (!player.isAlive()) {

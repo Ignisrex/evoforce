@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -36,6 +35,9 @@ import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
 
 import java.util.List;
+
+import static com.silverignis.ui.UiUtil.genFont;
+import static com.silverignis.ui.UiUtil.newTable;
 
 /**
  * Cyber-tactical "Neural Link OS" staging screen (skill_select_inspo.png):
@@ -527,14 +529,6 @@ public class SkillSelectOverlay {
     }
 
     // ── actor builders ──────────────────────────────────────────────────────
-    /** Tables default to integer-rounding child geometry, which mangles a
-     *  16x9 world-unit stage — every table must come from here. */
-    private static Table newTable() {
-        Table t = new Table();
-        t.setRound(false);
-        return t;
-    }
-
     private Table glassPanel(float x, float y, float w, float h, float pad) {
         Table panel = newTable();
         panel.setBackground(glassBg);
@@ -594,17 +588,6 @@ public class SkillSelectOverlay {
         stage.dispose();
         roundedRect.dispose();
         titleFont.dispose(); bodyFont.dispose(); statFont.dispose(); labelFont.dispose(); tinyFont.dispose();
-    }
-
-    private static BitmapFont genFont(FreeTypeFontGenerator g, int px, float worldScale) {
-        FreeTypeFontParameter p = new FreeTypeFontParameter();
-        p.size = px;
-        p.minFilter = Texture.TextureFilter.Linear;
-        p.magFilter = Texture.TextureFilter.Linear;
-        BitmapFont f = g.generateFont(p);
-        f.setUseIntegerPositions(false);
-        f.getData().setScale(worldScale);
-        return f;
     }
 
     private static int damageOf(Skill s) {
