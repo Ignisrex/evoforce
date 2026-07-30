@@ -714,6 +714,65 @@ Color green = new Color(0.5f, 1f, 0.6f, 1f);
             .build();
     }
 
+    // Reveal-ceremony timings/counts — burst windows here must match the choreography
+    // delays in RewardScreen and the totalSpawns fed to the stateful anchors.
+    public static final float REWARD_GATHER_TIME = 0.7f;
+    public static final int   REWARD_GATHER_SPAWNS = 90;
+    public static final int   REWARD_GATHER_GLYPHS = 10;
+
+    /** Reward-screen backdrop — a magic-system void: drifting blue-white dust plus
+     *  faint arcane runes rising slowly. Play over the full-screen region; builds up
+     *  over the first seconds (no prewarm — the gather ceremony covers the cold start). */
+    public static EffectDef rewardAmbience() {
+        return EffectDef.effect()
+            // 1. Dust field
+            .emitter(e -> e
+                .continuous(14f)
+                .speed(range(0.02f, 0.12f)).life(range(2.5f, 5f)).size(range(0.05f, 0.14f)).spread(180f)
+                .drift(0f, 0.12f, 0f)
+                .textures(assets.star(4), assets.star(5), assets.light(1))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .color(new Color(0.55f, 0.7f, 1f, 0.5f)))
+            // 2. Faint runes drifting up
+            .emitter(e -> e
+                .continuous(1.2f)
+                .speed(range(0.02f, 0.06f)).life(range(3f, 6f)).size(range(0.35f, 0.6f))
+                .drift(0f, 0.15f, 0f)
+                .textures(assets.symbol(1), assets.symbol(2), assets.magic(3), assets.magic(4))
+                .color(new Color(0.45f, 0.65f, 1f, 0.28f)))
+            .build();
+    }
+
+    /** One arm of the gather vortex — pair with {@link Anchor#spiralIn}; the spawn point
+     *  does the swirling, the particles just linger and fade as the comet trail.
+     *  Single emitter by design: the anchor is stateful, one step per spawn. */
+    public static EffectDef rewardGatherArm(Color tint) {
+        Color bright = tint.cpy().lerp(Color.WHITE, 0.4f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .burst(REWARD_GATHER_SPAWNS, REWARD_GATHER_TIME)
+                .speed(range(0.02f, 0.08f)).life(range(0.45f, 0.75f)).size(range(0.1f, 0.2f))
+                .textures(assets.star(4), assets.star(8), assets.circle(5))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, bright, tint))
+            .build();
+    }
+
+    /** Arcane radicals riding the gather spiral — sparse rune glyphs swept toward the
+     *  center among the mote arms. Single emitter by design: pair with its own
+     *  {@link Anchor#spiralIn} instance. */
+    public static EffectDef rewardGatherGlyphs(Color tint) {
+        Color bright = tint.cpy().lerp(Color.WHITE, 0.5f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .burst(REWARD_GATHER_GLYPHS, REWARD_GATHER_TIME)
+                .speed(range(0.02f, 0.06f)).life(range(0.4f, 0.65f)).size(range(0.25f, 0.4f))
+                .textures(assets.symbol(1), assets.symbol(2), assets.magic(3), assets.magic(4))
+                .sizeOverLife(Interpolation.pow2In, 0.5f)
+                .colorOverLife(Interpolation.linear, bright, new Color(tint.r, tint.g, tint.b, 0.6f)))
+            .build();
+    }
+
     public static EffectDef ambientDust() {
         return EffectDef.effect()
             .emitter(e -> e

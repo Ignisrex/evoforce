@@ -19,6 +19,7 @@ import com.silverignis.render.RenderContext;
 import com.silverignis.rewards.RewardOffer;
 import com.silverignis.rewards.RewardOption;
 import com.silverignis.ui.RewardCardStyle;
+import com.silverignis.ui.TraceBorder;
 import com.silverignis.ui.UiUtil;
 
 import java.util.ArrayList;
@@ -31,13 +32,20 @@ public class RewardScreen implements Screen {
     private final Stage stage;
     private final RewardCardStyle style;
 
+    /** Reveal-ceremony beats; gather runs 0 → REWARD_GATHER_TIME, trace connects at MATERIALIZE_AT. */
+    private static final float TRACE_AT = 0.5f, TRACE_TIME = 0.6f, MATERIALIZE_AT = 1.1f, CEREMONY_TIME = 1.35f;
+    /** Deep arcane blue — the "world system" void behind the ambience particles. */
+    private static final Color BG = new Color(0.02f, 0.045f, 0.11f, 1f);
+
     private int offerIndex = 0;
     private int selected = 0;
     private boolean exiting;
+    private boolean ceremonyActive;
 
     private final ParticleEngine particles = new ParticleEngine();
     private final RenderContext particleCtx;
     private final List<Table> frames = new ArrayList<>();
+    private final List<TraceBorder> traces = new ArrayList<>();
     private EmitterHandle ambient, selectWisps;
 
     public RewardScreen(Main game, List<RewardOffer> offers) {
@@ -54,6 +62,7 @@ public class RewardScreen implements Screen {
         selected = 0;
         stage.clear();
         frames.clear();
+        traces.clear();
         RewardOffer offer = offers.get(offerIndex);
 
         Table root = UiUtil.newTable();
@@ -83,26 +92,63 @@ public class RewardScreen implements Screen {
         root.validate();
         for (Table frame : frames) frame.setOrigin(frame.getWidth() / 2f, frame.getHeight() / 2f);
 
+        particles.clear(Channel.MENU);
+        ambient = Vfx.rewardAmbience().play(particles,
+            Anchor.region(8f, 0f, 4.5f, 8f, 0f, 4.5f), Drive.FULL, Channel.MENU);
+        selectWisps = null;
+
+        // Reveal ceremony: gather vortex → frame trace → materialize, all cards in sync.
+        ceremonyActive = true;
         for (int i = 0; i < frames.size(); i++) {
             Table frame = frames.get(i);
             RewardOption option = offer.options.get(i);
             frame.getColor().a = 0f;
-            frame.setScale(0.85f);
-            frame.moveBy(0f, -0.5f);
+            frame.setScale(0.9f);
+
+            Vector2 c = frame.localToStageCoordinates(new Vector2(frame.getWidth() / 2f, frame.getHeight() / 2f));
+            for (int arm = 0; arm < 4; arm++) {
+                Vfx.rewardGatherArm(option.accent()).play(particles,
+                    Anchor.spiralIn(c.x, 0f, c.y, 2.4f, 2.2f, Vfx.REWARD_GATHER_SPAWNS, arm * 90f),
+                    Drive.FULL, Channel.MENU);
+            }
+            Vfx.rewardGatherGlyphs(option.accent()).play(particles,
+                Anchor.spiralIn(c.x, 0f, c.y, 2.6f, 1.8f, Vfx.REWARD_GATHER_GLYPHS, 45f),
+                Drive.FULL, Channel.MENU);
+            TraceBorder trace = new TraceBorder(style.pixel, option.accent(), TRACE_TIME, TRACE_AT);
+            trace.setBounds(c.x - frame.getWidth() / 2f, c.y - frame.getHeight() / 2f,
+                frame.getWidth(), frame.getHeight());
+            stage.addActor(trace);
+            traces.add(trace);
+
             frame.addAction(Actions.sequence(
-                Actions.delay(i * 0.12f),
+                Actions.delay(MATERIALIZE_AT),
                 Actions.parallel(
-                    Actions.fadeIn(0.2f, Interpolation.pow2Out),
-                    Actions.moveBy(0f, 0.5f, 0.2f, Interpolation.pow2Out),
-                    Actions.scaleTo(1f, 1f, 0.26f, Interpolation.swingOut)),
+                    Actions.fadeIn(0.15f, Interpolation.pow2Out),
+                    Actions.scaleTo(1f, 1f, 0.2f, Interpolation.swingOut)),
                 Actions.run(() -> revealBurst(frame, option))));
         }
+        stage.addAction(Actions.sequence(Actions.delay(CEREMONY_TIME), Actions.run(this::finishCeremony)));
+    }
 
-        particles.clear(Channel.MENU);
-        ambient = Vfx.menuMotes().play(particles,
-            Anchor.region(8f, 0f, 4.5f, 5.5f, 0f, 3f), Drive.FULL, Channel.MENU);
-        selectWisps = null;
+    private void finishCeremony() {
+        ceremonyActive = false;
         applySelection(0, false);
+    }
+
+    /** Snap the ceremony to its finished state — cards fully visible, effects cleared. */
+    private void skipCeremony() {
+        stage.getRoot().clearActions();
+        for (TraceBorder trace : traces) trace.remove();
+        traces.clear();
+        for (Table frame : frames) {
+            frame.clearActions();
+            frame.getColor().a = 1f;
+            frame.setScale(1f);
+        }
+        particles.clear(Channel.MENU);
+        ambient = Vfx.rewardAmbience().play(particles,
+            Anchor.region(8f, 0f, 4.5f, 8f, 0f, 4.5f), Drive.FULL, Channel.MENU);
+        finishCeremony();
     }
 
     private void applySelection(int index, boolean pop) {
@@ -135,7 +181,11 @@ public class RewardScreen implements Screen {
     private void advance() {
         offerIndex++;
         if (offerIndex >= offers.size()) {
-            game.setScreen(new OverworldScreen(game));
+            // TEMP: ceremony-testing loop — re-roll another reward screen instead of
+            // returning to the overworld (skip offers to loop forever). Remove before ship.
+            RewardOffer next = RewardOffer.skillOffer(game.session);
+            game.setScreen(next != null ? new RewardScreen(game, List.of(next))
+                                        : new OverworldScreen(game));
         } else {
             buildOffer();
         }
@@ -148,20 +198,29 @@ public class RewardScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(Color.BLACK);
+        ScreenUtils.clear(BG);
         game.viewport.apply();
 
         input.update();
-        int count = offers.get(offerIndex).options.size();
-        if (input.isActionJustPressed(GameAction.MOVE_LEFT))  applySelection((selected + count - 1) % count, true);
-        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) applySelection((selected + 1) % count, true);
+        if (ceremonyActive) {
+            if (input.isActionJustPressed(GameAction.MOVE_LEFT)
+                || input.isActionJustPressed(GameAction.MOVE_RIGHT)
+                || input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)
+                || input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
+                skipCeremony();
+            }
+        } else if (!exiting) {
+            int count = offers.get(offerIndex).options.size();
+            if (input.isActionJustPressed(GameAction.MOVE_LEFT))  applySelection((selected + count - 1) % count, true);
+            if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) applySelection((selected + 1) % count, true);
 
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) {
-            offers.get(offerIndex).options.get(selected).apply(game.session);
-            exitOffer(true);
-        }
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
-            exitOffer(false);
+            if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) {
+                offers.get(offerIndex).options.get(selected).apply(game.session);
+                exitOffer(true);
+            }
+            if (input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
+                exitOffer(false);
+            }
         }
 
         particles.update(delta);

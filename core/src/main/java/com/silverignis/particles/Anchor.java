@@ -20,6 +20,22 @@ public interface Anchor {
             cz + MathUtils.random(-hz, hz));
     }
 
+    /** Spawn point sweeping an inward spiral around (cx, cz) in the x/z plane — advances
+     *  one step per call, so a burst(totalSpawns, window) emitter animates a converging
+     *  vortex out of its own emission trail. Stateful: use with a single-emitter effect,
+     *  one play() per arm ({@code phaseDeg} offsets the start angle). */
+    static Anchor spiralIn(float cx, float cy, float cz, float startRadius, float revolutions,
+                           int totalSpawns, float phaseDeg) {
+        float[] step = {0f};
+        float last = Math.max(1, totalSpawns - 1);
+        return out -> {
+            float t = Math.min(step[0]++ / last, 1f);
+            float ang = phaseDeg * MathUtils.degRad + t * revolutions * MathUtils.PI2;
+            float r = startRadius * (1f - t);
+            out.set(cx + MathUtils.cos(ang) * r, cy, cz + MathUtils.sin(ang) * r);
+        };
+    }
+
     /** Random point on the edge of an x/z rectangle (center ± half-extents) — spawn from a frame, not its middle. */
     static Anchor rim(float cx, float cy, float cz, float hx, float hz) {
         return out -> {

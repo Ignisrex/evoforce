@@ -20,7 +20,7 @@ public class PlayerProfile {
         this.caster = new Caster(Team.PLAYER);
 
         caster.setBasicAttack(library.get("wind_slash"));
-        for (String id : List.of("wind_strike", "fire_blast", "heal")) {
+        for (String id : List.of("wind_strike", "fire_blast", "heal", "ice_beam", "shield", "electro_ball")) {
             caster.getDeck().add(library.get(id));
         }
 
