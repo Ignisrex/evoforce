@@ -15,11 +15,15 @@ public final class Emitter implements SceneRenderable {
 
     private final Array<Particle> live = new Array<>(false, 64);
     private final Vector3 scratch = new Vector3();
+    private final Vector3 lastAnchor = new Vector3();
+    private boolean hasLastAnchor;
 
     private ParticleEngine engine;   // set on add(); owns the pool + the draw routine
 
     private float accumulator;
+    private float delayLeft;
     private int emitted;
+    private int spawned;
     private boolean stopped;
 
     private float depth;
@@ -30,6 +34,7 @@ public final class Emitter implements SceneRenderable {
         this.spec = spec;
         this.drive = drive;
         this.channel = channel;
+        this.delayLeft = spec.delay;
         anchor.point(scratch);
         this.depth = scratch.z;
     }
@@ -39,12 +44,22 @@ public final class Emitter implements SceneRenderable {
     public void stop() { stopped = true; }
 
     public boolean update(float dt) {
-        if (!stopped) spawn(dt);
+        if (delayLeft > 0f) delayLeft -= dt;
+        else if (!stopped) spawn(dt);
         for(int i = live.size - 1; i>= 0; i--){
             Particle p = live.get(i);
             p.age += dt;
             if(p.age >= p.life) engine.free(live.removeIndex(i));
-            else p.pos.mulAdd(p.vel, dt);
+            else {
+                p.vel.add(spec.accelX * dt, spec.accelY * dt, spec.accelZ * dt);
+                if (spec.wander > 0f) {
+                    float w = spec.wander * dt;   // ponytail: dt-scaled random walk, eyeball-tuned, not framerate-exact
+                    p.vel.add(MathUtils.random(-w, w), MathUtils.random(-w, w), MathUtils.random(-w, w));
+                }
+                if (spec.drag > 0f) p.vel.scl(Math.max(0f, 1f - spec.drag * dt));
+                p.pos.mulAdd(p.vel, dt);
+                p.rot += p.spin * dt;
+            }
         }
         boolean doneSpawning = stopped || (spec.mode == EmitterSpec.Mode.BURST && emitted >= spec.count);
         return  doneSpawning && live.size == 0;
@@ -69,7 +84,19 @@ public final class Emitter implements SceneRenderable {
     }
 
     public void spawnOne() {
-        anchor.point(scratch);
+        if (spec.follow) scratch.setZero();   // follow: pos is an offset; anchor re-added at draw
+        else anchor.point(scratch);
+        // inherit: sampled off the raw anchor point, before offset/jitter muddy the path direction
+        float ivx = 0f, ivy = 0f, ivz = 0f;
+        if (spec.inherit != 0f && !spec.follow) {
+            if (hasLastAnchor) {
+                ivx = (scratch.x - lastAnchor.x) * spec.inherit;
+                ivy = (scratch.y - lastAnchor.y) * spec.inherit;
+                ivz = (scratch.z - lastAnchor.z) * spec.inherit;
+            }
+            lastAnchor.set(scratch);
+            hasLastAnchor = true;
+        }
         scratch.add(spec.offsetX, spec.offsetY, spec.offsetZ);
         if (spec.jitterX != 0f || spec.jitterY != 0f || spec.jitterZ != 0f) {
             scratch.add(
@@ -84,16 +111,24 @@ public final class Emitter implements SceneRenderable {
         Particle p = engine.obtain();
         p.pos.set(scratch);
         p.vel.set(
-            horiz * MathUtils.cos(az) + spec.driftX,
-            sp * MathUtils.cos(polar) + spec.driftY,
-            horiz * MathUtils.sin(az) + spec.driftZ);
+            horiz * MathUtils.cos(az),
+            sp * MathUtils.cos(polar),
+            horiz * MathUtils.sin(az));
+        if (spec.dirRot != null) spec.dirRot.transform(p.vel);
+        p.vel.add(spec.driftX + ivx, spec.driftY + ivy, spec.driftZ + ivz);
 
         p.age = 0f;
         p.life = spec.life.sample();
+        p.rot = spec.rotation.sample();
+        p.spin = spec.spin.sample();
         p.texIndex = (!spec.texturesOverLife && spec.textures.length > 1)
             ? MathUtils.random(spec.textures.length - 1) : 0;   // over-life mode indexes by age instead
 
-        p.sizeFrom = spec.size.sample();
+        float burstT = (spec.mode == EmitterSpec.Mode.BURST && spec.count > 1)
+            ? Math.min(spawned / (spec.count - 1f), 1f) : 1f;
+        spawned++;
+        p.sizeFrom = spec.size.sample()
+            * (spec.sizeBurstStart + (1f - spec.sizeBurstStart) * burstT);
         p.sizeEndScale = spec.sizeEndScale;
         p.sizeInterp = spec.sizeInterp;
 
@@ -119,5 +154,9 @@ public final class Emitter implements SceneRenderable {
         return RenderLayer.BILLBOARD;
     }
 
-    public void render(RenderContext rc) { engine.draw(live, spec, rc); }
+    public void render(RenderContext rc) {
+        if (spec.follow) anchor.point(scratch);
+        else scratch.setZero();
+        engine.draw(live, spec, scratch, rc);
+    }
 }

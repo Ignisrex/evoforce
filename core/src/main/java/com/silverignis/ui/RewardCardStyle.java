@@ -1,6 +1,7 @@
 package com.silverignis.ui;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -35,8 +36,10 @@ public final class RewardCardStyle implements Disposable {
         body  = new Label.LabelStyle(bodyFont,  UiTheme.TEXT);
         small = new Label.LabelStyle(smallFont, UiTheme.TEXT_DIM);
 
-        cardBg = new BezelDrawable(shader, UiTheme.PANEL, UiTheme.OUTLINE_V, UiTheme.BORDER, UiTheme.CORNER_RADIUS);
-        cardBgSelected = new BezelDrawable(shader, UiTheme.CARD_HI, UiTheme.CYAN_HI, UiTheme.BORDER,
+        // translucent black instead of the shared PANEL/CARD_HI greys — the arcane backdrop
+        // shows through; selection reads as a deeper black (plus the cyan bezel + glow)
+        cardBg = new BezelDrawable(shader, new Color(0f, 0f, 0f, 0.45f), UiTheme.OUTLINE_V, UiTheme.BORDER, UiTheme.CORNER_RADIUS);
+        cardBgSelected = new BezelDrawable(shader, new Color(0f, 0f, 0f, 0.7f), UiTheme.CYAN_HI, UiTheme.BORDER,
             UiTheme.CORNER_RADIUS, UiTheme.CYAN_45, UiTheme.GLOW_WIDTH);
         statBox = new BezelDrawable(shader, UiTheme.STATBOX, UiTheme.OUTLINE_V, UiTheme.BORDER_THIN, UiTheme.CORNER_RADIUS);
     }

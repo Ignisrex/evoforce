@@ -20,19 +20,29 @@ public interface Anchor {
             cz + MathUtils.random(-hz, hz));
     }
 
-    /** Spawn point sweeping an inward spiral around (cx, cz) in the x/z plane — advances
-     *  one step per call, so a burst(totalSpawns, window) emitter animates a converging
-     *  vortex out of its own emission trail. Stateful: use with a single-emitter effect,
-     *  one play() per arm ({@code phaseDeg} offsets the start angle). */
-    static Anchor spiralIn(float cx, float cy, float cz, float startRadius, float revolutions,
-                           int totalSpawns, float phaseDeg) {
+    /** Spawn point sweeping a spiral around (cx, cz) in the x/z plane (inward or outward,
+     *  per start radius vs end extents) — advances one step per call, so a
+     *  burst(totalSpawns, window) emitter animates a vortex out of its own emission trail.
+     *  The end shape is the border of an endHx×endHz rectangle (per-angle radius), so an
+     *  outward sweep pushes into the corners instead of stopping on an inscribed circle.
+     *  The radius lands on that border at {@code settle} (fraction of spawns); angle keeps
+     *  advancing the whole time, so the remainder orbits tracing the border.
+     *  Stateful: use with a single-emitter effect, one play() per arm ({@code phaseDeg}
+     *  offsets the start angle). */
+    static Anchor spiralIn(float cx, float cy, float cz, float startRadius, float endHx,
+                           float endHz, float revolutions, int totalSpawns, float phaseDeg,
+                           float settle) {
         float[] step = {0f};
         float last = Math.max(1, totalSpawns - 1);
         return out -> {
             float t = Math.min(step[0]++ / last, 1f);
             float ang = phaseDeg * MathUtils.degRad + t * revolutions * MathUtils.PI2;
-            float r = startRadius * (1f - t);
-            out.set(cx + MathUtils.cos(ang) * r, cy, cz + MathUtils.sin(ang) * r);
+            float cos = MathUtils.cos(ang), sin = MathUtils.sin(ang);
+            float end = Math.min(endHx / Math.max(Math.abs(cos), 1e-4f),
+                                 endHz / Math.max(Math.abs(sin), 1e-4f));
+            float rt = Math.min(t / settle, 1f);
+            float r = end + (startRadius - end) * (1f - rt);
+            out.set(cx + cos * r, cy, cz + sin * r);
         };
     }
 

@@ -10,6 +10,8 @@ public final class Particle implements Poolable {
     public final Vector3 vel = new Vector3();
     public float age;
     public float life;
+    public float rot;    // degrees
+    public float spin;   // degrees/sec
     public float sizeFrom;
     public float sizeEndScale = 1f;
     public Interpolation sizeInterp = Interpolation.linear;
@@ -26,6 +28,8 @@ public final class Particle implements Poolable {
         vel.setZero();
         age = 0f;
         life = 0f;
+        rot = 0f;
+        spin = 0f;
 
         sizeFrom = 0f;
         sizeEndScale = 1f;

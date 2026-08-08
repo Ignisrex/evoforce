@@ -47,6 +47,7 @@ public class RewardScreen implements Screen {
     private final List<Table> frames = new ArrayList<>();
     private final List<TraceBorder> traces = new ArrayList<>();
     private EmitterHandle ambient, selectWisps;
+    private final List<EmitterHandle> cardWisps = new ArrayList<>();
 
     public RewardScreen(Main game, List<RewardOffer> offers) {
         this.game = game;
@@ -96,6 +97,7 @@ public class RewardScreen implements Screen {
         ambient = Vfx.rewardAmbience().play(particles,
             Anchor.region(8f, 0f, 4.5f, 8f, 0f, 4.5f), Drive.FULL, Channel.MENU);
         selectWisps = null;
+        cardWisps.clear();
 
         // Reveal ceremony: gather vortex → frame trace → materialize, all cards in sync.
         ceremonyActive = true;
@@ -108,12 +110,18 @@ public class RewardScreen implements Screen {
             Vector2 c = frame.localToStageCoordinates(new Vector2(frame.getWidth() / 2f, frame.getHeight() / 2f));
             for (int arm = 0; arm < 4; arm++) {
                 Vfx.rewardGatherArm(option.accent()).play(particles,
-                    Anchor.spiralIn(c.x, 0f, c.y, 2.4f, 2.2f, Vfx.REWARD_GATHER_SPAWNS, arm * 90f),
+                    Anchor.spiralIn(c.x, 0f, c.y, Vfx.REWARD_CIRCLE_RADIUS * 0.8f,
+                        frame.getWidth() / 2f, frame.getHeight() / 2f, 2.6f,
+                        Vfx.REWARD_GATHER_SPAWNS, arm * 90f, 0.7f),
                     Drive.FULL, Channel.MENU);
             }
             Vfx.rewardGatherGlyphs(option.accent()).play(particles,
-                Anchor.spiralIn(c.x, 0f, c.y, 2.6f, 1.8f, Vfx.REWARD_GATHER_GLYPHS, 45f),
+                Anchor.spiralIn(c.x, 0f, c.y, Vfx.REWARD_CIRCLE_RADIUS * 0.8f,
+                    frame.getWidth() / 2f, frame.getHeight() / 2f, 2.0f,
+                    Vfx.REWARD_GATHER_GLYPHS, 45f, 0.7f),
                 Drive.FULL, Channel.MENU);
+            Vfx.rewardGatherCircle(option.accent()).play(particles,
+                Anchor.at(c.x, 0f, c.y), Drive.FULL, Channel.MENU);
             TraceBorder trace = new TraceBorder(style.pixel, option.accent(), TRACE_TIME, TRACE_AT);
             trace.setBounds(c.x - frame.getWidth() / 2f, c.y - frame.getHeight() / 2f,
                 frame.getWidth(), frame.getHeight());
@@ -132,6 +140,15 @@ public class RewardScreen implements Screen {
 
     private void finishCeremony() {
         ceremonyActive = false;
+        // Every card face shimmers while present — same wisps as selection, full-face region.
+        RewardOffer offer = offers.get(offerIndex);
+        for (int i = 0; i < frames.size(); i++) {
+            Table frame = frames.get(i);
+            Vector2 c = frame.localToStageCoordinates(new Vector2(frame.getWidth() / 2f, frame.getHeight() / 2f));
+            cardWisps.add(Vfx.rewardSelectWisps(offer.options.get(i).accent()).play(particles,
+                Anchor.region(c.x, 0f, c.y, frame.getWidth() * 0.45f, 0f, frame.getHeight() * 0.45f),
+                Drive.FULL, Channel.MENU));
+        }
         applySelection(0, false);
     }
 
@@ -234,6 +251,8 @@ public class RewardScreen implements Screen {
             selectWisps.stop();
             selectWisps = null;
         }
+        for (EmitterHandle wisps : cardWisps) wisps.stop();
+        cardWisps.clear();
 
         for(int i = 0; i < frames.size(); i++) {
             if (claimed && i == selected) continue;
@@ -247,15 +266,11 @@ public class RewardScreen implements Screen {
             Table chosen = frames.get(selected);
             Vector2 c = chosen.localToStageCoordinates(new Vector2(chosen.getWidth() / 2f, chosen.getHeight() / 2f));
             Vfx.rewardConfirmBurst(offers.get(offerIndex).options.get(selected).accent()).play(particles,
-                Anchor.region(c.x, 0f, c.y, chosen.getWidth() * 0.3f, 0f, chosen.getHeight() * 0.3f),
-                Drive.FULL, Channel.MENU);
+                Anchor.at(c.x, 0f, c.y), Drive.FULL, Channel.MENU);
             chosen.addAction(Actions.sequence(
                 Actions.scaleTo(1.08f, 1.08f, 0.12f, Interpolation.pow2Out),
-                Actions.delay(0.25f),
-                Actions.parallel(
-                    Actions.fadeOut(0.18f, Interpolation.pow2In),
-                    Actions.scaleTo(0.9f, 0.9f, 0.18f, Interpolation.pow2In))));
-            wait = 0.6f;
+                Actions.fadeOut(0.25f, Interpolation.pow2In)));
+            wait = 0.45f;
         }
 
         stage.addAction(Actions.sequence(
