@@ -193,11 +193,7 @@ public class RewardScreen implements Screen {
     private void advance() {
         offerIndex++;
         if (offerIndex >= offers.size()) {
-            // TEMP: ceremony-testing loop — re-roll another reward screen instead of
-            // returning to the overworld (skip offers to loop forever). Remove before ship.
-            RewardOffer next = RewardOffer.skillOffer(game.session);
-            game.setScreen(next != null ? new RewardScreen(game, List.of(next))
-                                        : new OverworldScreen(game));
+            game.setScreen(new OverworldScreen(game));
         } else {
             buildOffer();
         }

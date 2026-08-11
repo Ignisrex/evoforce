@@ -31,6 +31,7 @@ import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.ButtonSlot;
+import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.systems.BattleContext;
 import com.silverignis.environment.GameEnvironment;
@@ -39,6 +40,7 @@ import com.silverignis.systems.MovementSystem;
 import com.silverignis.systems.SpawnSystem;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
+import com.silverignis.traits.TraitsContainer;
 import com.silverignis.util.PanelGenerator;
 
 import java.util.ArrayList;
@@ -115,6 +117,12 @@ public class PlayState implements GameScreenState {
         battleContext.combatSystem = combatSystem;
         battleContext.particleEngine = particles;
 
+        //apply traits to combatants
+        TraitsContainer traits = player.getCaster().getTraits();
+        player.getSlots().setSlotCapacity(SkillSlots.BASE_CAPACITY + traits.slotCapacityBonus());
+        traits.applyBattleHooks(player, triggerBus, damageSystem);
+        for (Enemy e : enemies) e.getCaster().getTraits().applyBattleHooks(e, triggerBus, damageSystem);
+
         vfxManager = screen.game.vfxManager;
     }
 
@@ -165,9 +173,14 @@ public class PlayState implements GameScreenState {
             transitionScheduled = true;
             screen.game.session.playerProfile.progressPlayer();
             screen.game.session.playerProfile.getCaster().resetStaging();
+
+            List<RewardOffer> offers = new ArrayList<>();
             RewardOffer skills = RewardOffer.skillOffer(screen.game.session);
-            screen.game.setScreen(skills == null ? new OverworldScreen(screen.game)
-                    : new RewardScreen(screen.game, List.of(skills)));
+            if( skills !=  null) offers.add(skills);
+            RewardOffer traits = RewardOffer.traitOffer(screen.game.session);
+            if( traits != null) offers.add(traits);
+            screen.game.setScreen( offers.isEmpty() ? new OverworldScreen(screen.game)
+                    : new RewardScreen(screen.game, offers));
             return true;
         }
         if (!player.isAlive()) {

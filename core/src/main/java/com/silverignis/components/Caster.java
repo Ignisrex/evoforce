@@ -3,6 +3,7 @@ package com.silverignis.components;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
+import com.silverignis.traits.TraitsContainer;
 import com.silverignis.util.InputLock;
 
 import java.util.ArrayList;
@@ -34,6 +35,8 @@ public class Caster {
     private final List<Skill> loadedSkills = new ArrayList<>();
     private Skill basicAttack;
 
+    private final TraitsContainer traits = new TraitsContainer();
+
     public Caster(Team team) {
         this.team = team;
     }
@@ -44,6 +47,8 @@ public class Caster {
     public InputLock  getInputLock()        { return inputLock; }
     public Skill      getBasicAttack()      { return basicAttack; }
     public void       setBasicAttack(Skill s) { this.basicAttack = s; }
+
+    public TraitsContainer getTraits() { return this.traits; }
 
     /** Tick per-caster state (currently just cooldowns inside the deck). */
     public void update(float delta) {

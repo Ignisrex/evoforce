@@ -77,10 +77,7 @@ public class Main extends Game {
 
         this.session = new GameSession();
 
-        // TEMP: boot straight into the reward screen for ceremony iteration. Remove before ship.
-        this.setScreen(new com.silverignis.screens.RewardScreen(this,
-            java.util.List.of(com.silverignis.rewards.RewardOffer.skillOffer(session))));
-        // this.setScreen(new MainMenuScreen(this));
+        this.setScreen(new MainMenuScreen(this));
     }
 
     private void loadAssets(){

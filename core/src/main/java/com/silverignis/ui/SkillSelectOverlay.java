@@ -33,6 +33,7 @@ import com.silverignis.skills.elements.Element;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
+import com.silverignis.traits.Trait;
 
 import java.util.List;
 
@@ -93,6 +94,9 @@ public class SkillSelectOverlay {
     private static final float TRAY_Y = 0.28f, TRAY_H = 1.62f;
     private static final float TRAY_CENTER_X = 8.0f, TRAY_CHIP_W = 1.05f, TRAY_MAX_W = 9.6f;
     private static final float TAB_X = 15.55f, TAB_Y = 3.9f, TAB_W = 0.45f, TAB_H = 1.2f;
+    private static final float TRAIT_CHIP = 0.66f;  // match SLOT_SIZE
+    private static final int   TRAIT_COLS = 4;      // 4 chips fit OPERATOR_W's interior
+    private static final float TRAIT_TIP_H = 1.35f;
 
     // ── animation ───────────────────────────────────────────────────────────
     // Card entrance (cascade) + assign (pop), driven by a clock rather than
@@ -228,7 +232,9 @@ public class SkillSelectOverlay {
     // are persistent so their Actions animate.
     public void refresh(List<Skill> hand, int handCursor, boolean inSlots, int slotCursor,
                         SkillSlots slots, Skill highlighted, boolean tucked,
-                        float mana, int manaMax) {
+                        float mana, int manaMax,
+                        List<Trait> traits, boolean detailFocused, boolean operatorFocused,
+                        boolean traitTrayOpen, int traitCursor) {
         if (tucked) {
             hud.setVisible(false);
             cursorBezel.setVisible(false);
@@ -248,14 +254,16 @@ public class SkillSelectOverlay {
         refreshDetailWisps(highlighted);
 
         rect(hud, 0f, 0f, viewport.getWorldWidth(), viewport.getWorldHeight()).fill(DIM);
-        buildOperator(slots, mana, manaMax);
-        buildDetail(highlighted);
+        buildOperator(slots, mana, manaMax, traits.size(), operatorFocused, traitTrayOpen);
+        buildDetail(highlighted, detailFocused);
         buildStacks(slots, inSlots, slotCursor);
-        buildTray(hand, handCursor, inSlots);
+        buildTray(hand, handCursor, inSlots || detailFocused || operatorFocused);
+        if (traitTrayOpen) buildTraitTray(traits, traitCursor);
         updateCursor();
     }
 
-    private void buildOperator(SkillSlots slots, float mana, int manaMax) {
+    private void buildOperator(SkillSlots slots, float mana, int manaMax,
+                               int traitCount, boolean operatorFocused, boolean traitTrayOpen) {
         int used = slots.getSlotsUsed();
         int max = slots.getSlotCapacity();
 
@@ -263,8 +271,10 @@ public class SkillSelectOverlay {
         avatar.setBackground(avatarBg);
 
         Table slotsRow = newTable();
-        slotsRow.add(label(labelStyle, "SLOTS", TEXT_DIM)).left().expandX().bottom();
-        slotsRow.add(label(statStyle, used + "/" + max, CYAN_HI)).right().bottom();
+        slotsRow.add(label(labelStyle, "SLOTS", TEXT_DIM)).left().bottom();
+        slotsRow.add(label(statStyle, used + "/" + max, CYAN_HI)).left().padLeft(0.12f).bottom();
+        slotsRow.add(label(labelStyle, "TRAITS", TEXT_DIM)).right().expandX().bottom();
+        slotsRow.add(label(statStyle, String.valueOf(traitCount), GOLD)).right().padLeft(0.12f).bottom();
 
         Table info = newTable();
         info.add(label(labelStyle, "OPERATOR_01", CYAN)).left().expandX().row();
@@ -275,12 +285,17 @@ public class SkillSelectOverlay {
         Table panel = glassPanel(OPERATOR_X, OPERATOR_TOP - OPERATOR_H, OPERATOR_W, OPERATOR_H, OPERATOR_PAD);
         panel.add(avatar).size(OPERATOR_H - 2 * OPERATOR_PAD).padRight(0.25f);
         panel.add(info).grow();
+
+        if (operatorFocused && !traitTrayOpen) {
+            target(OPERATOR_X, OPERATOR_TOP - OPERATOR_H, OPERATOR_W, OPERATOR_H);
+        }
     }
 
-    private void buildDetail(Skill s) {
+    private void buildDetail(Skill s, boolean detailFocused) {
         cornerBrackets(DETAIL_X, DETAIL_Y, DETAIL_W, DETAIL_H);
         Table panel = glassPanel(DETAIL_X, DETAIL_Y, DETAIL_W, DETAIL_H, PANEL_PAD);
         panel.top();
+        if (detailFocused) target(DETAIL_X, DETAIL_Y, DETAIL_W, DETAIL_H);
 
         float imageW = DETAIL_W - 2 * PANEL_PAD;
         panel.add(imageBox(s, imageW, DETAIL_IMAGE_H)).size(imageW, DETAIL_IMAGE_H).row();
@@ -452,6 +467,45 @@ public class SkillSelectOverlay {
             icon(chip, s.getIcon(), w / 2f - iconSize / 2f, h / 2f - iconSize / 2f + 0.05f, iconSize, iconSize, 1f);
         }
         rect(chip, 0.1f, 0.1f, w - 0.2f, 0.06f).fill(CARD_HI);
+    }
+
+    /** Trait tray modal: chip grid + tooltip under the operator panel; draws over the detail panel. */
+    private void buildTraitTray(List<Trait> traits, int cursor) {
+        float panelTop = OPERATOR_TOP - OPERATOR_H - GAP;
+        int n = traits.size();
+        int rows = Math.max(1, (n + TRAIT_COLS - 1) / TRAIT_COLS);
+        float h = 2 * PANEL_PAD + rows * TRAIT_CHIP + (rows - 1) * GAP;
+        float y = panelTop - h;
+        glassPanel(OPERATOR_X, y, OPERATOR_W, h, 0f);
+
+        if (n == 0) {
+            placeLabel(hud, tinyStyle, "NO TRAITS YET", TEXT_DIM,
+                       OPERATOR_X + OPERATOR_W / 2f, y + h / 2f + 0.08f, Align.center);
+            return;
+        }
+
+        int cur = Math.clamp(cursor, 0, n - 1);
+        float inset = TRAIT_CHIP * CARD_ICON_INSET;
+        for (int i = 0; i < n; i++) {
+            float cx = OPERATOR_X + PANEL_PAD + (i % TRAIT_COLS) * (TRAIT_CHIP + GAP);
+            float cy = panelTop - PANEL_PAD - TRAIT_CHIP - (i / TRAIT_COLS) * (TRAIT_CHIP + GAP);
+            Group chip = new Group();
+            chip.setPosition(cx, cy);
+            hud.addActor(chip);
+            rect(chip, 0f, 0f, TRAIT_CHIP, TRAIT_CHIP).fill(CARD).border(OUTLINE_60, BORDER).radius(CORNER_RADIUS);
+            icon(chip, traits.get(i).getIcon(), inset, inset,
+                 TRAIT_CHIP - 2 * inset, TRAIT_CHIP - 2 * inset, 1f);
+            if (i == cur) target(cx, cy, TRAIT_CHIP, TRAIT_CHIP);
+        }
+
+        Trait sel = traits.get(cur);
+        Table tip = glassPanel(OPERATOR_X, y - GAP - TRAIT_TIP_H, OPERATOR_W, TRAIT_TIP_H, PANEL_PAD * 0.6f);
+        tip.top();
+        tip.add(label(labelStyle, sel.getDisplayName().toUpperCase(), CYAN)).left().growX().row();
+        Label desc = label(tinyStyle, sel.getDescription(), TEXT);
+        desc.setWrap(true);
+        desc.setAlignment(Align.topLeft);
+        tip.add(desc).grow().padTop(0.06f);
     }
 
     private void updateCursor() {

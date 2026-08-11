@@ -10,6 +10,7 @@ import com.silverignis.skills.Skill;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
+import com.silverignis.traits.Trait;
 import com.silverignis.ui.SkillSelectOverlay;
 
 import java.util.*;
@@ -21,9 +22,13 @@ public class SkillSelectState implements GameScreenState {
     private final GameScreen screen;
     private final SkillSelectOverlay overlay;
 
+    private enum Zone { HAND, DETAIL, STACKS, OPERATOR }
+
     private List<Skill> hand;
     private int cursor;
-    private boolean inSlots;
+    private Zone zone;
+    private boolean traitTrayOpen;
+    private int traitCursor;
     private int slotCursor;
     private boolean tucked;
     private boolean exiting; // overlay is playing its exit animation; input is done
@@ -39,7 +44,9 @@ public class SkillSelectState implements GameScreenState {
 
     @Override
     public void onEnter() {
-        inSlots = false;
+        zone = Zone.HAND;
+        traitTrayOpen = false;
+        traitCursor = 0;
         slotCursor = 0;
         tucked = false;
         exiting = false;
@@ -66,8 +73,28 @@ public class SkillSelectState implements GameScreenState {
         if (input.isActionJustPressed(GameAction.SKILL_SELECT_TUCK)) tucked = !tucked;
         if (tucked) return; //view-only mode so all other input commands are ignored
 
-        if (input.isActionJustPressed(GameAction.MOVE_UP)) inSlots = true;
-        if (input.isActionJustPressed(GameAction.MOVE_DOWN)) inSlots = false;
+        if (traitTrayOpen) {
+            List<Trait> traits = screen.playState.getPlayer().getCaster().getTraits().all();
+            int max = Math.max(0, traits.size() - 1);
+            if (input.isActionJustPressed(GameAction.MOVE_LEFT))  traitCursor = Math.clamp(traitCursor - 1, 0, max);
+            if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) traitCursor = Math.clamp(traitCursor + 1, 0, max);
+            if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)
+                    || input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
+                traitTrayOpen = false;
+            }
+            return; // modal: swallow everything else — especially cancel's mana drain
+        }
+
+        // Spatial navigation: UP/DOWN walks the left column (hand -> detail -> operator);
+        // LEFT/RIGHT jumps between the column and the stacks on the right (see moveCursor).
+        if (input.isActionJustPressed(GameAction.MOVE_UP)) {
+            if (zone == Zone.HAND) zone = Zone.DETAIL;
+            else if (zone == Zone.DETAIL) zone = Zone.OPERATOR;
+        }
+        if (input.isActionJustPressed(GameAction.MOVE_DOWN)) {
+            if (zone == Zone.OPERATOR) zone = Zone.DETAIL;
+            else if (zone == Zone.DETAIL || zone == Zone.STACKS) zone = Zone.HAND;
+        }
 
         if (input.isActionJustPressed(GameAction.MOVE_LEFT)) moveCursor(-1);
         if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) moveCursor(+1);
@@ -78,21 +105,31 @@ public class SkillSelectState implements GameScreenState {
 
         if (input.isActionJustPressed(GameAction.SKILL_SELECT_UNDO)) tryUndo();
 
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)){ confirm();
-        }else if (input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) cancel();
+        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) {
+            if (zone == Zone.OPERATOR) { traitTrayOpen = true; traitCursor = 0; }
+            else confirm();
+        } else if (input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) cancel();
     }
 
     private void moveCursor(int d) {
-        if( inSlots ) {
-            slotCursor = Math.clamp(slotCursor + d, 0, SlotKey.values().length - 1);
-        } else if(!hand.isEmpty()) {
-            cursor = Math.clamp(cursor + d, 0, hand.size() - 1);
+        switch (zone) {
+            case HAND -> {
+                if (!hand.isEmpty()) cursor = Math.clamp(cursor + d, 0, hand.size() - 1);
+            }
+            case STACKS -> {
+                if (d < 0 && slotCursor == 0) zone = Zone.DETAIL; // walk off the left edge
+                else slotCursor = Math.clamp(slotCursor + d, 0, SlotKey.values().length - 1);
+            }
+            case DETAIL, OPERATOR -> {
+                if (d > 0) zone = Zone.STACKS;
+            }
         }
     }
 
     private void tryUndo() {
+        if (zone == Zone.OPERATOR) return;
         SlotKey key;
-        if (inSlots) {
+        if (zone == Zone.STACKS) {
             key = SlotKey.values()[slotCursor];
         } else if(!selectHistory.isEmpty()) {
             key = selectHistory.pop();
@@ -104,7 +141,7 @@ public class SkillSelectState implements GameScreenState {
         Skill s = slot.pop(); // top = most recently staged
         if (s == null) return;
         if (!isPrepaid(s)) pendingCost -= s.getManaCost();
-        if (inSlots) selectHistory.removeFirstOccurrence(key);
+        if (zone == Zone.STACKS) selectHistory.removeFirstOccurrence(key);
         hand.add(s);
     }
 
@@ -114,9 +151,11 @@ public class SkillSelectState implements GameScreenState {
     public void update(float delta) {
         if (!exiting) {
             Player p = screen.playState.getPlayer();
-            overlay.refresh(hand, cursor, inSlots, slotCursor, p.getSlots(),
+            overlay.refresh(hand, cursor, zone == Zone.STACKS, slotCursor, p.getSlots(),
                     highlighted(), tucked,
-                    screen.mana.getCurrent() - pendingCost, screen.mana.getMax());
+                    screen.mana.getCurrent() - pendingCost, screen.mana.getMax(),
+                    p.getCaster().getTraits().all(), zone == Zone.DETAIL, zone == Zone.OPERATOR,
+                    traitTrayOpen, traitCursor);
         }
         overlay.act(delta);
     }
@@ -132,7 +171,8 @@ public class SkillSelectState implements GameScreenState {
     }
 
     private Skill highlighted() {
-        if (inSlots) {
+        if (zone == Zone.OPERATOR) return null;
+        if (zone == Zone.STACKS) {
             List<Skill> q = screen.playState.getPlayer().getSlots().get(SlotKey.values()[slotCursor]).view();
             return q.isEmpty() ? null : q.get(0); // top of the stack
         }
@@ -172,6 +212,7 @@ public class SkillSelectState implements GameScreenState {
         // Guard order: nothing to assign from an empty hand, and a full slot
         // can't accept more. NOTE: do NOT bail when the slot is empty —
         // that's exactly when we most; need to put a skill into it.
+        if (zone == Zone.OPERATOR) return;
         if (hand.isEmpty()) return;
         SkillSlots slots = screen.playState.getPlayer().getSlots();
         if (slots.isFull()) return;

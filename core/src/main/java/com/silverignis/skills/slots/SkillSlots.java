@@ -10,7 +10,8 @@ import java.util.EnumMap;
  * menu lets the player top up but doesn't wipe what's already loaded.
  */
 public class SkillSlots {
-    private int slotCapacity = 6;
+    public static final int BASE_CAPACITY = 6;
+    private int slotCapacity = BASE_CAPACITY;
     private final EnumMap<SlotKey, ButtonSlot> slots = new EnumMap<>(SlotKey.class);
 
     public SkillSlots() {
@@ -50,4 +51,6 @@ public class SkillSlots {
     }
 
     public int getSlotCapacity(){ return this.slotCapacity; }
+
+    public void setSlotCapacity(int capacity) { slotCapacity = capacity; }
 }

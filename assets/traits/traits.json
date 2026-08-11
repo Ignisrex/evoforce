@@ -1,0 +1,21 @@
+[
+  { "id": "arcane_memory", "displayName": "Arcane Memory",
+    "description": "Stage up to 2 extra skills in your slots.",
+    "icon": "traits/arcane_memory.png", "effect": "ARCANE_MEMORY" },
+
+  { "id": "flame_resistance", "displayName": "Flame Resistance",
+    "description": "Take half damage from Fire skills.",
+    "icon": "traits/flame_resistance.png", "effect": "FLAME_RESISTANCE" },
+
+  { "id": "frost_resistance", "displayName": "Frost Resistance",
+    "description": "Take half damage from Ice skills.",
+    "icon": "traits/frost_resistance.png", "effect": "FROST_RESISTANCE" },
+
+  { "id": "vampiric_edge", "displayName": "Vampiric Edge",
+    "description": "Heal for a tenth of the skill damage you deal.",
+    "icon": "traits/vampiric_edge.png", "effect": "VAMPIRIC_EDGE" },
+
+  { "id": "soul_feast", "displayName": "Soul Feast",
+    "description": "Restore 15 HP whenever you defeat an enemy.",
+    "icon": "traits/soul_feast.png", "effect": "SOUL_FEAST" }
+]
