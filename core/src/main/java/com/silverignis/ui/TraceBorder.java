@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 
 /**
@@ -18,16 +19,18 @@ public final class TraceBorder extends Actor {
 
     private static final float THICKNESS = 0.045f;
     private static final float FLASH_TIME = 0.15f;
-    private static final float SHEEN_TIME = 0.2f;
+    private static final float SHEEN_TIME = 0.35f;
     private static final float FADE_TIME = 0.25f;
 
     private final Texture pixel;
+    private final TextureRegion pixelRegion;   // rotated draws (diagonal sheen) need a region
     private final Color accent, bright;
     private final float traceTime;
     private float age;
 
     public TraceBorder(Texture pixel, Color accent, float traceTime, float delay) {
         this.pixel = pixel;
+        this.pixelRegion = new TextureRegion(pixel);
         this.accent = new Color(accent);
         this.bright = accent.cpy().lerp(Color.WHITE, 0.6f);
         this.traceTime = traceTime;
@@ -38,7 +41,7 @@ public final class TraceBorder extends Actor {
     public void act(float dt) {
         super.act(dt);
         age += dt;
-        if (age >= traceTime + FADE_TIME) remove();
+        if (age >= traceTime + Math.max(FADE_TIME, SHEEN_TIME)) remove();
     }
 
     @Override
@@ -53,7 +56,7 @@ public final class TraceBorder extends Actor {
             glow += 0.8f * Math.max(0f, 1f - post / FLASH_TIME);   // connect flash
             alpha = Math.max(0f, 1f - post / FADE_TIME);           // fade under the materialized card
         }
-        if (alpha <= 0f) return;
+        if (alpha <= 0f && post >= SHEEN_TIME) return;   // sheen may outlive the border fade
 
         b.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
         float d = t * (getWidth() / 2f + getHeight() + getWidth() / 2f);   // per-pen path length
@@ -104,20 +107,31 @@ public final class TraceBorder extends Actor {
         b.draw(pixel, cx - (xR - cx) - ts / 2f, yR - ts / 2f, ts, ts);   // left pen mirrors in x
     }
 
-    /** Shiny-reveal band sweeping the card face bottom → top as the flash fades. */
+    /** Shiny-reveal beam sweeping diagonally across the card face as the flash fades —
+     *  one 45° white band drawn as thin slices with a smooth falloff profile (bright core,
+     *  soft edges), scissored to the card rect so it never pokes past the corners. */
     private void drawSheen(Batch b, float q) {
-        float bandH = getHeight() * 0.35f;
-        float yC = getY() + q * getHeight();
         float fade = 1f - q * q;
-        strip(b, yC, bandH, 0.08f * fade);
-        strip(b, yC, bandH / 3f, 0.12f * fade);
+        if (!clipBegin(getX(), getY(), getWidth(), getHeight())) return;
+        float bandW = getWidth() * 0.5f;
+        int slices = 14;
+        float sliceW = bandW / slices;
+        for (int i = 0; i < slices; i++) {
+            float x = (i + 0.5f) / slices * 2f - 1f;   // -1..1 across the beam
+            float p = 1f - x * x;                      // parabolic² falloff → gaussian-ish
+            slice(b, q, sliceW, x * bandW / 2f, 0.6f * p * p * fade);
+        }
+        b.flush();
+        clipEnd();
     }
 
-    private void strip(Batch b, float yC, float bandH, float a) {
-        float lo = Math.max(getY(), yC - bandH / 2f);
-        float hi = Math.min(getY() + getHeight(), yC + bandH / 2f);
-        if (hi <= lo) return;
-        b.setColor(bright.r, bright.g, bright.b, a);
-        b.draw(pixel, getX(), lo, getWidth(), hi - lo);
+    private void slice(Batch b, float q, float sliceW, float off, float a) {
+        float w = getWidth(), h = getHeight();
+        float len = (float) Math.sqrt(w * w + h * h) * 1.5f;   // covers the face at 45°
+        float cx = getX() + w + h / 2f - q * (w + h) + off;    // sweep fully across, right to left
+        float cy = getY() + h / 2f;
+        b.setColor(1f, 1f, 1f, a);
+        b.draw(pixelRegion, cx - sliceW / 2f, cy - len / 2f,
+            sliceW / 2f, len / 2f, sliceW * 1.15f, len, 1f, 1f, -45f);   // slight overlap kills seams
     }
 }

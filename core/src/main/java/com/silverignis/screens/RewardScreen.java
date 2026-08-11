@@ -34,6 +34,8 @@ public class RewardScreen implements Screen {
 
     /** Reveal-ceremony beats; gather runs 0 → REWARD_GATHER_TIME, trace connects at MATERIALIZE_AT. */
     private static final float TRACE_AT = 0.5f, TRACE_TIME = 0.6f, MATERIALIZE_AT = 1.1f, CEREMONY_TIME = 1.35f;
+    /** Each card's reveal starts this long after the previous one's (overlapping cascade). */
+    private static final float REVEAL_STAGGER = 0.35f;
     /** Deep arcane blue — the "world system" void behind the ambience particles. */
     private static final Color BG = new Color(0.02f, 0.045f, 0.11f, 1f);
 
@@ -41,11 +43,12 @@ public class RewardScreen implements Screen {
     private int selected = 0;
     private boolean exiting;
     private boolean ceremonyActive;
+    /** Skip fast-forwards the ceremony rather than cutting; everything is delta-driven. */
+    private float timeScale = 1f;
 
     private final ParticleEngine particles = new ParticleEngine();
     private final RenderContext particleCtx;
     private final List<Table> frames = new ArrayList<>();
-    private final List<TraceBorder> traces = new ArrayList<>();
     private EmitterHandle ambient, selectWisps;
     private final List<EmitterHandle> cardWisps = new ArrayList<>();
 
@@ -63,7 +66,6 @@ public class RewardScreen implements Screen {
         selected = 0;
         stage.clear();
         frames.clear();
-        traces.clear();
         RewardOffer offer = offers.get(offerIndex);
 
         Table root = UiUtil.newTable();
@@ -99,7 +101,8 @@ public class RewardScreen implements Screen {
         selectWisps = null;
         cardWisps.clear();
 
-        // Reveal ceremony: gather vortex → frame trace → materialize, all cards in sync.
+        // Reveal ceremony: gather vortex → frame trace → materialize, cards cascading
+        // left to right (each starts REVEAL_STAGGER after the previous, overlapping).
         ceremonyActive = true;
         for (int i = 0; i < frames.size(); i++) {
             Table frame = frames.get(i);
@@ -107,39 +110,47 @@ public class RewardScreen implements Screen {
             frame.getColor().a = 0f;
             frame.setScale(0.9f);
 
+            float stagger = i * REVEAL_STAGGER;
             Vector2 c = frame.localToStageCoordinates(new Vector2(frame.getWidth() / 2f, frame.getHeight() / 2f));
-            for (int arm = 0; arm < 4; arm++) {
-                Vfx.rewardGatherArm(option.accent()).play(particles,
+            Runnable spells = () -> {
+                for (int arm = 0; arm < 4; arm++) {
+                    Vfx.rewardGatherArm(option.accent()).play(particles,
+                        Anchor.spiralIn(c.x, 0f, c.y, Vfx.REWARD_CIRCLE_RADIUS * 0.8f,
+                            frame.getWidth() / 2f, frame.getHeight() / 2f, 2.6f,
+                            Vfx.REWARD_GATHER_SPAWNS, arm * 90f, 0.7f),
+                        Drive.FULL, Channel.MENU);
+                }
+                Vfx.rewardGatherGlyphs(option.accent()).play(particles,
                     Anchor.spiralIn(c.x, 0f, c.y, Vfx.REWARD_CIRCLE_RADIUS * 0.8f,
-                        frame.getWidth() / 2f, frame.getHeight() / 2f, 2.6f,
-                        Vfx.REWARD_GATHER_SPAWNS, arm * 90f, 0.7f),
+                        frame.getWidth() / 2f, frame.getHeight() / 2f, 2.0f,
+                        Vfx.REWARD_GATHER_GLYPHS, 45f, 0.7f),
                     Drive.FULL, Channel.MENU);
-            }
-            Vfx.rewardGatherGlyphs(option.accent()).play(particles,
-                Anchor.spiralIn(c.x, 0f, c.y, Vfx.REWARD_CIRCLE_RADIUS * 0.8f,
-                    frame.getWidth() / 2f, frame.getHeight() / 2f, 2.0f,
-                    Vfx.REWARD_GATHER_GLYPHS, 45f, 0.7f),
-                Drive.FULL, Channel.MENU);
-            Vfx.rewardGatherCircle(option.accent()).play(particles,
-                Anchor.at(c.x, 0f, c.y), Drive.FULL, Channel.MENU);
-            TraceBorder trace = new TraceBorder(style.pixel, option.accent(), TRACE_TIME, TRACE_AT);
+                Vfx.rewardGatherCircle(option.accent()).play(particles,
+                    Anchor.at(c.x, 0f, c.y), Drive.FULL, Channel.MENU);
+            };
+            if (stagger <= 0f) spells.run();
+            else stage.addAction(Actions.sequence(Actions.delay(stagger), Actions.run(spells)));
+
+            TraceBorder trace = new TraceBorder(style.pixel, option.accent(), TRACE_TIME, TRACE_AT + stagger);
             trace.setBounds(c.x - frame.getWidth() / 2f, c.y - frame.getHeight() / 2f,
                 frame.getWidth(), frame.getHeight());
             stage.addActor(trace);
-            traces.add(trace);
 
             frame.addAction(Actions.sequence(
-                Actions.delay(MATERIALIZE_AT),
+                Actions.delay(MATERIALIZE_AT + stagger),
                 Actions.parallel(
                     Actions.fadeIn(0.15f, Interpolation.pow2Out),
                     Actions.scaleTo(1f, 1f, 0.2f, Interpolation.swingOut)),
                 Actions.run(() -> revealBurst(frame, option))));
         }
-        stage.addAction(Actions.sequence(Actions.delay(CEREMONY_TIME), Actions.run(this::finishCeremony)));
+        stage.addAction(Actions.sequence(
+            Actions.delay(CEREMONY_TIME + (frames.size() - 1) * REVEAL_STAGGER),
+            Actions.run(this::finishCeremony)));
     }
 
     private void finishCeremony() {
         ceremonyActive = false;
+        timeScale = 1f;
         // Every card face shimmers while present — same wisps as selection, full-face region.
         RewardOffer offer = offers.get(offerIndex);
         for (int i = 0; i < frames.size(); i++) {
@@ -150,22 +161,6 @@ public class RewardScreen implements Screen {
                 Drive.FULL, Channel.MENU));
         }
         applySelection(0, false);
-    }
-
-    /** Snap the ceremony to its finished state — cards fully visible, effects cleared. */
-    private void skipCeremony() {
-        stage.getRoot().clearActions();
-        for (TraceBorder trace : traces) trace.remove();
-        traces.clear();
-        for (Table frame : frames) {
-            frame.clearActions();
-            frame.getColor().a = 1f;
-            frame.setScale(1f);
-        }
-        particles.clear(Channel.MENU);
-        ambient = Vfx.rewardAmbience().play(particles,
-            Anchor.region(8f, 0f, 4.5f, 8f, 0f, 4.5f), Drive.FULL, Channel.MENU);
-        finishCeremony();
     }
 
     private void applySelection(int index, boolean pop) {
@@ -224,7 +219,7 @@ public class RewardScreen implements Screen {
                 || input.isActionJustPressed(GameAction.MOVE_RIGHT)
                 || input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)
                 || input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
-                skipCeremony();
+                timeScale = 3f;
             }
         } else if (!exiting) {
             int count = offers.get(offerIndex).options.size();
@@ -240,8 +235,8 @@ public class RewardScreen implements Screen {
             }
         }
 
-        particles.update(delta);
-        stage.act(delta);
+        particles.update(delta * timeScale);
+        stage.act(delta * timeScale);
         stage.draw();
     }
 

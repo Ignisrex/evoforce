@@ -49,7 +49,11 @@
       "Bash(file assets/ui/*)",
       "WebFetch(domain:kenney.nl)",
       "Bash(cd /tmp)",
-      "Bash(unzip -o -q kenney_scifi.zip -d kenney_scifi)"
+      "Bash(unzip -o -q kenney_scifi.zip -d kenney_scifi)",
+      "PowerShell(.\\\\gradlew.bat core:compileJava)",
+      "PowerShell(.\\\\gradlew.bat core:classes --console=plain -q)",
+      "Bash(git *)",
+      "PowerShell(.\\\\gradlew.bat core:compileJava -q)"
     ]
   }
 }

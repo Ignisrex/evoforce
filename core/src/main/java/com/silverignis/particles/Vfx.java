@@ -703,7 +703,7 @@ Color green = new Color(0.5f, 1f, 0.6f, 1f);
                 .speed(range(0.02f, 0.06f)).life(range(3f, 6f)).size(range(0.35f, 0.6f))
                 .drift(0f, 0.15f, 0f)
                 .spin(range(-12f, 12f)).fadeIn(0.25f)
-                .textures(assets.symbol(1), assets.symbol(2), assets.magic(3), assets.magic(4))
+                .textures(assets.magic(3), assets.magic(4))
                 .color(new Color(0.45f, 0.65f, 1f, 0.28f)))
             .build();
     }
