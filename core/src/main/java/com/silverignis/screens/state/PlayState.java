@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
@@ -87,6 +88,7 @@ public class PlayState implements GameScreenState {
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
+        environment.rebuild(MathUtils.random.nextLong());
         this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
 
         this.spawnSystem = new SpawnSystem(
@@ -161,6 +163,7 @@ public class PlayState implements GameScreenState {
         battlefieldDecor.update(delta);
 
         particles.update(delta);
+        environment.update(delta);
         if (checkBattleOver()) return;
         tickAndCullEffects(delta);
     }

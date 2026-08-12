@@ -133,11 +133,11 @@ public final class GameAssets implements Disposable {
     private TextureRegion avatarRegion;
 
     public void queueLoad() {
-        mgr.load(CAVE_WALL,  Texture.class);
-        // Floor tiles 6x across the cave at perspective — without mipmaps the far rows shimmer.
-        TextureLoader.TextureParameter floorParams = new TextureLoader.TextureParameter();
-        floorParams.genMipMaps = true;
-        mgr.load(CAVE_FLOOR, Texture.class, floorParams);
+        TextureLoader.TextureParameter tiledParams = new TextureLoader.TextureParameter();
+        tiledParams.genMipMaps = true;
+        mgr.load(CAVE_WALL, Texture.class, tiledParams);
+        mgr.load(CAVE_FLOOR, Texture.class, tiledParams);
+
         for (String[] set : EFFECT_SETS)
             for (String s : set) mgr.load(s, Texture.class);
 
@@ -156,7 +156,8 @@ public final class GameAssets implements Disposable {
      */
     public void finishLoading() {
         mgr.finishLoading();
-        caveWall().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        caveWall().setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+        caveWall().setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         caveFloor().setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
         caveFloor().setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         for (String[] set : EFFECT_SETS)

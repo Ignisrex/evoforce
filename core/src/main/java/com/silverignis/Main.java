@@ -11,6 +11,7 @@ import com.crashinvaders.vfx.effects.BloomEffect;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.silverignis.assets.GameAssets;
 import com.silverignis.assets.GeneratedAssets;
+import com.silverignis.environment.CaveTheme;
 import com.silverignis.environment.GameEnvironment;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
@@ -52,11 +53,8 @@ public class Main extends Game {
 
         this.generated = new GeneratedAssets();
         EmitterSpec.init(generated.pixel());
-        // Emissive is derived from the diffuse PNG once at startup, so the floor's
-        // cyan crystal veins glow through bloom without managing a second asset file.
-        this.generated.buildCaveFloorEmissive(GameAssets.CAVE_FLOOR);
 
-        this.environment = new GameEnvironment(viewport, assets.caveWall(), assets.caveFloor(), generated.caveFloorEmissive());
+        this.environment = new GameEnvironment(viewport, CaveTheme.cave(assets.caveWall(), assets.caveFloor(), null));
         this.worldRenderer = new WorldRenderer();
         this.renderContext = new RenderContext(batch, font, environment);
 

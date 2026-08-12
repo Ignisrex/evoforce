@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.silverignis.Main;
 import com.silverignis.components.FreePosition;
+import com.silverignis.environment.CaveTheme;
 import com.silverignis.environment.GameEnvironment;
 import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
@@ -50,6 +51,7 @@ public class OverworldScreen implements Screen {
     public OverworldScreen(Main game){
         this.game = game;
         this.environment = game.environment;
+        environment.rebuild(CaveTheme.OVERWORLD_SEED);
 
         this.avatar = new Sprite(game.assets.avatar());
 
@@ -70,6 +72,7 @@ public class OverworldScreen implements Screen {
         input.update();
         handleInput(delta);
         game.particles.update(delta);
+        environment.update(delta);
         checkDoors();
         if (transitioning) return;
 

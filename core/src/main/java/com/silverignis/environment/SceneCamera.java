@@ -8,7 +8,8 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class SceneCamera {
 
-    private static final float CAM_X = 0f, CAM_Y = 6.75f, CAM_Z = 7.54f;
+    // Package-visible: GameEnvironment ray-tests decor placement against this fixed pose.
+    static final float CAM_X = 0f, CAM_Y = 6.75f, CAM_Z = 7.54f;
     private static final float CAM_FOV = 45f;
     private static final float LOOK_X = 0f, LOOK_Y = 0.33f, LOOK_Z = -0.11f;
 
@@ -26,7 +27,7 @@ public class SceneCamera {
         cam.position.set(CAM_X, CAM_Y, CAM_Z);
         cam.lookAt(LOOK_X, LOOK_Y, LOOK_Z);
         cam.near = 0.1f;
-        cam.far  = 100f;
+        cam.far  = 26f;  // tight far plane so DefaultShader fog (dist²/far²) lands in the room; farthest corner ≈21u
         cam.update();
     }
 
