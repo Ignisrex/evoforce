@@ -2,11 +2,10 @@ package com.silverignis.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 import com.silverignis.animation.AnimController;
 import com.silverignis.animation.AnimSet;
-import com.silverignis.animation.AnimState;
 import com.silverignis.components.*;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
@@ -20,7 +19,6 @@ import com.silverignis.util.InputLock;
 
 public class Player implements Combatant, SceneRenderable {
 
-    private final Battlefield     battlefield;
     private final AnimController  animController;
     private final Caster          caster;
     private final Health          health;
@@ -30,17 +28,15 @@ public class Player implements Combatant, SceneRenderable {
 
     public float visualHeight = 0f;
 
-    public Player(int col, int row, AnimSet animSet, Battlefield battlefield, Caster caster, Stats stats) {
-        this.battlefield  = battlefield;
+    public Player(int col, int row, AnimSet animSet, Caster caster, Stats stats) {
         this.gridMovement = new GridMovement(
-            new GridPosition(battlefield, col, row),
+            new GridPosition(col, row),
             new GridBounds(0, Battlefield.COLS / 2 - 1, 0, Battlefield.ROWS - 1));
         this.caster = caster;
         this.stats  = stats;
         this.health = new Health(stats.getVitality());
         this.statusContainer = new StatusContainer(this);
-        this.animController = new AnimController(animSet,
-            battlefield.tileCenterX(col), battlefield.tileCenterY(row));
+        this.animController = new AnimController(animSet, col, row);
     }
 
     // --- Position (delegated to GridPosition / AnimController) ---
@@ -50,19 +46,10 @@ public class Player implements Combatant, SceneRenderable {
     @Override public GridMovement   getGridMovement()   { return gridMovement; }
     @Override public AnimController getAnimController() { return animController; }
 
-    public int   getCol()        { return gridMovement.getPosition().getCol(); }
-    public int   getRow()        { return gridMovement.getPosition().getRow(); }
-    public float getVisualX()    { return animController.getRenderX(); }
-    public float getVisualY()    { return animController.getRenderY(); }
-    public float getDepthScale() { return gridMovement.getPosition().getDepthScale(); }
-
-    /** Per-frame projection push from PlayState. Snaps the visual unless a MOVE is mid-tween. */
-    public void setProjectedTarget(float x, float y) {
-        if (animController.getState() != AnimState.MOVE) {
-            animController.snapTo(x, y);
-        }
-    }
-    public void setDepthScale(float s) { gridMovement.getPosition().setDepthScale(s); }
+    public int   getCol()       { return gridMovement.getPosition().getCol(); }
+    public int   getRow()       { return gridMovement.getPosition().getRow(); }
+    public float getVisualCol() { return animController.getVisualCol(); }
+    public float getVisualRow() { return animController.getVisualRow(); }
 
     // --- Caster role (delegated to Caster) ---
 
@@ -90,7 +77,8 @@ public class Player implements Combatant, SceneRenderable {
         animController.update(delta);
     }
 
-    @Override public float       depth() { return battlefield.floorZ(getRow()); }
+    /** Depth-sorts by the *visual* row so a mid-step entity sorts where it looks. */
+    @Override public float       depth() { return Battlefield.floorZ(getVisualRow()); }
     @Override public RenderLayer layer() { return RenderLayer.BILLBOARD; }
 
     @Override
@@ -99,34 +87,28 @@ public class Player implements Combatant, SceneRenderable {
         TextureRegion frame = animController.currentFrame();
         if (frame == null) return;
 
-        float pw = battlefield.panelFloorWidth() * gridMovement.getPosition().getDepthScale();
+        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
+        float pw = Battlefield.panelFloorWidth() * rc.tileDepthScale(getVisualRow());
         float alpha = animController.getRenderAlpha();
         rc.batch.setColor(1f, 1f, 1f, alpha);
-        rc.batch.draw(frame,
-            animController.getRenderX() - pw * 0.5f,
-            animController.getRenderY() + visualHeight,
-            pw, pw);
+        rc.batch.draw(frame, p.x - pw * 0.5f, p.y + visualHeight, pw, pw);
         rc.batch.setColor(Color.WHITE);
     }
 
-    private void renderShadow(SpriteBatch batch, Texture shadowTex) {
-        float pw = battlefield.getPanelWidth();
-        float ph = battlefield.getPanelRenderHeight();
-        float sw = pw * 0.75f;
-        float sh = ph * 0.35f;
-        batch.setColor(Color.WHITE);
-        batch.draw(shadowTex,
-            animController.getRenderX() - sw * 0.5f,
-            animController.getRenderY(),
-            sw, sh);
+    private void renderShadow(RenderContext rc, Texture shadowTex) {
+        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
+        float sw = rc.panelWidth() * 0.75f;
+        float sh = rc.panelRenderHeight() * 0.35f;
+        rc.batch.setColor(Color.WHITE);
+        rc.batch.draw(shadowTex, p.x - sw * 0.5f, p.y, sw, sh);
     }
 
     public SceneRenderable shadowView(Texture shadowTex) {
         return new SceneRenderable() {
-            @Override public float       depth() { return battlefield.floorZ(getRow()); }
+            @Override public float       depth() { return Battlefield.floorZ(getVisualRow()); }
             @Override public RenderLayer layer() { return RenderLayer.GROUND; }
             @Override public void render(RenderContext rc) {
-                if (isAlive()) renderShadow(rc.batch, shadowTex);
+                if (isAlive()) renderShadow(rc, shadowTex);
             }
         };
     }

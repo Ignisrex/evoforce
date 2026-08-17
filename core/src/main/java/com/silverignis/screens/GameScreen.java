@@ -5,12 +5,19 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.silverignis.Main;
-import com.silverignis.components.ManaPool;
+import com.silverignis.components.Team;
+import com.silverignis.entities.Enemy;
+import com.silverignis.entities.Player;
 import com.silverignis.input.InputManager;
+import com.silverignis.registry.Monster;
 import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
 import com.silverignis.screens.state.SkillSelectState;
+import com.silverignis.systems.Encounter;
+import com.silverignis.systems.SpawnSystem;
 import com.silverignis.ui.*;
+
+import java.util.List;
 
 public class GameScreen implements Screen {
 
@@ -22,7 +29,9 @@ public class GameScreen implements Screen {
     public final SkillSelectState skillSelectState;
     private GameScreenState currentState;
 
-    public final ManaPool mana;
+    /** The battle itself. Owned here rather than by PlayState because
+     *  SkillSelectState and the HUDs read it too. */
+    public final Encounter encounter;
 
     //HUDs — Scene2D actors on hudStage sharing one SDF shader; BasicAttackHud
     //still draws immediate-mode, FpsHud owns nothing.
@@ -38,8 +47,17 @@ public class GameScreen implements Screen {
     public GameScreen(Main game){
         this.game = game;
 
-        this.mana = game.session.playerProfile.getMana();
-        mana.drain();
+        Player player = new Player(1, 1,
+            game.monsterRegistry.getAnimSet(Monster.BEASTKIN, Team.PLAYER),
+            game.session.playerProfile.getCaster(),
+            game.session.playerProfile.getStats());
+        List<Enemy> enemies = new SpawnSystem(game.session.spawnTable,
+                                              game.monsterRegistry,
+                                              game.session.skills)
+            .spawnNext(game.session.playerProfile.getProgressionLevel());
+        this.encounter = Encounter.create(player, enemies,
+                                          game.session.playerProfile.getManaStats(),
+                                          game.particles);
 
         Texture pixel = game.generated.pixel();
         this.hudShader      = new RoundedRectShader(pixel);
@@ -106,7 +124,7 @@ public class GameScreen implements Screen {
         if (!overlayUp) {
             slotsHud.refresh(playState.getPlayer().getSlots());
             lifeBarHud.refresh(playState.getPlayer());
-            manaBarHud.refresh(mana);
+            manaBarHud.refresh(encounter.mana());
             statusHud.refresh(playState.getPlayer());
             hudStage.act(delta);
             hudStage.draw();

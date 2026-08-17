@@ -10,9 +10,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
+import com.silverignis.render.RenderContext;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
-import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 
 public class BeamInstance extends SkillInstance {
@@ -36,8 +37,11 @@ public class BeamInstance extends SkillInstance {
 
     private final Color tint;
 
-    public BeamInstance(Skill def, Combatant combatant, BattleContext ctx) {
-        super(def, combatant, ctx);
+    private final Vector2 nearScratch = new Vector2();
+    private final Vector2 farScratch  = new Vector2();
+
+    public BeamInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         this.row = originRow;
         this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
         acquireInputLock();
@@ -50,13 +54,13 @@ public class BeamInstance extends SkillInstance {
     }
 
     @Override
-    public void update(float delta) {
+    public void update(float delta, SkillContext ctx) {
         phaseTime += delta;
         stateTime += delta;
 
         switch (phase) {
             case CHARGE:
-                if (phaseTime >= CHARGE_TIME) enterFire(battleContext());
+                if (phaseTime >= CHARGE_TIME) enterFire(ctx);
                 break;
             case FIRE:
                 if (phaseTime >= FIRE_TIME) enterFade();
@@ -72,11 +76,11 @@ public class BeamInstance extends SkillInstance {
         }
     }
 
-    private void enterFire(BattleContext ctx) {
+    private void enterFire(SkillContext ctx) {
         phase = Phase.FIRE;
         phaseTime = 0f;
         applyHit(ctx);
-        playVfx(this::beamPoint, this::intensity);   // layered effects listed in the skill def
+        playVfx(this::beamPoint, this::intensity, ctx);   // layered effects listed in the skill def
     }
 
     private void enterFade() {
@@ -86,14 +90,14 @@ public class BeamInstance extends SkillInstance {
         combatant.getAnimController().enterIdle();
     }
 
-    private void applyHit(BattleContext ctx) {
+    private void applyHit(SkillContext ctx) {
         if (hitApplied) return;
         hitApplied = true;
 
-        for(Combatant target: ctx.opposingOnRow(combatant, row)){
+        for(Combatant target: ctx.battleState.opposingOnRow(combatant, row)){
             // Only targets ahead of the caster in the beam's facing direction.
             if ((target.getCol() - originCol) * dir > 0){
-                applyEffectsTo(target);
+                applyEffectsTo(target, ctx);
             }
         }
     }
@@ -109,13 +113,14 @@ public class BeamInstance extends SkillInstance {
     private void beamPoint(Vector3 out) {
         int nearCol = originCol + dir;
         int farCol = dir > 0 ? Battlefield.COLS - 1 : 0;
-        Battlefield bf = battleContext().battlefield;
-        out.set(MathUtils.random(bf.floorX(nearCol), bf.floorX(farCol)), 0f, bf.floorZ(row));
+        out.set(MathUtils.random(Battlefield.floorX(nearCol), Battlefield.floorX(farCol)),
+                0f, Battlefield.floorZ(row));
     }
 
     @Override
-    public void render(SpriteBatch batch, BattleContext ctx) {
+    public void render(RenderContext rc) {
         if (phase == Phase.DONE) return;
+        SpriteBatch batch = rc.batch;
 
         // Beam spans from the tile just ahead of the caster to the far grid edge
         // in the caster's facing direction. If the caster sits on the edge it
@@ -124,11 +129,13 @@ public class BeamInstance extends SkillInstance {
         if (nearCol < 0 || nearCol >= Battlefield.COLS) return;
         int farCol = dir > 0 ? Battlefield.COLS - 1 : 0;
 
-        float scale  = ctx.tileDepthScale(row);
-        float panelW = ctx.battlefield.getPanelWidth() * scale;
-        float panelH = ctx.battlefield.getPanelRenderHeight() * scale;
-        Vector2 nearPos = ctx.projectedTileWorld(nearCol, row);
-        Vector2 farPos  = ctx.projectedTileWorld(farCol, row);
+        float scale  = rc.tileDepthScale(row);
+        float panelW = rc.panelWidth() * scale;
+        float panelH = rc.panelRenderHeight() * scale;
+        // Two tile positions live at once — each needs its own Vector2, not the
+        // shared scratch RenderContext.tileWorld(col, row) hands back.
+        Vector2 nearPos = rc.tileWorld(nearCol, row, nearScratch);
+        Vector2 farPos  = rc.tileWorld(farCol, row, farScratch);
         float leftX  = Math.min(nearPos.x, farPos.x) - panelW * 0.5f;
         float rightX = Math.max(nearPos.x, farPos.x) + panelW * 0.5f;
         float y      = nearPos.y - panelH * 0.5f;

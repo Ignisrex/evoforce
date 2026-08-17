@@ -18,4 +18,11 @@ public class StunStatus extends Status {
     public boolean blocksAttack() {
         return true;
     }
+
+    /** A stun stops everything. Stated explicitly now that casting is gated on
+     *  its own predicate — before, blocksMovement was doing this job by accident. */
+    @Override
+    public boolean blocksCasting() {
+        return true;
+    }
 }

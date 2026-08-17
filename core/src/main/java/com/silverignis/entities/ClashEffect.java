@@ -28,32 +28,25 @@ public class ClashEffect implements BattleVfx {
     private final Sprite sprite;
     /** Optional animated frames. When non-null, takes priority over the static texture. */
     private final Animation<TextureRegion> animation;
-    private final float baseSize;
-    private final float centerX;
-    private final float centerY;
+    private final int col;
+    private final int row;
     private float elapsed = 0f;
-    private final float worldZ;
     private final Color tint;
 
     /**
+     * Positioned by tile, not by screen point: whoever spawns one is ticking,
+     * and the tick has no projection. The screen position and size are resolved
+     * per frame in {@link #render}, so this stays correct across a resize.
+     *
      * @param texture starburst texture (transparent background expected)
-     * @param centerX world-space X of the clash midpoint
-     * @param centerY world-space Y of the clash midpoint
-     * @param size    target sprite size at scale 1.0 (typically one panel cell)
      */
-    public ClashEffect(Texture texture, float centerX, float centerY, float size, float worldZ) {
-        this(texture, null, Color.WHITE, centerX, centerY, size, worldZ);
-    }
-
     public ClashEffect(Texture texture, Animation<TextureRegion> animation, Color tint,
-                       float centerX, float centerY, float size, float worldZ) {
+                       int col, int row) {
         this.sprite = new Sprite(texture);
         this.animation = animation;
         this.tint = tint != null ? tint : Color.WHITE;
-        this.baseSize = size;
-        this.centerX = centerX;
-        this.centerY = centerY;
-        this.worldZ = worldZ;
+        this.col = col;
+        this.row = row;
     }
 
     @Override
@@ -62,7 +55,7 @@ public class ClashEffect implements BattleVfx {
     }
 
     @Override
-    public float depth() { return worldZ; }
+    public float depth() { return Battlefield.floorZ(row); }
 
     @Override
     public RenderLayer layer() { return RenderLayer.BILLBOARD; }
@@ -71,6 +64,14 @@ public class ClashEffect implements BattleVfx {
     public void render(RenderContext rc) {
         float t = MathUtils.clamp(elapsed / DURATION, 0f, 1f);
         float scale = MathUtils.lerp(START_SCALE, END_SCALE, t);
+
+        float depth    = rc.tileDepthScale(row);
+        float panelH   = rc.panelRenderHeight() * depth;
+        float baseSize = Math.max(rc.panelWidth() * depth, panelH);
+        var  tilePos   = rc.tileWorld(col, row);
+        float centerX  = tilePos.x;
+        float centerY  = tilePos.y + panelH * 0.5f;
+
         float w = baseSize * scale;
         float h = baseSize * scale;
         float alpha = (1f - t) * tint.a;

@@ -1,35 +1,52 @@
 package com.silverignis.systems;
 
 import com.silverignis.components.Caster;
+import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
+import com.silverignis.particles.ParticleEngine;
 import com.silverignis.particles.Vfx;
 import com.silverignis.render.WorldRenderer;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillFactory;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.elements.Element;
 import com.silverignis.skills.instances.ProjectileInstance;
 import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.DamageSystem;
+import com.silverignis.systems.combat.TriggerBus;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CombatSystem {
 
-    private final BattleContext ctx;
+    private final BattleState battleState;
+    private final ParticleEngine particleEngine;
+    private final SkillContext ctx;
+
     private final List<SkillInstance> active = new ArrayList<>();
 
-    public CombatSystem(BattleContext ctx){
-        this.ctx = ctx;
+    public CombatSystem(BattleState battleState,
+                        DamageSystem damageSystem,
+                        TriggerBus triggerBus,
+                        MovementSystem movementSystem,
+                        ParticleEngine particleEngine,
+                        List<BattleVfx> vfxSink) {
+        this.battleState    = battleState;
+        this.particleEngine = particleEngine;
+        // Lob needs to spawn a child Zone, so the context has to name this
+        // system. Building it here keeps that cycle immutable — it used to be a
+        // mutable field set from outside after construction.
+        this.ctx = new SkillContext(battleState, damageSystem, triggerBus,
+                                    movementSystem, this, particleEngine, vfxSink);
     }
-
-    public BattleContext getBattleContext(){ return this.ctx; }
 
     /** Create and spawn a fresh instance for {@code skill}, cast by {@code combatant}. */
     public void spawn(Skill skill, Combatant combatant){
-        active.add(SkillFactory.create(skill, combatant, ctx));
+        active.add(SkillFactory.create(skill, combatant));
     }
 
     /** Spawn an already-built instance — for derived/synthetic instances (e.g. a lingering cloud). */
@@ -41,7 +58,7 @@ public class CombatSystem {
         // Iterate over a snapshot index so an instance that spawns another
         // mid-update doesn't get double-ticked this frame.
         for (int i = 0, n = active.size(); i < n; i++){
-            active.get(i).update(delta);
+            active.get(i).update(delta, ctx);
         }
 
         resolveProjectileClashes();
@@ -50,11 +67,11 @@ public class CombatSystem {
     }
 
     public void tickStatuses(float delta){
-        if (ctx.player.isAlive()){
-            ctx.player.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
+        if (battleState.player.isAlive()){
+            battleState.player.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
         }
 
-        for (var enemy : ctx.enemies){
+        for (var enemy : battleState.enemies){
             if(!enemy.isAlive()) continue;
             enemy.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
         }
@@ -73,9 +90,9 @@ public class CombatSystem {
                 if (a.getCaster().getTeam() == b.getCaster().getTeam()) continue;
                 if (a.getRow() != b.getRow()) continue;
 
-                int row = a.getRow();
-                float halfW = ctx.battlefield.getPanelWidth() * ctx.tileDepthScale(row) * 0.5f;
-                if (Math.abs(a.getCenterX() - b.getCenterX()) > halfW) continue;
+                // Within half a tile of each other, measured in columns — so the
+                // clash window is the same on every row.
+                if (Math.abs(a.getColPos() - b.getColPos()) > 0.5f) continue;
 
                 spawnClash(a, b);
                 a.finish();
@@ -89,12 +106,10 @@ public class CombatSystem {
     private static final float IMPACT_HEIGHT = 0.35f;
 
     private void spawnClash(ProjectileInstance a, ProjectileInstance b) {
-        int row = a.getRow();
-        float midX = (a.getCenterX() + b.getCenterX()) * 0.5f;   // screen-space (projectiles fly in viewport coords)
-        float z = ctx.battlefield.floorZ(row);
-        float worldMidX = ctx.environment.unprojectX(midX, z);
-        Vfx.impact(Element.NONE).play(ctx.particleEngine,
-            Anchor.at(worldMidX, IMPACT_HEIGHT, z), Channel.COMBAT);
+        float midCol = (a.getColPos() + b.getColPos()) * 0.5f;
+        Vfx.impact(Element.NONE).play(particleEngine,
+            Anchor.at(Battlefield.floorX(midCol), IMPACT_HEIGHT, Battlefield.floorZ(a.getRow())),
+            Channel.COMBAT);
     }
 
     public void submitRenderables(WorldRenderer renderer) {
@@ -107,13 +122,33 @@ public class CombatSystem {
     public void finishAll() {
         for (SkillInstance inst : active) inst.finish();
         active.clear();
-        ctx.particleEngine.clear(Channel.COMBAT);
+        particleEngine.clear(Channel.COMBAT);
     }
 
-    public void fireSkill(Combatant combatant, Skill skill) {
+    /**
+     * The one definition of "cast a skill": gate, start the cooldown, spawn.
+     * Player input and enemy AI both route through here — each used to carry its
+     * own copy of these checks, and the copies disagreed.
+     *
+     * @return whether the skill actually fired.
+     */
+    public boolean tryCast(Combatant combatant, Skill skill) {
+        if (!combatant.canUse(skill)) return false;
+        cast(combatant, skill);
+        return true;
+    }
+
+    /**
+     * Cast that skips the gate. Staged slot fires and released bursts use this:
+     * the card was filtered against cooldowns when it was staged and has already
+     * been popped off the slot by now, so re-gating would silently swallow it
+     * instead of refusing it.
+     */
+    public void cast(Combatant combatant, Skill skill) {
         combatant.getCaster().getDeck().onUsed(skill);
         spawn(skill, combatant);
     }
+
     public void loadSkill(Combatant combatant, Skill skill) {
         combatant.getCaster().loadSkill(skill);
     }
@@ -122,15 +157,12 @@ public class CombatSystem {
         Caster caster = combatant.getCaster();
         List<Skill> loaded = caster.releaseLoadedSkills();
 
-        //trigger cooldowns
-        for (Skill s : loaded) caster.getDeck().onUsed(s);
-
         //handle advance skill check or rapid cast
         Skill advanced = null; //matchRecipe(loaded) -> future impl
         if(advanced != null) {
-            spawn(advanced, combatant);
+            cast(combatant, advanced);
         } else {
-            for (Skill s : loaded) spawn(s, combatant);
+            for (Skill s : loaded) cast(combatant, s);
         }
     }
 

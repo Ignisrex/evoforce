@@ -14,15 +14,17 @@ public final class AnimController {
     private float stateTime = 0f;
     private boolean locked = false;
 
-    private float renderX, renderY;
-    private float moveFromX, moveFromY, moveToX, moveToY;
+    // Visual position is in *grid* coordinates, not screen coordinates: the
+    // tween runs from one tile to another and rendering projects the result.
+    // Keeping it logical means a resize or camera change mid-step stays correct,
+    // and nothing has to push a projected target in every frame.
+    private float visualCol, visualRow;
+    private float moveFromCol, moveFromRow, moveToCol, moveToRow;
 
-    public AnimController(AnimSet animSet, float startX, float startY) {
+    public AnimController(AnimSet animSet, int startCol, int startRow) {
         this.animSet = animSet;
-        this.renderX = startX;
-        this.renderY = startY;
-        this.moveFromX = this.moveToX = startX;
-        this.moveFromY = this.moveToY = startY;
+        this.visualCol = this.moveFromCol = this.moveToCol = startCol;
+        this.visualRow = this.moveFromRow = this.moveToRow = startRow;
     }
 
     //State entry api
@@ -31,25 +33,27 @@ public final class AnimController {
     public void enterCast() { setState(AnimState.CAST);}
     public void enterHurt() { setState(AnimState.HURT);}
     public void enterDeath() { setState(AnimState.DEATH);}
-    public void enterMove(float fromX, float fromY, float toX, float toY) {
+    /** Tween from the tile the entity was on to the one it just stepped to. */
+    public void enterMove(int fromCol, int fromRow, int toCol, int toRow) {
         if (!canTransitionTo(AnimState.MOVE)) return;
         beginState(AnimState.MOVE);
-        moveFromX = fromX;
-        moveFromY = fromY;
-        moveToX = toX;
-        moveToY = toY;
+        moveFromCol = fromCol;
+        moveFromRow = fromRow;
+        moveToCol = toCol;
+        moveToRow = toRow;
     }
 
-    public void snapTo(float x, float y){
-        renderX = moveFromX = moveToX = x;
-        renderY = moveFromY = moveToY = y;
+    /** Jump straight to a tile with no tween — teleports and spawns. */
+    public void snapTo(int col, int row) {
+        visualCol = moveFromCol = moveToCol = col;
+        visualRow = moveFromRow = moveToRow = row;
     }
 
     private void setState(AnimState s){
         if (!canTransitionTo(s)) return;
         if (current == AnimState.MOVE && s != AnimState.MOVE) {
-            renderX = moveToX;
-            renderY = moveToY;
+            visualCol = moveToCol;
+            visualRow = moveToRow;
         }
         beginState(s);
     }
@@ -73,8 +77,8 @@ public final class AnimController {
 
         if (current == AnimState.MOVE) {
             float t = Math.min(stateTime / MOVE_DURATION, 1f);
-            renderX = moveFromX + (moveToX - moveFromX) * t;
-            renderY = moveFromY + (moveToY - moveFromY) * t;
+            visualCol = moveFromCol + (moveToCol - moveFromCol) * t;
+            visualRow = moveFromRow + (moveToRow - moveFromRow) * t;
         }
 
         if (!locked) return;
@@ -102,8 +106,10 @@ public final class AnimController {
         return animSet.get(current).frame(stateTime);
     }
 
-    public float getRenderX() { return renderX; }
-    public float getRenderY() { return renderY; }
+    /** Continuous grid position — integral when standing, fractional mid-step.
+     *  Rendering projects this; nothing here knows where it lands on screen. */
+    public float getVisualCol() { return visualCol; }
+    public float getVisualRow() { return visualRow; }
 
     /** True on alternating intervals during HURT — drives the skip-draw strobe. */
     public boolean isHurtHidden() {

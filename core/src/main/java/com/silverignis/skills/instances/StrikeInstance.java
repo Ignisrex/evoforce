@@ -1,12 +1,11 @@
 package com.silverignis.skills.instances;
 
-import com.badlogic.gdx.math.Vector2;
 import com.silverignis.components.Team;
 import com.silverignis.entities.ClashEffect;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.StrikeConfig;
-import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 
 public class StrikeInstance extends SkillInstance {
@@ -27,8 +26,8 @@ public class StrikeInstance extends SkillInstance {
     private final int hitTiles;
     private final int row;
 
-    public StrikeInstance(Skill def, Combatant combatant, BattleContext ctx) {
-        super(def, combatant, ctx);
+    public StrikeInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
 
         StrikeConfig cfg = def.getShapeConfig() instanceof StrikeConfig
@@ -44,24 +43,20 @@ public class StrikeInstance extends SkillInstance {
     }
 
     @Override
-    public void update(float delta) {
+    public void update(float delta, SkillContext ctx) {
         if (!primed) {
-            battleContext().movementSystem.forceGridTeleport(combatant, strikeFromCol, row);
+            ctx.movementSystem.forceGridTeleport(combatant, strikeFromCol, row);
             primed = true;
         }
         phaseTime += delta;
 
         switch (phase) {
             case DASH_FORWARD:
-                if (phaseTime >= DASH_FORWARD_TIME) {
-                    enterHit(battleContext());
-                }
+                if (phaseTime >= DASH_FORWARD_TIME) enterHit(ctx);
                 break;
 
             case HIT:
-                if (phaseTime >= HIT_TIME) {
-                    enterDashBack(battleContext());
-                }
+                if (phaseTime >= HIT_TIME) enterDashBack(ctx);
                 break;
 
             case DASH_BACK:
@@ -76,7 +71,7 @@ public class StrikeInstance extends SkillInstance {
         }
     }
 
-    private void enterHit(BattleContext ctx) {
+    private void enterHit(SkillContext ctx) {
         phase = Phase.HIT;
         phaseTime = 0f;
         combatant.getAnimController().enterAttack();
@@ -86,34 +81,27 @@ public class StrikeInstance extends SkillInstance {
             spawnSlashVfx(ctx, col);
             applyHit(ctx, col);
         }
-        playVfx(tileAnchor(firstTargetCol, row));   // layered particle effects at the struck tile
+        playVfx(tileAnchor(firstTargetCol, row), ctx);   // layered particle effects at the struck tile
     }
 
-    private void enterDashBack(BattleContext ctx) {
+    private void enterDashBack(SkillContext ctx) {
         phase = Phase.DASH_BACK;
         phaseTime = 0f;
         ctx.movementSystem.forceGridTeleport(combatant, originCol, originRow);
     }
 
-    private void spawnSlashVfx(BattleContext ctx, int col) {
-        // VFX lands on the target tile regardless of whether anyone's standing there.
-        float depth  = ctx.tileDepthScale(row);
-        float panelW = ctx.battlefield.getPanelWidth() * depth;
-        float panelH = ctx.battlefield.getPanelRenderHeight() * depth;
-        Vector2 tilePos = ctx.projectedTileWorld(col, row);
-        float cx = tilePos.x;
-        float cy = tilePos.y + panelH * 0.5f;
-        float size = Math.max(panelW, panelH);
-
-        ctx.vfx.add(new ClashEffect(def.getVfxTexture(), def.getVfxAnimation(), def.getVfxTint(),
-                                    cx, cy, size, worldZ));
+    /** VFX lands on the target tile regardless of whether anyone is standing there.
+     *  Named by tile — the effect resolves its own screen position when drawn. */
+    private void spawnSlashVfx(SkillContext ctx, int col) {
+        ctx.vfxSink.add(new ClashEffect(def.getVfxTexture(), def.getVfxAnimation(),
+                                        def.getVfxTint(), col, row));
     }
 
-    private void applyHit(BattleContext ctx, int col) {
-        Combatant target = ctx.combatantAt(col, row);
+    private void applyHit(SkillContext ctx, int col) {
+        Combatant target = ctx.battleState.combatantAt(col, row);
         if (target == null) return;
         if (target.getTeam() == combatant.getTeam()) return;
-        applyEffectsTo(target);
+        applyEffectsTo(target, ctx);
     }
 
     public void coveredTiles(TileSink sink) {

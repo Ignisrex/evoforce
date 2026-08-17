@@ -9,11 +9,12 @@ import com.badlogic.gdx.math.Vector2;
 import com.silverignis.components.Direction;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
+import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.ZoneConfig;
-import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 
 public class ZoneInstance extends SkillInstance {
@@ -41,14 +42,14 @@ public class ZoneInstance extends SkillInstance {
     private final int targetRow;
     private boolean rendersUnder = true;
 
-    public ZoneInstance(Skill def, Combatant combatant, BattleContext ctx) {
+    public ZoneInstance(Skill def, Combatant combatant) {
         this(def, combatant,
              combatant.getCol() + (combatant.getTeam() == Team.PLAYER ? 1 : -1),
-             combatant.getRow(), ctx);
+             combatant.getRow());
     }
 
-    public ZoneInstance(Skill def, Combatant combatant, int targetCol, int targetRow, BattleContext ctx) {
-        super(def, combatant, ctx);
+    public ZoneInstance(Skill def, Combatant combatant, int targetCol, int targetRow) {
+        super(def, combatant);
         this.targetCol = targetCol;
         this.targetRow = targetRow;
 
@@ -66,19 +67,19 @@ public class ZoneInstance extends SkillInstance {
     public boolean isRenderUnder() { return rendersUnder; }
 
     @Override
-    public void update(float delta) {
+    public void update(float delta, SkillContext ctx) {
         phaseTime += delta;
         stateTime += delta;
 
         switch (phase) {
             case APPEAR:
-                if (phaseTime >= APPEAR_TIME) enterActive();
+                if (phaseTime >= APPEAR_TIME) enterActive(ctx);
                 break;
             case ACTIVE:
                 tickTimer += delta;
                 if (tickTimer >= tickInterval) {
                     tickTimer -= tickInterval;
-                    applyTick(battleContext());
+                    applyTick(ctx);
                 }
                 if (phaseTime >= activeTime) enterFade();
                 break;
@@ -93,10 +94,10 @@ public class ZoneInstance extends SkillInstance {
         }
     }
 
-    private void enterActive() {
+    private void enterActive(SkillContext ctx) {
         phase = Phase.ACTIVE;
         phaseTime = 0f;
-        playVfx(tileAnchor(targetCol, targetRow));   // layered particle effects on the zone tile
+        playVfx(tileAnchor(targetCol, targetRow), ctx);   // layered particle effects on the zone tile
     }
 
     private void enterFade() {
@@ -104,15 +105,15 @@ public class ZoneInstance extends SkillInstance {
         phaseTime = 0f;
     }
 
-    private void applyTick(BattleContext ctx) {
+    private void applyTick(SkillContext ctx) {
         if (pull) {
             applyPull(ctx);
             return;
         }
-        Combatant target = ctx.combatantAt(targetCol, targetRow);
+        Combatant target = ctx.battleState.combatantAt(targetCol, targetRow);
         if (target == null) return;
         if (target.getTeam() == combatant.getTeam()) return;
-        applyEffectsTo(target);
+        applyEffectsTo(target, ctx);
     }
 
     /**
@@ -120,11 +121,11 @@ public class ZoneInstance extends SkillInstance {
      * tile toward the zone tile, and sap it. Diagonally-positioned combatants
      * share neither the zone's row nor column, so they are never affected.
      */
-    private void applyPull(BattleContext ctx) {
+    private void applyPull(SkillContext ctx) {
         // A foe standing on the zone tile itself still gets sapped.
-        Combatant onTile = ctx.combatantAt(targetCol, targetRow);
+        Combatant onTile = ctx.battleState.combatantAt(targetCol, targetRow);
         if (onTile != null && onTile.getTeam() != combatant.getTeam()) {
-            applyEffectsTo(onTile);
+            applyEffectsTo(onTile, ctx);
         }
 
         for (Direction dir : Direction.values()) {
@@ -133,7 +134,7 @@ public class ZoneInstance extends SkillInstance {
                 int row = targetRow + dir.dRow * dist;
                 if (col < 0 || col >= Battlefield.COLS || row < 0 || row >= Battlefield.ROWS) break;
 
-                Combatant c = ctx.combatantAt(col, row);
+                Combatant c = ctx.battleState.combatantAt(col, row);
                 if (c == null) continue;
                 if (c.getTeam() == combatant.getTeam()) break; // friendly blocks the ray
 
@@ -142,10 +143,10 @@ public class ZoneInstance extends SkillInstance {
                 int nr = row + inward.dRow;
                 // applyDisplacement bypasses the tryGridStep occupancy guard, so
                 // only pull when the inward tile is free to avoid stacking.
-                if (!ctx.tilesOccupied(nc, nr)) {
+                if (!ctx.battleState.tilesOccupied(nc, nr)) {
                     ctx.movementSystem.applyDisplacement(c, 1, inward);
                 }
-                applyEffectsTo(c);
+                applyEffectsTo(c, ctx);
                 break; // only the nearest foe per ray
             }
         }
@@ -162,13 +163,14 @@ public class ZoneInstance extends SkillInstance {
     }
 
     @Override
-    public void render(SpriteBatch batch, BattleContext ctx) {
+    public void render(RenderContext rc) {
         if (phase == Phase.DONE) return;
+        SpriteBatch batch = rc.batch;
 
-        float depthScale = ctx.tileDepthScale(targetRow);
-        float panelW = ctx.battlefield.getPanelWidth() * depthScale;
-        float panelH = ctx.battlefield.getPanelRenderHeight() * depthScale;
-        Vector2 tilePos = ctx.projectedTileWorld(targetCol, targetRow);
+        float depthScale = rc.tileDepthScale(targetRow);
+        float panelW = rc.panelWidth() * depthScale;
+        float panelH = rc.panelRenderHeight() * depthScale;
+        Vector2 tilePos = rc.tileWorld(targetCol, targetRow);
         float tileX = tilePos.x;
         float tileY = tilePos.y;
 

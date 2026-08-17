@@ -36,7 +36,6 @@ public class OverworldScreen implements Screen {
 
     private final Main game;
     private final InputManager input = InputManager.defaultSetup();
-    private final MovementSystem movementSystem = new MovementSystem();
 
     private final GameEnvironment environment;
     private final Sprite avatar;
@@ -115,7 +114,7 @@ public class OverworldScreen implements Screen {
         if (input.isActionPressed(GameAction.MOVE_RIGHT)) dx += 1f;
         if (input.isActionPressed(GameAction.MOVE_UP))    dz -= 1f;   // away from camera
         if (input.isActionPressed(GameAction.MOVE_DOWN))  dz += 1f;   // toward camera
-        movementSystem.applyFreeInput(pos, dx, dz, delta);
+        MovementSystem.applyFreeInput(pos, dx, dz, delta);
     }
 
     @Override

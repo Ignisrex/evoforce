@@ -153,7 +153,7 @@ public class SkillSelectState implements GameScreenState {
             Player p = screen.playState.getPlayer();
             overlay.refresh(hand, cursor, zone == Zone.STACKS, slotCursor, p.getSlots(),
                     highlighted(), tucked,
-                    screen.mana.getCurrent() - pendingCost, screen.mana.getMax(),
+                    screen.encounter.mana().getCurrent() - pendingCost, screen.encounter.mana().getMax(),
                     p.getCaster().getTraits().all(), zone == Zone.DETAIL, zone == Zone.OPERATOR,
                     traitTrayOpen, traitCursor);
         }
@@ -221,7 +221,7 @@ public class SkillSelectState implements GameScreenState {
 
         Skill picked = hand.get(cursor);
         int cost = isPrepaid(picked) ? 0 : picked.getManaCost();
-        if (pendingCost + cost > screen.mana.getCurrent()) return;
+        if (pendingCost + cost > screen.encounter.mana().getCurrent()) return;
 
         hand.remove(cursor);
         slot.add(picked);
@@ -231,14 +231,17 @@ public class SkillSelectState implements GameScreenState {
         if (cursor >= hand.size()) cursor = Math.max(0, hand.size() - 1);
     }
 
+    /** Backing out costs half the bar — reading your hand and redrawing is not free. */
     private void cancel(){
-        screen.mana.drain();
+        screen.encounter.mana().drainHalf();
         restoreSnapshot();
         exit();
     }
 
+    /** Committing costs the whole bar, not the staged total: mana is the budget
+     *  that limits what can be staged, not a per-card price. */
     private void confirm() {
-        screen.mana.spendMana(pendingCost);
+        screen.encounter.mana().drain();
         overlay.confirmFlourish(screen.playState.getPlayer().getSlots());
         exit();
     }

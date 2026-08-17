@@ -41,43 +41,40 @@ public class Battlefield {
      */
     private static final float RENDER_HEIGHT_SCALE = 0.60f;
 
-    // World-space placement. (x, y) is the bottom-left corner of the grid.
-    private final float x;
-    private final float y;
-    private final float panelWidth;
-    private final float panelHeight;
-
-    public Battlefield(float x, float y, float panelWidth, float panelHeight, PanelType[][] panels) {
-        this.x = x;
-        this.y = y;
-        this.panelWidth = panelWidth;
-        this.panelHeight = panelHeight;
+    public Battlefield(PanelType[][] panels) {
         this.panels = panels;
     }
 
-    public float getPanelWidth()         { return panelWidth; }
-    public float getPanelHeight()        { return panelHeight; }
+    // The one construction site passes 10f/COLS and 4f/ROWS, so these are
+    // constants in practice. Static, like the grid geometry above, so the render
+    // pass can size a panel without being handed the panel-state grid.
+    public static final float PANEL_WIDTH  = 10f / COLS;
+    public static final float PANEL_HEIGHT = 4f  / ROWS;
+
+    public static float getPanelWidth()  { return PANEL_WIDTH; }
+    public static float getPanelHeight() { return PANEL_HEIGHT; }
     /** Compressed height used for all rendering and entity positioning. */
-    public float getPanelRenderHeight()  { return panelHeight * RENDER_HEIGHT_SCALE; }
+    public static float getPanelRenderHeight() { return PANEL_HEIGHT * RENDER_HEIGHT_SCALE; }
 
     /** True if {@code col} is on the player's half of the grid. */
     public boolean isPlayerSide(int col) { return col < COLS / 2; }
-
-    /** World X at the center of the given column. */
-    public float tileCenterX(int col) { return x + (col + 0.3f) * panelWidth; }
-
-    /** World Y at the center of the given row (uses the compressed render height). */
-    public float tileCenterY(int row) { return y + (row + 0.3f) * getPanelRenderHeight(); }
 
     // Static: pure functions of the grid constants (Vfx uses them for tile-relative offsets).
     public static float panelFloorWidth() { return GRID_WIDTH_3D / COLS; }
     public static float panelFloorDepth() { return GRID_DEPTH_3D / ROWS; }
 
-    /** Floor-space X of a column center (world X for SceneCamera.project). */
-    public float floorX(int col) { return GRID_LEFT_3D + (col + 0.5f) * panelFloorWidth(); }
+    // Grid geometry is a pure function of the constants above, so these are
+    // static: tick-time code (hit tests, particle anchors) can locate a tile in
+    // the world without holding a Battlefield instance. The instance side of
+    // this class is only the panel-state grid and the render sizes.
 
-    /** Floor-space Z of a row center (world Z; nearer rows have larger z). */
-    public float floorZ(int row) { return GRID_NEAR_3D - (row + 0.5f) * panelFloorDepth(); }
+    /** Floor-space X of a column center (world X for SceneCamera.project).
+     *  Takes a float so a projectile mid-flight can sit between two columns. */
+    public static float floorX(float col) { return GRID_LEFT_3D + (col + 0.5f) * panelFloorWidth(); }
+
+    /** Floor-space Z of a row center (world Z; nearer rows have larger z).
+     *  Takes a float so an entity mid-step can sit between two rows. */
+    public static float floorZ(float row) { return GRID_NEAR_3D - (row + 0.5f) * panelFloorDepth(); }
 
     public PanelType getPanel(int col, int row) {
         return panels[col][row];

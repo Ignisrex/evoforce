@@ -3,12 +3,14 @@ package com.silverignis.skills.instances;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.silverignis.particles.Anchor;
+import com.silverignis.render.RenderContext;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.skills.effects.EffectType;
-import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.Trigger;
 import com.silverignis.systems.combat.event.TriggerEvent;
@@ -27,8 +29,8 @@ public class AuraInstance extends SkillInstance {
     private final Sprite sprite;
     private float activeDuration;
 
-    public AuraInstance(Skill def, Combatant combatant, BattleContext ctx) {
-        super(def, combatant, ctx);
+    public AuraInstance(Skill def, Combatant combatant) {
+        super(def, combatant);
         // Sprite-less when the skill is particle-backed (vfx list, no vfxTexture).
         if (def.getVfxTexture() != null) {
             this.sprite = new Sprite(def.getVfxTexture());
@@ -41,13 +43,13 @@ public class AuraInstance extends SkillInstance {
     }
 
     @Override
-    public void update(float delta) {
+    public void update(float delta, SkillContext ctx) {
         if (!combatant.isAlive()) { finish(); return; }
         phaseTime += delta;
 
         switch (phase) {
             case EXPAND:
-                if (phaseTime >= EXPAND_TIME) enterActive(battleContext());
+                if (phaseTime >= EXPAND_TIME) enterActive(ctx);
                 break;
             case ACTIVE:
                 if (shouldFade()) enterFade();
@@ -63,14 +65,14 @@ public class AuraInstance extends SkillInstance {
         }
     }
 
-    private void enterActive(BattleContext ctx) {
+    private void enterActive(SkillContext ctx) {
         phase = Phase.ACTIVE;
         phaseTime = 0f;
         combatant.getAnimController().enterIdle();
         activeDuration = computeActiveDuration();
-        playVfx(Anchor.follow(combatant));   // layered particle effects centered on the caster
+        playVfx(Anchor.follow(combatant), ctx);   // layered particle effects centered on the caster
         if (combatant.isAlive()){
-            applyEffectsTo(combatant);
+            applyEffectsTo(combatant, ctx);
             ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_TICK, combatant, null)); //might need move to status onTick??
         }
     }
@@ -106,14 +108,16 @@ public class AuraInstance extends SkillInstance {
     }
 
     @Override
-    public void render(SpriteBatch batch, BattleContext ctx) {
+    public void render(RenderContext rc) {
         if (sprite == null || phase == Phase.DONE) return;
 
-        float panelW = ctx.battlefield.getPanelWidth();
-        float panelH = ctx.battlefield.getPanelHeight();
+        float panelW = rc.panelWidth();
+        float panelH = rc.panelHeight();
 
-        float cx = combatant.getVisualX();
-        float cy = combatant.getVisualY() + panelH * 0.5f;
+        // Centred on the caster's *visual* tile, so the aura rides a mid-step dash.
+        Vector2 p = rc.tileWorld(combatant.getVisualCol(), combatant.getVisualRow());
+        float cx = p.x;
+        float cy = p.y + panelH * 0.5f;
 
         float scale;
         float alpha;
@@ -138,7 +142,7 @@ public class AuraInstance extends SkillInstance {
         float size = Math.max(panelW, panelH) * 1.6f * scale;
         sprite.setBounds(cx - size * 0.5f, cy - size * 0.5f, size, size);
         sprite.setAlpha(alpha);
-        sprite.draw(batch);
+        sprite.draw(rc.batch);
         sprite.setAlpha(1f);
     }
 

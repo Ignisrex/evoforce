@@ -41,7 +41,7 @@ public class SpawnSystem {
         this.rng = rng;
     }
 
-    public List<Enemy> spawnNext(Battlefield battlefield, int progressionLevel) {
+    public List<Enemy> spawnNext(int progressionLevel) {
         int budget = Math.min(Math.max(progressionLevel, 0) + 1, MAX_BUDGET);
         List<int[]> partitions = partitionsByBudget.computeIfAbsent(budget, this::buildPartitions);
         if (partitions.isEmpty()) {
@@ -64,7 +64,7 @@ public class SpawnSystem {
             }
         }
 
-        return buildEnemies(drawn, battlefield);
+        return buildEnemies(drawn);
     }
 
     private List<int[]> buildPartitions(int budget) {
@@ -95,13 +95,13 @@ public class SpawnSystem {
         current[idx] = 0;
     }
 
-    private List<Enemy> buildEnemies(List<SpawnConfig> configs, Battlefield battlefield) {
+    private List<Enemy> buildEnemies(List<SpawnConfig> configs) {
         List<Enemy> result = new ArrayList<>(configs.size());
         int col = Battlefield.COLS - 1;
         int row = 0;
         for (SpawnConfig cfg : configs) {;
             Stats stats = new Stats(cfg.power, cfg.magic, cfg.vitality, cfg.defense, cfg.speed);
-            Enemy enemy = new Enemy(col, row, registry.getAnimSet(cfg.species, Team.ENEMY), battlefield, stats);
+            Enemy enemy = new Enemy(col, row, registry.getAnimSet(cfg.species, Team.ENEMY), stats);
             enemy.setupSkills(resolveSkills(cfg), resolveBasicAttack(cfg));
             result.add(enemy);
 

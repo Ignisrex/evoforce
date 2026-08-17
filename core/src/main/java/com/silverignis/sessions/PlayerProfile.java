@@ -1,7 +1,7 @@
 package com.silverignis.sessions;
 
 import com.silverignis.components.Caster;
-import com.silverignis.components.ManaPool;
+import com.silverignis.components.ManaStats;
 import com.silverignis.components.Stats;
 import com.silverignis.components.Team;
 import com.silverignis.skills.SkillLibrary;
@@ -13,7 +13,9 @@ public class PlayerProfile {
     private final Caster caster;
     private final Stats stats;
     private int progressionLevel;
-    private ManaPool mana = new ManaPool();
+
+    /** Capacity and regen only — the per-battle bar lives on the Encounter. */
+    private final ManaStats manaStats = new ManaStats(10, 2f);
 
     public PlayerProfile(SkillLibrary library){
         this.stats = new Stats(20, 10, 100, 10, 20);
@@ -34,5 +36,5 @@ public class PlayerProfile {
     public int getProgressionLevel() {
         return progressionLevel;
     }
-    public ManaPool getMana(){ return mana; }
+    public ManaStats getManaStats(){ return manaStats; }
 }

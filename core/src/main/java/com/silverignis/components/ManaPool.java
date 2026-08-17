@@ -1,39 +1,33 @@
 package com.silverignis.components;
 
-public class ManaPool {
+/**
+ * One battle's mana bar. Fills over time and gates how much can be staged in
+ * the skill menu; using the menu costs the bar rather than a per-card price.
+ *
+ * Battle-scoped and owned by the Encounter: a fresh pool starts empty by
+ * construction, so nothing has to remember to drain it at the start of a fight.
+ * Capacity and regen come from the run-level {@link ManaStats}.
+ */
+public final class ManaPool {
 
-    private int max = 10;
-    private float current = 0;
-    private float regenRate = 2; //per second
+    private final ManaStats stats;
+    private float current = 0f;
 
-    public ManaPool(){
-
+    public ManaPool(ManaStats stats) {
+        this.stats = stats;
     }
 
-    public int getMax(){ return this.max;}
-    public float getCurrent(){return this.current;}
+    public int   getMax()     { return stats.getMax(); }
+    public float getCurrent() { return current; }
 
-    public void update(float delta){
-        current = Math.min(max, current + regenRate * delta);
+    public void update(float delta) {
+        current = Math.min(stats.getMax(), current + stats.getRegenPerSecond() * delta);
     }
 
-    public void drain(){
-        this.current = 0;
-    }
+    /** Committing to a staged loadout costs the whole bar, whatever it held. */
+    public void drain() { current = 0f; }
 
-    public boolean spendMana(int amt){
-        if(amt > current) return false;
-        current = current - amt;
-        return true;
-    }
-
-    public void increaseMax(int amt){
-        max += amt;
-    }
-
-    public void increaseRegenRate(float rate){
-        regenRate += rate;
-    }
-
-    public float getRegenRate() {return regenRate;}
+    /** Backing out still costs — half the bar, so reading your hand and
+     *  cancelling to redraw is not free. */
+    public void drainHalf() { current *= 0.5f; }
 }

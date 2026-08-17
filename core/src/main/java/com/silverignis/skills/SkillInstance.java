@@ -1,7 +1,6 @@
 package com.silverignis.skills;
 
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Array;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
@@ -18,7 +17,6 @@ import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.effects.Effect;
-import com.silverignis.systems.BattleContext;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
 import com.silverignis.systems.combat.StatusFactory;
@@ -26,6 +24,15 @@ import com.silverignis.systems.combat.StatusType;
 import com.silverignis.systems.combat.event.DamageEvent;
 import com.silverignis.systems.combat.event.HealEvent;
 
+/**
+ * One execution of a skill. Origin is snapshotted at construction, so the
+ * fire-time tile stays valid even if the caster moves.
+ *
+ * Holds no context: the simulation arrives as a {@link SkillContext} parameter
+ * on {@link #update}, and rendering gets a {@link RenderContext} on
+ * {@link #render}. An instance therefore cannot reach the camera while ticking,
+ * nor the battle while drawing.
+ */
 public abstract class SkillInstance implements SceneRenderable {
 
     protected final Skill def;
@@ -44,23 +51,20 @@ public abstract class SkillInstance implements SceneRenderable {
     /** Handles for the skill's layered particle effects (from {@code def.getVfx()}), stopped on finish. */
     private final Array<EmitterHandle> vfxHandles = new Array<>(false, 4);
 
-    private final BattleContext battleContext;
-
-    protected SkillInstance(Skill def, Combatant combatant, BattleContext ctx) {
+    protected SkillInstance(Skill def, Combatant combatant) {
         this.def       = def;
         this.combatant = combatant;
         this.caster    = this.combatant.getCaster();
         this.pos       = this.combatant.getGridPosition();
         this.originCol = pos.getCol();
         this.originRow = pos.getRow();
-        this.worldZ = combatant.getGridPosition().getWorldZ();
-        this.battleContext = ctx;
+        this.worldZ    = Battlefield.floorZ(originRow);
     }
 
-    public Skill        getDef()    { return def; }
+    public Skill        getDef()       { return def; }
     public Combatant    getCombatant() { return combatant; }
-    public Caster       getCaster() { return caster; }
-    public GridPosition getPos()    { return pos; }
+    public Caster       getCaster()    { return caster; }
+    public GridPosition getPos()       { return pos; }
 
     protected final void acquireInputLock() {
         if (!lockTaken && caster.getInputLock().lock(this)) {
@@ -91,8 +95,8 @@ public abstract class SkillInstance implements SceneRenderable {
 
     /** Plays every effect in {@code def.getVfx()}, layered, at {@code anchor}, driven by {@code drive}.
      *  Call once at the shape's trigger moment; handles are stopped in {@link #onFinish()}. */
-    protected void playVfx(Anchor anchor, Drive drive) {
-        ParticleEngine engine = battleContext.particleEngine;
+    protected void playVfx(Anchor anchor, Drive drive, SkillContext ctx) {
+        ParticleEngine engine = ctx.particleEngine;
         if (engine == null || def.getVfx().isEmpty()) return;
         int dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
         for (VfxFactory f : def.getVfx()) {
@@ -101,39 +105,38 @@ public abstract class SkillInstance implements SceneRenderable {
         }
     }
 
-    protected void playVfx(Anchor anchor) { playVfx(anchor, Drive.FULL); }
+    protected void playVfx(Anchor anchor, SkillContext ctx) { playVfx(anchor, Drive.FULL, ctx); }
 
     /** Ground point at the center of a grid tile — the natural anchor for tile-targeted shapes. */
-    protected Anchor tileAnchor(int col, int row) {
-        Battlefield bf = battleContext.battlefield;
-        return out -> out.set(bf.floorX(col), 0f, bf.floorZ(row));
+    protected static Anchor tileAnchor(int col, int row) {
+        return out -> out.set(Battlefield.floorX(col), 0f, Battlefield.floorZ(row));
     }
 
     public final boolean isFinished() { return finished; }
 
-    protected void applyEffectsTo(Combatant target) {
-        if(target == null || !target.isAlive()) return;
+    protected void applyEffectsTo(Combatant target, SkillContext ctx) {
+        if (target == null || !target.isAlive()) return;
 
         for (Effect e : def.getEffects()) {
             switch (e.getType()) {
                 case DAMAGE:
-                    Stats casterStats =  combatant.getStats();
+                    Stats casterStats = combatant.getStats();
                     StatusContainer casterStatus = combatant.getStatusContainer();
                     float powerMul = casterStatus.has(StatusType.POWER_UP) ? 3f : 1f;
                     float magicMul = casterStatus.has(StatusType.MAGIC_UP) ? 3f : 1f;
                     int scaledBase = e.getValue()
                         + Math.round(casterStats.getPower() * powerMul * def.getPowerScale())
                         + Math.round(casterStats.getMagic() * magicMul * def.getMagicScale());
-                    battleContext.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
+                    ctx.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
                     break;
                 case HEAL:
-                    battleContext.damageSystem.heal(new HealEvent(target, e.getValue()));
+                    ctx.damageSystem.heal(new HealEvent(target, e.getValue()));
                     break;
                 case APPLY_STATUS:
-                    if(MathUtils.random(99) < e.getChance()){
+                    if (MathUtils.random(99) < e.getChance()) {
                         target.getStatusContainer().apply(
                             StatusFactory.create(e.getStatusType(), e.getDuration(), e.getValue()),
-                            battleContext.triggerBus
+                            ctx.triggerBus
                         );
                     }
                     break;
@@ -148,20 +151,12 @@ public abstract class SkillInstance implements SceneRenderable {
 
     public void coveredTiles(TileSink sink){}
 
-    public BattleContext battleContext() {
-        return battleContext;
-    }
+    public abstract void update(float delta, SkillContext ctx);
 
-    public abstract void update(float delta);
-
-    public void render(SpriteBatch batch, BattleContext ctx) {}
-
-    public float depth() {
-        return worldZ;
-    }
+    public float depth() { return worldZ; }
 
     public RenderLayer layer() { return RenderLayer.BILLBOARD; }
-    public void render(RenderContext rc) {
-        render(rc.batch, this.battleContext);
-    }
+
+    @Override
+    public void render(RenderContext rc) {}
 }

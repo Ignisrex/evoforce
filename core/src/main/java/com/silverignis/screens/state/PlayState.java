@@ -6,18 +6,15 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.silverignis.components.Direction;
-import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.environment.BattlefieldDecor;
 import com.silverignis.particles.ParticleEngine;
-import com.silverignis.registry.Monster;
 import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
 import com.silverignis.render.RenderContext;
@@ -28,20 +25,11 @@ import com.silverignis.screens.GameOverScreen;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.screens.OverworldScreen;
 import com.silverignis.screens.RewardScreen;
-import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.Skill;
-import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.ButtonSlot;
-import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
-import com.silverignis.systems.BattleContext;
 import com.silverignis.environment.GameEnvironment;
-import com.silverignis.systems.CombatSystem;
-import com.silverignis.systems.MovementSystem;
-import com.silverignis.systems.SpawnSystem;
-import com.silverignis.systems.combat.DamageSystem;
-import com.silverignis.systems.combat.TriggerBus;
-import com.silverignis.traits.TraitsContainer;
+import com.silverignis.systems.Encounter;
 import com.silverignis.util.PanelGenerator;
 
 import java.util.ArrayList;
@@ -53,12 +41,9 @@ public class PlayState implements GameScreenState {
     private final InputManager input;
 
     private final Battlefield battlefield;
+    private final Encounter encounter;
     private final Player player;
-    private final List<Enemy> enemies = new ArrayList<>();
-    private final List<BattleVfx> effects = new ArrayList<>();
-
-    private final BattleContext battleContext;
-    private final CombatSystem combatSystem;
+    private final List<Enemy> enemies;
 
     private final GameEnvironment environment;
     private final VfxManager vfxManager;
@@ -73,32 +58,20 @@ public class PlayState implements GameScreenState {
     private final SceneRenderable[] enemyHpLabels;
     private final BattlefieldDecor battlefieldDecor;
 
-    private final SpawnSystem spawnSystem;
-
     public PlayState(GameScreen screen) {
         this.screen = screen;
         this.input  = screen.getInputManager();
 
-        var assets   = screen.game.assets;
-        var registry = screen.game.monsterRegistry;
+        this.encounter = screen.encounter;
+        this.player    = encounter.player();
+        this.enemies   = encounter.enemies();
 
-        float panelWidth  = 10f / Battlefield.COLS;
-        float panelHeight = 4f  / Battlefield.ROWS;
-        battlefield = new Battlefield(3f, 1f, panelWidth, panelHeight, PanelGenerator.generatePanels());
+        battlefield = new Battlefield(PanelGenerator.generatePanels());
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
         environment.rebuild(MathUtils.random.nextLong());
         this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
-
-        this.spawnSystem = new SpawnSystem(
-            screen.game.session.spawnTable,
-            registry,
-            screen.game.session.skills);
-
-        player = new Player(1, 1, registry.getAnimSet(Monster.BEASTKIN, Team.PLAYER), battlefield, screen.game.session.playerProfile.getCaster(), screen.game.session.playerProfile.getStats());
-        int level = screen.game.session.playerProfile.getProgressionLevel();
-        enemies.addAll(spawnSystem.spawnNext(battlefield, level));
 
         Texture shadowTex = screen.game.generated.shadow();
         this.renderContext = screen.game.renderContext;
@@ -109,21 +82,6 @@ public class PlayState implements GameScreenState {
             enemyShadows[i] = enemies.get(i).shadowView(shadowTex);
             enemyHpLabels[i] = enemies.get(i).hpLabelView();
         }
-
-        TriggerBus triggerBus = new TriggerBus();
-        DamageSystem damageSystem = new DamageSystem(triggerBus);
-        MovementSystem movementSystem = new MovementSystem();
-
-        battleContext = new BattleContext(battlefield, player, enemies, effects, environment, damageSystem, triggerBus, movementSystem);
-        combatSystem  = new CombatSystem(battleContext);
-        battleContext.combatSystem = combatSystem;
-        battleContext.particleEngine = particles;
-
-        //apply traits to combatants
-        TraitsContainer traits = player.getCaster().getTraits();
-        player.getSlots().setSlotCapacity(SkillSlots.BASE_CAPACITY + traits.slotCapacityBonus());
-        traits.applyBattleHooks(player, triggerBus, damageSystem);
-        for (Enemy e : enemies) e.getCaster().getTraits().applyBattleHooks(e, triggerBus, damageSystem);
 
         vfxManager = screen.game.vfxManager;
     }
@@ -140,10 +98,10 @@ public class PlayState implements GameScreenState {
 
     @Override
     public void input() {
-        if (input.isActionJustPressed(GameAction.MOVE_UP))    battleContext.movementSystem.tryGridStep(player, Direction.UP);
-        if (input.isActionJustPressed(GameAction.MOVE_DOWN))  battleContext.movementSystem.tryGridStep(player, Direction.DOWN);
-        if (input.isActionJustPressed(GameAction.MOVE_LEFT))  battleContext.movementSystem.tryGridStep(player, Direction.LEFT);
-        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) battleContext.movementSystem.tryGridStep(player, Direction.RIGHT);
+        if (input.isActionJustPressed(GameAction.MOVE_UP))    encounter.tryMove(player, Direction.UP);
+        if (input.isActionJustPressed(GameAction.MOVE_DOWN))  encounter.tryMove(player, Direction.DOWN);
+        if (input.isActionJustPressed(GameAction.MOVE_LEFT))  encounter.tryMove(player, Direction.LEFT);
+        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) encounter.tryMove(player, Direction.RIGHT);
 
         handleAttack();
         handleSlotFire();
@@ -154,12 +112,9 @@ public class PlayState implements GameScreenState {
 
     @Override
     public void update(float delta) {
-        tickEntities(delta);
-        tickMeters(delta);
-        enemyAi();
-        combatSystem.tickStatuses(delta);
-        combatSystem.update(delta);
-        combatSystem.collectCoveredTiles(battlefieldDecor::glow);
+        encounter.tick(delta);
+
+        encounter.collectCoveredTiles(battlefieldDecor::glow);
         battlefieldDecor.update(delta);
 
         particles.update(delta);
@@ -168,61 +123,37 @@ public class PlayState implements GameScreenState {
         tickAndCullEffects(delta);
     }
 
+    /** The encounter reports the result; deciding what a result *means* for the
+     *  run — progression, rewards, which screen comes next — is this screen's job. */
     private boolean checkBattleOver() {
         if (transitionScheduled) return true;
 
-        if (allEnemiesDead()) {
-            this.combatSystem.finishAll();
-            transitionScheduled = true;
-            screen.game.session.playerProfile.progressPlayer();
-            screen.game.session.playerProfile.getCaster().resetStaging();
+        Encounter.Outcome outcome = encounter.outcome();
+        if (outcome == Encounter.Outcome.ONGOING) return false;
 
-            List<RewardOffer> offers = new ArrayList<>();
-            RewardOffer skills = RewardOffer.skillOffer(screen.game.session);
-            if( skills !=  null) offers.add(skills);
-            RewardOffer traits = RewardOffer.traitOffer(screen.game.session);
-            if( traits != null) offers.add(traits);
-            screen.game.setScreen( offers.isEmpty() ? new OverworldScreen(screen.game)
-                    : new RewardScreen(screen.game, offers));
-            return true;
-        }
-        if (!player.isAlive()) {
-            screen.game.session.playerProfile.getCaster().resetStaging();
-            this.combatSystem.finishAll();
-            transitionScheduled = true;
+        encounter.finish();
+        encounter.resetStaging();
+        transitionScheduled = true;
+
+        if (outcome == Encounter.Outcome.DEFEAT) {
             screen.game.setScreen(new GameOverScreen(screen.game, GameOverScreen.Result.LOST));
             return true;
         }
-        return false;
-    }
 
-    private boolean allEnemiesDead() {
-        for (Enemy e : enemies) if (!e.isDead()) return false;
+        screen.game.session.playerProfile.progressPlayer();
+        List<RewardOffer> offers = new ArrayList<>();
+        RewardOffer skills = RewardOffer.skillOffer(screen.game.session);
+        if (skills != null) offers.add(skills);
+        RewardOffer traits = RewardOffer.traitOffer(screen.game.session);
+        if (traits != null) offers.add(traits);
+        screen.game.setScreen(offers.isEmpty() ? new OverworldScreen(screen.game)
+                                               : new RewardScreen(screen.game, offers));
         return true;
     }
 
-    private void tickEntities(float delta) {
-        player.update(delta);
-        for (Enemy e : enemies) e.update(delta, battleContext);
-
-        Vector2 pp = battleContext.projectedTileWorld(player.getCol(), player.getRow());
-        player.setProjectedTarget(pp.x, pp.y);
-        player.setDepthScale(battleContext.tileDepthScale(player.getRow()));
-
-        for (Enemy e : enemies) {
-            Vector2 ep = battleContext.projectedTileWorld(e.getCol(), e.getRow());
-            e.setProjectedTarget(ep.x, ep.y);
-            e.setDepthScale(battleContext.tileDepthScale(e.getRow()));
-        }
-    }
-
-    private void tickMeters(float delta) {
-        screen.mana.update(delta);
-    }
-
     private void tickAndCullEffects(float delta) {
-        for (BattleVfx e : effects) e.update(delta);
-        effects.removeIf(e -> !e.isAlive());
+        for (BattleVfx e : encounter.vfx()) e.update(delta);
+        encounter.vfx().removeIf(e -> !e.isAlive());
     }
 
     @Override
@@ -254,7 +185,6 @@ public class PlayState implements GameScreenState {
     @Override
     public void resize(int width, int height) {
         environment.resize(width, height);
-        battleContext.buildCache();
     }
 
     public void renderWorld() {
@@ -267,8 +197,8 @@ public class PlayState implements GameScreenState {
             worldRenderer.submit(e);
             worldRenderer.submit(enemyHpLabels[i]);
         }
-        combatSystem.submitRenderables(worldRenderer);
-        worldRenderer.submit(effects);
+        encounter.combat().submitRenderables(worldRenderer);
+        worldRenderer.submit(encounter.vfx());
         worldRenderer.submit(particles.emitters());
         worldRenderer.flush(renderContext);
     }
@@ -279,22 +209,15 @@ public class PlayState implements GameScreenState {
 
     private void handleReleaseSkills(){
         if (!input.isActionPressed(GameAction.TRIGGER_RIGHT) && player.getCaster().areSkillsLoaded()) {
-            combatSystem.resolveLoadedSkills(player);
+            encounter.releaseLoadedSkills(player);
         }
     }
 
     private void handleAttack() {
-        //handles basic attack
-        if( player.isInputLocked() || player.getStatusContainer().blocksMovement()) return;
-
         if (!input.isActionJustPressed(GameAction.ATTACK_BASIC)) return;
-        if (player.isInputLocked()) return;
-
-        Skill skill = player.getBasicAttack();
-        if (skill == null) return;
-
-        if (player.getDeck().isOnCooldown(skill)) return;
-        combatSystem.fireSkill(player, skill);
+        // Gate lives in tryCast — basic attacks check blocksAttack, casts check
+        // blocksCasting, and neither is this screen's business to re-decide.
+        encounter.tryCast(player, player.getBasicAttack());
     }
 
     private void handleSlotFire() {
@@ -304,7 +227,10 @@ public class PlayState implements GameScreenState {
     }
 
     private void tryFireSlot(SlotKey key){
-        if (player.isInputLocked() || player.getStatusContainer().blocksMovement()) return;
+        // Checked *before* popping: a refused cast must not eat the staged card.
+        // Cooldown is deliberately not re-checked — the card was filtered against
+        // cooldowns when it was staged, which is why this uses cast, not tryCast.
+        if (!player.canStartCast()) return;
 
         ButtonSlot slot = player.getSlots().get(key);
         if (slot.isEmpty()) return;
@@ -312,9 +238,9 @@ public class PlayState implements GameScreenState {
         Skill skill = slot.pop();
 
         if (input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
-            combatSystem.loadSkill(player, skill);
-        }else {
-            combatSystem.fireSkill(player, skill);
+            encounter.loadSkill(player, skill);
+        } else {
+            encounter.cast(player, skill);
         }
     }
 
@@ -322,61 +248,6 @@ public class PlayState implements GameScreenState {
         if (input.isActionPressed(GameAction.TRIGGER_LEFT)
             && input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
             screen.setState(screen.skillSelectState);
-        }
-    }
-
-    // Self-contained placeholder AI. Each enemy picks the first off-cooldown
-    // skill whose shape could plausibly land on the player from its current
-    // tile, falling back to its basic attack. Slated for overhaul — keep all
-    // the logic in this section so the rewrite can lift it cleanly.
-    private void enemyAi() {
-        for (Enemy enemy : enemies) {
-            if (!enemy.wantsToBasicAttack()) continue;
-            Skill chosen = pickEnemyAction(enemy);
-            if (chosen == null) continue;
-            enemy.onBasicAttackFired();
-            combatSystem.fireSkill(enemy, chosen);
-        }
-    }
-
-    private Skill pickEnemyAction(Enemy enemy) {
-        SkillDeck deck = enemy.getDeck();
-        for (Skill s : deck.all()) {
-            if (deck.isOnCooldown(s)) continue;
-            if (canSkillReachPlayer(enemy, s)) return s;
-        }
-        Skill basic = enemy.getBasicAttack();
-        if (basic != null && !deck.isOnCooldown(basic) && canSkillReachPlayer(enemy, basic)) {
-            return basic;
-        }
-        return null;
-    }
-
-    private boolean canSkillReachPlayer(Enemy enemy, Skill skill) {
-        int dir = -1; // enemies face west
-        int dr = player.getRow() - enemy.getRow();
-        int dc = player.getCol() - enemy.getCol();
-
-        switch (skill.getShape()) {
-            case AURA:
-                return true;
-            case STRIKE:
-                return dr == 0 && dc == 2 * dir;
-            case ZONE:
-                return dr == 0 && dc == dir;
-            case BEAM:
-                return dr == 0 && dc * dir > 0;
-            case PROJECTILE:
-                if (dr != 0) return false;
-                if (skill.getShapeConfig() instanceof ProjectileConfig) {
-                    ProjectileConfig pc = (ProjectileConfig) skill.getShapeConfig();
-                    if (pc.getMovementType() == ProjectileConfig.MovementType.LOB) {
-                        return dc == pc.getTargetRange() * dir;
-                    }
-                }
-                return dc * dir > 0;
-            default:
-                return false;
         }
     }
 }

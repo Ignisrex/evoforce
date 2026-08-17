@@ -2,17 +2,27 @@ package com.silverignis.systems;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-import com.silverignis.animation.AnimController;
 import com.silverignis.components.*;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.systems.combat.Combatant;
 
+/**
+ * Sole owner of entity position writes. Input steps go through
+ * {@link #tryGridStep} (input-lock, movement-blocking status, per-entity
+ * {@link GridBounds}); skill-driven dashes go through
+ * {@link #forceGridTeleport}, which clamps only to the global grid edge so a
+ * Strike's HIT phase can drive the caster into enemy territory.
+ *
+ * Knows nothing about the camera: it hands the animation controller tiles, and
+ * the render pass turns those into screen positions.
+ */
 public final class MovementSystem {
 
-    private BattleContext ctx;
+    private final BattleState battleState;
 
-    public void setBattleContext(BattleContext ctx){ this.ctx = ctx; }
+    public MovementSystem(BattleState battleState) {
+        this.battleState = battleState;
+    }
 
     public boolean tryGridStep(Combatant combatant, Direction dir) {
         if (combatant.isInputLocked()) return false;
@@ -22,16 +32,16 @@ public final class MovementSystem {
         GridBounds bounds = gridMovement.getBounds();
         GridPosition pos = gridMovement.getPosition();
 
-        int newCol = MathUtils.clamp(pos.getCol() + dir.dCol, bounds.minCol, bounds.maxCol);
-        int newRow = MathUtils.clamp(pos.getRow() + dir.dRow, bounds.minRow, bounds.maxRow);
-        if (newCol == pos.getCol() && newRow == pos.getRow()) return false;
+        int fromCol = pos.getCol();
+        int fromRow = pos.getRow();
+        int newCol = MathUtils.clamp(fromCol + dir.dCol, bounds.minCol, bounds.maxCol);
+        int newRow = MathUtils.clamp(fromRow + dir.dRow, bounds.minRow, bounds.maxRow);
+        if (newCol == fromCol && newRow == fromRow) return false;
 
-        if (this.ctx.tilesOccupied(newCol, newRow)) return false;
+        if (battleState.tilesOccupied(newCol, newRow)) return false;
 
         pos.setTile(newCol, newRow);
-        AnimController ac = combatant.getAnimController();
-        Vector2 to = ctx.projectedTileWorld(newCol, newRow);
-        ac.enterMove(ac.getRenderX(), ac.getRenderY(), to.x, to.y);
+        combatant.getAnimController().enterMove(fromCol, fromRow, newCol, newRow);
         return true;
     }
 
@@ -39,9 +49,7 @@ public final class MovementSystem {
         int c = MathUtils.clamp(col, 0, Battlefield.COLS - 1);
         int r = MathUtils.clamp(row, 0, Battlefield.ROWS - 1);
         combatant.getGridMovement().getPosition().setTile(c, r);
-        AnimController ac = combatant.getAnimController();
-        Vector2 to = ctx.projectedTileWorld(c,r);
-        ac.snapTo(to.x, to.y);
+        combatant.getAnimController().snapTo(c, r);
     }
 
     public void applyDisplacement(Combatant combatant, int tiles, Direction dir) {
@@ -51,7 +59,9 @@ public final class MovementSystem {
         forceGridTeleport(combatant, newCol, newRow);
     }
 
-    public void applyFreeInput(FreePosition free, float dx, float dy, float delta) {
+    /** Free (non-grid) movement — the overworld avatar. Static because it touches
+     *  no battle state: there is no roster to collide with out there. */
+    public static void applyFreeInput(FreePosition free, float dx, float dy, float delta) {
         Rectangle b = free.getBounds();
         float nx = MathUtils.clamp(free.getX() + dx * free.getSpeed() * delta, b.x, b.x + b.width);
         float ny = MathUtils.clamp(free.getY() + dy * free.getSpeed() * delta, b.y, b.y + b.height);
