@@ -33,14 +33,31 @@ public final class AnimController {
     public void enterCast() { setState(AnimState.CAST);}
     public void enterHurt() { setState(AnimState.HURT);}
     public void enterDeath() { setState(AnimState.DEATH);}
-    /** Tween from the tile the entity was on to the one it just stepped to. */
+    /**
+     * Tween from the tile the entity was on to the one it just stepped to.
+     *
+     * The position change is always accepted; only the *pose* transition can be
+     * refused. MovementSystem has already committed the logical tile by the time
+     * this is called, so dropping the position here strands the body — which is
+     * exactly what happened when the per-frame projected-target push (which used
+     * to re-sync it every frame) was removed.
+     */
     public void enterMove(int fromCol, int fromRow, int toCol, int toRow) {
-        if (!canTransitionTo(AnimState.MOVE)) return;
-        beginState(AnimState.MOVE);
         moveFromCol = fromCol;
         moveFromRow = fromRow;
         moveToCol = toCol;
         moveToRow = toRow;
+
+        if (canTransitionTo(AnimState.MOVE)) {
+            beginState(AnimState.MOVE);
+            return;
+        }
+        // ponytail: pose is locked (ATTACK/HURT), and the tween is driven off the
+        // pose clock, so there is nothing to tween with — snap instead. Matches
+        // the old behaviour. Giving the tween its own clock is the real fix; see
+        // SPEC.md "Deferred decisions / tech debt".
+        visualCol = toCol;
+        visualRow = toRow;
     }
 
     /** Jump straight to a tile with no tween — teleports and spawns. */
