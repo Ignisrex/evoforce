@@ -36,7 +36,7 @@ public class Player implements Combatant, SceneRenderable {
         this.stats  = stats;
         this.health = new Health(stats.getVitality());
         this.statusContainer = new StatusContainer(this);
-        this.animController = new AnimController(animSet, col, row);
+        this.animController = new AnimController(animSet);
     }
 
     // --- Position (delegated to GridPosition / AnimController) ---
@@ -48,8 +48,6 @@ public class Player implements Combatant, SceneRenderable {
 
     public int   getCol()       { return gridMovement.getPosition().getCol(); }
     public int   getRow()       { return gridMovement.getPosition().getRow(); }
-    public float getVisualCol() { return animController.getVisualCol(); }
-    public float getVisualRow() { return animController.getVisualRow(); }
 
     // --- Caster role (delegated to Caster) ---
 
@@ -74,6 +72,7 @@ public class Player implements Combatant, SceneRenderable {
 
     public void update(float delta) {
         caster.update(delta);
+        gridMovement.update(delta);
         animController.update(delta);
     }
 

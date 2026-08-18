@@ -18,7 +18,7 @@ public interface Combatant {
     int getCol();
     int getRow();
     default boolean hittableAt(int col, int row) {
-        if(getAnimController().moveProgress() < 0.5f) return false;
+        if (getGridMovement().stepProgress() < 0.5f) return false;
         return col == getCol() && row == getRow();
     }
 
@@ -52,10 +52,11 @@ public interface Combatant {
         return skill == getCaster().getBasicAttack() ? canStartAttack() : canStartCast();
     }
 
-    /** Continuous grid position for drawing — fractional mid-step. Screen
-     *  coordinates are the render pass's business, not a combatant's. */
-    float getVisualCol();
-    float getVisualRow();
+    /** Continuous grid position for drawing — fractional mid-step. Derived from
+     *  the authoritative tile, so it cannot disagree with it. Screen coordinates
+     *  are the render pass's business, not a combatant's. */
+    default float getVisualCol() { return getGridMovement().visualCol(); }
+    default float getVisualRow() { return getGridMovement().visualRow(); }
     // ponytail: tile-snapped, not smoothed — fine for feet emission; invert projection if you need sprite-glued anchors; for example particles on dashing sprite
     default void worldPos(Vector3 out) {getGridPosition().worldPos(out);}
 

@@ -40,16 +40,17 @@ public final class MovementSystem {
 
         if (battleState.tilesOccupied(newCol, newRow)) return false;
 
-        pos.setTile(newCol, newRow);
-        combatant.getAnimController().enterMove(fromCol, fromRow, newCol, newRow);
+        // One call updates tile and tween together; the pose is a separate,
+        // refusable concern that can no longer affect where the body is.
+        gridMovement.stepTo(newCol, newRow);
+        combatant.getAnimController().enterMove();
         return true;
     }
 
     public void forceGridTeleport(Combatant combatant, int col, int row){
         int c = MathUtils.clamp(col, 0, Battlefield.COLS - 1);
         int r = MathUtils.clamp(row, 0, Battlefield.ROWS - 1);
-        combatant.getGridMovement().getPosition().setTile(c, r);
-        combatant.getAnimController().snapTo(c, r);
+        combatant.getGridMovement().teleportTo(c, r);
     }
 
     public void applyDisplacement(Combatant combatant, int tiles, Direction dir) {

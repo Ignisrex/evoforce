@@ -45,7 +45,7 @@ public class Enemy implements Combatant, SceneRenderable {
             new GridPosition(col, row),
             new GridBounds(Battlefield.COLS / 2, Battlefield.COLS - 1, 0, Battlefield.ROWS - 1));
         this.statusContainer = new StatusContainer(this);
-        this.animController = new AnimController(animSet, col, row);
+        this.animController = new AnimController(animSet);
     }
 
     @Override public GridMovement   getGridMovement()   { return gridMovement; }
@@ -54,8 +54,6 @@ public class Enemy implements Combatant, SceneRenderable {
 
     public int   getCol()       { return gridMovement.getPosition().getCol(); }
     public int   getRow()       { return gridMovement.getPosition().getRow(); }
-    public float getVisualCol() { return animController.getVisualCol(); }
-    public float getVisualRow() { return animController.getVisualRow(); }
 
     public void setupSkills(List<Skill> skills, Skill basicAttack) {
         for (Skill s : skills) caster.getDeck().add(s);
@@ -84,6 +82,7 @@ public class Enemy implements Combatant, SceneRenderable {
     /** Same shape as Player.update — deciding what this enemy does is EnemyAi's job. */
     public void update(float delta) {
         caster.update(delta);
+        gridMovement.update(delta);
         animController.update(delta);
     }
 
