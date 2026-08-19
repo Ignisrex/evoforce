@@ -32,7 +32,6 @@ import com.silverignis.environment.GameEnvironment;
 import com.silverignis.systems.Encounter;
 import com.silverignis.util.PanelGenerator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class PlayState implements GameScreenState {
@@ -141,11 +140,7 @@ public class PlayState implements GameScreenState {
         }
 
         screen.game.session.playerProfile.progressPlayer();
-        List<RewardOffer> offers = new ArrayList<>();
-        RewardOffer skills = RewardOffer.skillOffer(screen.game.session);
-        if (skills != null) offers.add(skills);
-        RewardOffer traits = RewardOffer.traitOffer(screen.game.session);
-        if (traits != null) offers.add(traits);
+        List<RewardOffer> offers = RewardScreen.offersFor(screen.game.session);
         screen.game.setScreen(offers.isEmpty() ? new OverworldScreen(screen.game)
                                                : new RewardScreen(screen.game, offers));
         return true;

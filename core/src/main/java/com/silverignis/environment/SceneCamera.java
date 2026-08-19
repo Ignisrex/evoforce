@@ -10,8 +10,8 @@ public class SceneCamera {
 
     // Package-visible: GameEnvironment ray-tests decor placement against this fixed pose.
     static final float CAM_X = 0f, CAM_Y = 6.75f, CAM_Z = 7.54f;
-    private static final float CAM_FOV = 45f;
-    private static final float LOOK_X = 0f, LOOK_Y = 0.33f, LOOK_Z = -0.11f;
+    private static final float CAM_FOV = 50f;
+    private static final float LOOK_X = 0f, LOOK_Y = 1.0f, LOOK_Z = -0.11f;
 
     private static final float NEAR_FLOOR_Z   = 2.0f;   // z closest to camera
     private static final float FLOOR_DEPTH     = 5.0f;   // z span front -> back

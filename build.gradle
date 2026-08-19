@@ -43,6 +43,8 @@ configure(subprojects) {
     File assetsFile = new File(assetsFolder, "assets.txt")
     // delete that file in case we've already created it
     assetsFile.delete()
+    // the running game reads its version from here (shown on the main menu)
+    new File(assetsFolder, "version.txt").text = projectVersion
 
     // iterate through all files inside that folder
     // convert it to a relative path

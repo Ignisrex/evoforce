@@ -58,6 +58,16 @@ dependencies {
 
 def os = System.properties['os.name'].toLowerCase(Locale.ROOT)
 
+tasks.register('shaderCheck', JavaExec) {
+  group = 'verification'
+  description = 'Compiles every ui shader against a real GL context and reports failures.'
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'com.silverignis.lwjgl3.ShaderCheck'
+  workingDir = rootProject.file('assets').path
+  jvmArgs += "--enable-native-access=ALL-UNNAMED"
+  if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
+}
+
 run {
   workingDir = rootProject.file('assets').path
 // You can uncomment the next line if your IDE claims a build failure even when the app closed properly.
@@ -133,10 +143,18 @@ tasks.register("jarWin") {
 }
 
 construo {
+  // jlink runs from the Gradle daemon's JVM by default (often older than our target);
+  // pin it to a JDK matching java.targetCompatibility or the runtime image can't load our classes.
+  jdkRoot.set(javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(25))
+  }.map { it.metadata.installationPath })
   // name of the executable
   name.set(appName)
   // human-readable name, used for example in the `.app` name for macOS
   humanName.set(appName)
+  roast {
+    vmArgs.set(["--enable-native-access=ALL-UNNAMED"])
+  }
   jlink {
     guessModulesFromJar.set(false)
     // You may need to add more modules, as needed.
@@ -169,7 +187,7 @@ construo {
       architecture.set(Target.Architecture.X86_64)
       // Optional: icon for Windows, as a PNG
       icon.set(project.file("icons/logo.png"))
-      jdkUrl.set("https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jdk_x64_windows_hotspot_21.0.10_7.zip")
+      jdkUrl.set("https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_windows_hotspot_25.0.2_10.zip")
       // Uncomment the next line to show a console when the game runs, to print messages.
       //useConsole.set(true)
     }

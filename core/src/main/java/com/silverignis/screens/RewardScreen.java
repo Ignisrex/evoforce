@@ -18,6 +18,8 @@ import com.silverignis.particles.*;
 import com.silverignis.render.RenderContext;
 import com.silverignis.rewards.RewardOffer;
 import com.silverignis.rewards.RewardOption;
+import com.silverignis.sessions.GameSession;
+import com.silverignis.ui.CelestialVeil;
 import com.silverignis.ui.RewardCardStyle;
 import com.silverignis.ui.TraceBorder;
 import com.silverignis.ui.UiUtil;
@@ -31,13 +33,12 @@ public class RewardScreen implements Screen {
     private final InputManager input = InputManager.defaultSetup();
     private final Stage stage;
     private final RewardCardStyle style;
+    private final CelestialVeil sky;
 
     /** Reveal-ceremony beats; gather runs 0 → REWARD_GATHER_TIME, trace connects at MATERIALIZE_AT. */
     private static final float TRACE_AT = 0.5f, TRACE_TIME = 0.6f, MATERIALIZE_AT = 1.1f, CEREMONY_TIME = 1.35f;
     /** Each card's reveal starts this long after the previous one's (overlapping cascade). */
     private static final float REVEAL_STAGGER = 0.35f;
-    /** Deep arcane blue — the "world system" void behind the ambience particles. */
-    private static final Color BG = new Color(0.02f, 0.045f, 0.11f, 1f);
 
     private int offerIndex = 0;
     private int selected = 0;
@@ -56,6 +57,7 @@ public class RewardScreen implements Screen {
         this.game = game;
         this.offers = offers;
         this.style = new RewardCardStyle(game.generated, game.viewport);
+        this.sky = new CelestialVeil(style.pixel);
         this.stage = new Stage(game.viewport, game.batch);
         this.particleCtx = RenderContext.screenSpace(game.batch);
 
@@ -190,6 +192,16 @@ public class RewardScreen implements Screen {
             Drive.FULL, Channel.MENU);
     }
 
+    /** Skill offer then trait offer, skipping whichever the session can't fill; empty means nothing to show. */
+    public static List<RewardOffer> offersFor(GameSession session) {
+        List<RewardOffer> offers = new ArrayList<>();
+        RewardOffer skills = RewardOffer.skillOffer(session);
+        if (skills != null) offers.add(skills);
+        RewardOffer traits = RewardOffer.traitOffer(session);
+        if (traits != null) offers.add(traits);
+        return offers;
+    }
+
     private void advance() {
         offerIndex++;
         if (offerIndex >= offers.size()) {
@@ -206,8 +218,13 @@ public class RewardScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(BG);
+        ScreenUtils.clear(Color.BLACK);
         game.viewport.apply();
+        sky.update(delta);
+        game.batch.setProjectionMatrix(game.viewport.getCamera().combined);
+        game.batch.begin();
+        sky.draw(game.batch, game.viewport.getWorldWidth(), game.viewport.getWorldHeight());
+        game.batch.end();
 
         input.update();
         if (ceremonyActive) {
@@ -294,6 +311,7 @@ public class RewardScreen implements Screen {
     public void dispose() {
         stage.dispose();
         style.dispose();
+        sky.dispose();
     }
 
     private final class ParticleLayer extends Actor {

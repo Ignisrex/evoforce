@@ -171,3 +171,6 @@ tools/textures_raw/
 
 ## Local scratch space
 .scratch/
+
+## Generated at build:
+/assets/version.txt
