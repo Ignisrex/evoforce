@@ -28,8 +28,9 @@ public final class FireBlastVisual extends AbstractSkillVisual {
     @Override
     public void render(RenderContext rc, VisualState state) {
         if (hasEnded()) return;
-        float w = rc.panelWidth();
-        float h = rc.panelRenderHeight();
+        float depth = rc.depthScale(state.bodyPos.z);
+        float w = rc.panelWidth() * depth;
+        float h = rc.panelRenderHeight() * depth;
         Vector2 p = rc.project(state.bodyPos.x, state.bodyPos.z);
         sprite.setSize(w, h);
         sprite.setPosition(p.x - w * 0.5f, p.y);

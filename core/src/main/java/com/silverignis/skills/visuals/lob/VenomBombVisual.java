@@ -28,7 +28,7 @@ public final class VenomBombVisual extends AbstractSkillVisual {
     @Override
     public void render(RenderContext rc, VisualState vs) {
         if (hasEnded()) return;
-        float size = rc.panelWidth() * BALL_SCALE;
+        float size = rc.panelWidth() * BALL_SCALE * rc.depthScale(vs.bodyPos.z);
         Vector2 p = rc.project(vs.bodyPos.x, vs.bodyPos.z);
         float y = p.y + vs.bodyPos.y * rc.depthScale(vs.bodyPos.z);
         sprite.setSize(size, size);

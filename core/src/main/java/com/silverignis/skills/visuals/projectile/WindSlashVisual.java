@@ -31,8 +31,9 @@ public final class WindSlashVisual extends  AbstractSkillVisual {
     @Override
     public void render(RenderContext rc, VisualState state) {
         if (hasEnded()) return;
-        float w = rc.panelWidth();
-        float h = rc.panelRenderHeight();
+        float depth = rc.depthScale(state.bodyPos.z);
+        float w = rc.panelWidth() * depth;
+        float h = rc.panelRenderHeight() * depth;
         Vector2 p = rc.project(state.bodyPos.x, state.bodyPos.z);
         // Wind layer first, slash sprite on top of its own slipstream. The quad
         // is sprite-height so the shader's y-space IS the crescent's height.

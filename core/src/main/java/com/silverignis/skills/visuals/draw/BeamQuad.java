@@ -46,8 +46,9 @@ public final class BeamQuad {
         if (vs.nearCol < 0 || vs.nearCol >= Battlefield.COLS) return;
 
         float scale = rc.tileDepthScale(vs.row);
-        float panelW = rc.panelWidth() * scale;
-        float panelH = rc.panelRenderHeight() * scale;
+        float depth = rc.tileDepthScale(vs.row);
+        float panelW = rc.panelWidth() * scale * depth;
+        float panelH = rc.panelRenderHeight() * scale * depth;
         Vector2 nearPos = rc.tileWorld(vs.nearCol, vs.row, nearScratch);
         Vector2 farPos = rc.tileWorld(vs.farCol, vs.row, farScratch);
         float leftX = Math.min(nearPos.x, farPos.x) - panelW * 0.5f;

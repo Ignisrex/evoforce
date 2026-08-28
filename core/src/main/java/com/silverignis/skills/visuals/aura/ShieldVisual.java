@@ -11,7 +11,8 @@ import com.silverignis.render.RenderContext;
  *  blooming in and holding until the status drops. */
 public final class ShieldVisual extends AbstractSkillVisual {
 
-    private static final float SIZE_SCALE = 1.6f;   // vs the larger panel dimension
+    private static final float SIZE_SCALE = 1.75f;  // vs the larger panel dimension
+    private static final float GROUND_Y   = -0.5f;  // feet in quad space (-1..1); mirrors shield.frag
     private static final float HOLD_ALPHA = 1.0f;
 
     private final Color tint = new Color(Color.WHITE);
@@ -35,11 +36,12 @@ public final class ShieldVisual extends AbstractSkillVisual {
             case RECOVERY -> { scale = 1f; alpha = HOLD_ALPHA * (1f - vs.phaseProgress); }
             default       -> { return; }
         }
-        float panelW = rc.panelWidth();
-        float panelH = rc.panelHeight();
+        float depth = rc.depthScale(vs.casterPos.z);
+        float panelW = rc.panelWidth() * depth;
+        float panelH = rc.panelHeight() * depth;
         Vector2 p = rc.project(vs.casterPos.x, vs.casterPos.z);
-        float cy = p.y + panelH * 0.5f;
         float size = Math.max(panelW, panelH) * SIZE_SCALE * scale;
+        float cy = p.y - GROUND_Y * size * 0.5f;   // feet stay at GROUND_Y whatever the size
         tint.a = alpha;
         rc.skillShaders.draw(rc.batch, "shield", p.x, cy, size, vs.elapsed, vs.dir, tint);
     }

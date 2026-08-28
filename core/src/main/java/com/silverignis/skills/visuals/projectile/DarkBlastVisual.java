@@ -33,8 +33,9 @@ public final class DarkBlastVisual extends AbstractSkillVisual {
     @Override
     public void render(RenderContext rc, VisualState state) {
         if (hasEnded()) return;
-        float w = rc.panelWidth();
-        float h = rc.panelRenderHeight();
+        float depth = rc.depthScale(state.bodyPos.z);
+        float w = rc.panelWidth() * depth;
+        float h = rc.panelRenderHeight() * depth;
         Vector2 p = rc.project(state.bodyPos.x, state.bodyPos.z);
         rc.skillShaders.draw(rc.batch, "dark_blast", p.x, p.y + h * 0.5f,
             QUAD_SCALE *w, state.elapsed, state.dir, TINT);
