@@ -4,17 +4,18 @@ package com.silverignis.components;
  * One battle's mana bar. Fills over time and gates how much can be staged in
  * the skill menu; using the menu costs the bar rather than a per-card price.
  *
- * Battle-scoped and owned by the Encounter: a fresh pool starts empty by
- * construction, so nothing has to remember to drain it at the start of a fight.
+ * Battle-scoped and owned by the Encounter: a fresh pool starts full by
+ * construction, so nothing has to remember to refill it at the start of a fight.
  * Capacity and regen come from the run-level {@link ManaStats}.
  */
 public final class ManaPool {
 
     private final ManaStats stats;
-    private float current = 0f;
+    private float current;
 
     public ManaPool(ManaStats stats) {
         this.stats = stats;
+        this.current = stats.getMax();   // a battle opens with a full bar
     }
 
     public int   getMax()     { return stats.getMax(); }
