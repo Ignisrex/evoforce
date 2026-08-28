@@ -15,7 +15,7 @@ final class FlameTorrentVisual extends AbstractSkillVisual {
 
     /** The torrent sheet is a continuous roiled, not a one-shot — it loops. */
     private static Animation<TextureRegion> looping() {
-        Animation<TextureRegion> a = SkillVisuals.assets.sheetOnDemand(
+        Animation<TextureRegion> a = SkillVisuals.assets.sheet(
             "skills/animations/flame_torrent_spritesheet.png", 256, 128, 0.09f);
         a.setPlayMode(Animation.PlayMode.LOOP);
         return a;

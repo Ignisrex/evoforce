@@ -42,4 +42,4 @@ This is a Gradle multi-project build (`core`, `lwjgl3`) using the Gradle wrapper
 
 ## Asset pipeline
 
-Art is generated offline by Python/Pillow scripts under `tools/` (some hit the PixelLab API). Outputs live under `assets/{panels,sprites,attacks,effects,skills}/`. The scripts are run manually — they are not part of the Gradle build. The `generateAssetList` task is what wires `assets/` into the runtime classpath via `assets.txt`.
+Art is generated offline by Python/Pillow scripts under `tools/` (some hit the PixelLab API). Outputs live under `assets/{panels,sprites,attacks,effects,skills}/`. The scripts are run manually — they are not part of the Gradle build. The `generateAssetList` task is what wires `assets/` into the runtime classpath via `assets.txt`. `GameAssets.queueLoad` also reads that manifest to preload every `skills/sprites/*.png` and `skills/animations/*.png` — skill visuals never load on demand; drop new art in those folders and it is resident at startup.

@@ -12,7 +12,7 @@ import com.silverignis.render.RenderLayer;
 final class VenomBombCloudVisual extends AbstractSkillVisual {
 
     private final GroundQuad quad = new GroundQuad(
-        new TextureRegion(SkillVisuals.assets.textureOnDemand("effects/venom_ball.png")), null, Color.WHITE);
+        new TextureRegion(SkillVisuals.assets.texture("skills/sprites/venom_ball.png")), null, Color.WHITE);
 
     @Override
     protected void react(Trigger t, VisualState vs, ParticleEngine engine) {

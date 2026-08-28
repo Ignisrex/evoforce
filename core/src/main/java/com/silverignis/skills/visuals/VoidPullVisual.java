@@ -16,7 +16,7 @@ final class VoidPullVisual extends AbstractSkillVisual {
     private final GroundQuad quad = new GroundQuad(null, looping(), VIOLET);
 
     private static Animation<TextureRegion> looping() {
-        Animation<TextureRegion> a = SkillVisuals.assets.sheetOnDemand("skills/animations/void_pull_spritesheet.png", 192, 192, 0.08f);
+        Animation<TextureRegion> a = SkillVisuals.assets.sheet("skills/animations/void_pull_spritesheet.png", 192, 192, 0.08f);
         a.setPlayMode(Animation.PlayMode.LOOP);
         return a;
     }

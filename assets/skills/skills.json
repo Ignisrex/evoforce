@@ -115,7 +115,7 @@
     "id": "wind_slash",
     "displayName": "Wind Slash",
     "description": "Quick wind slash. Always available.",
-    "icon": "effects/wind_slash.png",
+    "icon": "skills/sprites/wind_slash.png",
     "shape": "PROJECTILE",
     "element": "NONE",
     "cooldown": 0.5,

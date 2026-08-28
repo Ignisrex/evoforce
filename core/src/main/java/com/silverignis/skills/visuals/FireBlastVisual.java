@@ -8,7 +8,7 @@ import com.silverignis.render.RenderContext;
 
 final class FireBlastVisual extends AbstractSkillVisual {
 
-    private final Sprite sprite = new Sprite(SkillVisuals.assets.textureOnDemand("effects/fireball.png"));
+    private final Sprite sprite = new Sprite(SkillVisuals.assets.texture("skills/sprites/fireball.png"));
 
     @Override
     protected void react(Trigger t, VisualState state, ParticleEngine engine) {

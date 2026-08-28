@@ -11,7 +11,7 @@ import java.util.List;
 
 final class WindStrikeVisual extends AbstractSkillVisual {
 
-    private final TextureRegion slash = new TextureRegion(SkillVisuals.assets.textureOnDemand("effects/slash.png"));
+    private final TextureRegion slash = new TextureRegion(SkillVisuals.assets.texture("skills/sprites/slash.png"));
     private final List<SlashFlash> slashes = new ArrayList<>();
 
     @Override

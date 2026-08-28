@@ -1,5 +1,6 @@
 package com.silverignis.assets;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.assets.loaders.TextureLoader;
 import com.badlogic.gdx.audio.Music;
@@ -25,11 +26,11 @@ import java.util.EnumMap;
  *
  * <p>Three disjoint asset sets exist in the game; this class owns one of them:
  * <ul>
- *   <li>Non-monster files (cave, clash VFX, overworld avatar, audio) — owned here.</li>
+ *   <li>Non-monster files (cave, effect sets, {@code skills/sprites} + {@code skills/animations}, audio) — owned here.</li>
  *   <li>Monster directional sprites — also loaded here ({@link #queueLoad()} iterates the
  *       {@code Monster} enum); they are <em>fetched</em> through {@code MonsterRegistry},
  *       which holds this {@code GameAssets}. One cache, one dispose.</li>
- *   <li>Skill icons / VFX textures — owned and disposed by {@code SkillLibrary}.</li>
+ *   <li>Skill icons — owned and disposed by {@code SkillLibrary}.</li>
  * </ul>
  * Because the sets are disjoint, nothing is owned twice and there is no double-dispose.
  * Do not register skill or generated (Pixmap) textures with this manager.
@@ -142,6 +143,13 @@ public final class GameAssets implements Disposable {
         for (String[] set : EFFECT_SETS)
             for (String s : set) mgr.load(s, Texture.class);
 
+        // Every skill sprite/sheet, from the manifest generateAssetList writes at build time.
+        for (String line : Gdx.files.internal("assets.txt").readString().split("\n")) {
+            String p = line.trim();
+            if ((p.startsWith("skills/sprites/") || p.startsWith("skills/animations/")) && p.endsWith(".png"))
+                mgr.load(p, Texture.class);
+        }
+
         for (Monster m : Monster.values()) {
             for (AnimSheet.Row r : m.animSheet().rows()) {
                 mgr.load(m.texturePath(r.state, Team.PLAYER), Texture.class);
@@ -237,23 +245,11 @@ public final class GameAssets implements Disposable {
         mgr.dispose();
     }
 
-    /** On-demand texture for skill visuals: queued and finish-loaded on first
-     *  request, then cached by the manager like everything else. The plain
-     *  {@link #texture} stays fail-fast for the preloaded sets. */
-    public Texture textureOnDemand(String path) {
-        if (!mgr.isLoaded(path, Texture.class)) {
-            mgr.load(path, Texture.class);
-            mgr.finishLoadingAsset(path);
-        }
-        return mgr.get(path, Texture.class);
-    }
-
-    /** Strip animation from a one-row spritesheet, loaded on demand. Frame
-     *  count is derived from the sheet width, so a re-exported sheet with
-     *  more frames just works. */
-    public Animation<TextureRegion> sheetOnDemand(String path, int frameW, int frameH,
-                                                  float frameDuration) {
-        Texture sheet = textureOnDemand(path);
+    /** Strip animation from a preloaded one-row spritesheet. Frame count is
+     *  derived from the sheet width, so a re-exported sheet with more frames
+     *  just works. */
+    public Animation<TextureRegion> sheet(String path, int frameW, int frameH, float frameDuration) {
+        Texture sheet = texture(path);
         TextureRegion[][] grid = TextureRegion.split(sheet, frameW, frameH);
         TextureRegion[] frames = new TextureRegion[sheet.getWidth() / frameW];
         for (int i = 0; i < frames.length; i++) frames[i] = grid[0][i];

@@ -1,10 +1,10 @@
 """Generate placeholder VFX sprites for each skill shape.
 
 Produces:
-    assets/effects/slash.png  — directional slash arc (Strike)
-    assets/effects/beam.png   — horizontal gradient bar (Beam)
-    assets/effects/aura.png   — radial glow ring (Aura)
-    assets/effects/zone.png   — edge-inward tile border glow (Zone)
+    assets/skills/sprites/slash.png  — directional slash arc (Strike)
+    assets/skills/sprites/beam.png   — horizontal gradient bar (Beam)
+    assets/skills/sprites/aura.png   — radial glow ring (Aura)
+    assets/skills/sprites/zone.png   — edge-inward tile border glow (Zone)
 
 Usage:
     python tools/generate_skill_vfx.py
@@ -21,7 +21,7 @@ from PIL import Image
 
 
 DEFAULT_SIZE = 128
-ASSETS_DIR = Path("assets") / "effects"
+ASSETS_DIR = Path("assets") / "skills" / "sprites"
 
 
 def generate_slash(out: Path, size: int) -> None:

@@ -12,7 +12,7 @@ import java.util.List;
 
 final class FlameClawVisual extends AbstractSkillVisual {
 
-    private final Animation<TextureRegion> claw = SkillVisuals.assets.sheetOnDemand("skills/animations/flame_claw_spritesheet.png", 192, 192, 0.03f);
+    private final Animation<TextureRegion> claw = SkillVisuals.assets.sheet("skills/animations/flame_claw_spritesheet.png", 192, 192, 0.03f);
     private final List<SlashFlash> slashes = new ArrayList<>();
 
     @Override

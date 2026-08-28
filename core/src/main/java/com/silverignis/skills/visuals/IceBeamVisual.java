@@ -9,7 +9,7 @@ import com.silverignis.render.RenderContext;
 final class IceBeamVisual extends AbstractSkillVisual {
 
     private final BeamQuad quad = new BeamQuad(
-        SkillVisuals.assets.sheetOnDemand("skills/animations/icebeam_spritesheet.png", 256, 128, 0.1f),
+        SkillVisuals.assets.sheet("skills/animations/icebeam_spritesheet.png", 256, 128, 0.1f),
         Color.WHITE);
 
     @Override

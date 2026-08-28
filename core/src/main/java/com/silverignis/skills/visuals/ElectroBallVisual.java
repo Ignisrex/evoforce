@@ -10,7 +10,7 @@ final class ElectroBallVisual extends AbstractSkillVisual {
 
     private static final float BALL_SCALE = 0.55f;
 
-    private final Sprite sprite = new Sprite(SkillVisuals.assets.textureOnDemand("effects/electro_ball.png"));
+    private final Sprite sprite = new Sprite(SkillVisuals.assets.texture("skills/sprites/electro_ball.png"));
 
     @Override
     protected void react(Trigger t, VisualState vs, ParticleEngine engine) {

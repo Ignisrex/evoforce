@@ -10,7 +10,7 @@ final class VenomBombVisual extends AbstractSkillVisual {
 
     private static final float BALL_SCALE = 0.55f;
 
-    private final Sprite sprite = new Sprite(SkillVisuals.assets.textureOnDemand("effects/venom_ball.png"));
+    private final Sprite sprite = new Sprite(SkillVisuals.assets.texture("skills/sprites/venom_ball.png"));
 
     @Override
     protected void react(Trigger t, VisualState visualState, ParticleEngine engine) {

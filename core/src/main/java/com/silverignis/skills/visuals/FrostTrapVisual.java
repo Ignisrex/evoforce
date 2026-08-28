@@ -10,7 +10,7 @@ import com.silverignis.render.RenderLayer;
 final class FrostTrapVisual extends AbstractSkillVisual {
 
     private final GroundQuad quad = new GroundQuad(
-        new TextureRegion(SkillVisuals.assets.textureOnDemand("effects/zone.png")), null, Color.WHITE);
+        new TextureRegion(SkillVisuals.assets.texture("skills/sprites/zone.png")), null, Color.WHITE);
 
     @Override
     protected void react(Trigger t, VisualState vs, ParticleEngine engine) {}

@@ -10,7 +10,7 @@ import com.silverignis.render.RenderContext;
 final class ThunderVisual extends AbstractSkillVisual {
 
     private final BeamQuad quad = new BeamQuad(
-        SkillVisuals.assets.sheetOnDemand("skills/animations/thunder_spritesheet.png", 192, 192, 0.08f),
+        SkillVisuals.assets.sheet("skills/animations/thunder_spritesheet.png", 192, 192, 0.08f),
         Color.WHITE);
 
     @Override

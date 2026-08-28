@@ -1,8 +1,8 @@
 """Generate projectile VFX sprites.
 
 Produces:
-    assets/effects/fireball.png  — bright orange-yellow fireball with trailing glow
-    assets/effects/venom_ball.png — sickly green-purple glob with drip texture
+    assets/skills/sprites/fireball.png  — bright orange-yellow fireball with trailing glow
+    assets/skills/sprites/venom_ball.png — sickly green-purple glob with drip texture
 
 Usage:
     python tools/generate_projectile_vfx.py
@@ -16,7 +16,7 @@ from pathlib import Path
 from PIL import Image
 
 
-ASSETS_DIR = Path("assets") / "effects"
+ASSETS_DIR = Path("assets") / "skills" / "sprites"
 SIZE = 128
 
 

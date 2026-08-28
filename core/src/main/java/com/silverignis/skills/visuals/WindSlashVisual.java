@@ -8,7 +8,7 @@ import com.silverignis.particles.Vfx;
 import com.silverignis.render.RenderContext;
 
 final class WindSlashVisual extends  AbstractSkillVisual {
-    private final Sprite sprite = new Sprite(SkillVisuals.assets.textureOnDemand("effects/wind_slash.png"));
+    private final Sprite sprite = new Sprite(SkillVisuals.assets.texture("skills/sprites/wind_slash.png"));
 
     /** Wind quad side in panel widths — twice the sprite, so the lines can
      *  trail a full sprite-width behind it (per the concept sketch). */
