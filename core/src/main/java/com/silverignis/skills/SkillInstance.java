@@ -1,23 +1,21 @@
 package com.silverignis.skills;
 
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.Array;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
 import com.silverignis.components.Stats;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.particles.Anchor;
-import com.silverignis.particles.Channel;
-import com.silverignis.particles.Drive;
-import com.silverignis.particles.EmitterHandle;
 import com.silverignis.particles.ParticleEngine;
-import com.silverignis.particles.VfxFactory;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.effects.Effect;
-import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.Phase;
+import com.silverignis.skills.visuals.SkillVisual;
+import com.silverignis.skills.visuals.SkillVisuals;
+import com.silverignis.skills.visuals.Trigger;
+import com.silverignis.skills.visuals.VisualState;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
 import com.silverignis.systems.combat.StatusFactory;
@@ -33,6 +31,10 @@ import com.silverignis.systems.combat.event.HealEvent;
  * on {@link #update}, and rendering gets a {@link RenderContext} on
  * {@link #render}. An instance therefore cannot reach the camera while ticking,
  * nor the battle while drawing.
+ *
+ * The instance is pure sim. It writes a {@link VisualState} (anchors, phase,
+ * progress) and fires {@link Trigger}s; the {@link SkillVisual} resolved from
+ * the skill id owns everything about how that looks.
  */
 public abstract class SkillInstance implements SceneRenderable {
 
@@ -55,9 +57,6 @@ public abstract class SkillInstance implements SceneRenderable {
     //cached for end state
     private ParticleEngine engine;
 
-    /** Handles for the skill's layered particle effects (from {@code def.getVfx()}), stopped on finish. */
-    private final Array<EmitterHandle> vfxHandles = new Array<>(false, 4);
-
     protected SkillInstance(Skill def, Combatant combatant) {
         this.def       = def;
         this.combatant = combatant;
@@ -67,7 +66,7 @@ public abstract class SkillInstance implements SceneRenderable {
         this.originRow = pos.getRow();
         this.worldZ    = Battlefield.floorZ(originRow);
 
-        this.visual = SkillVisuals.has(def.getId()) ? SkillVisuals.create(def.getId()) : null;
+        this.visual = SkillVisuals.create(def.getId());
         visualState.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
         visualState.row = originRow;
         visualState.element = def.getElement();
@@ -92,45 +91,20 @@ public abstract class SkillInstance implements SceneRenderable {
         }
     }
 
+    /** Gameplay is over: locks released, END fired so the visual stops its
+     *  emitters. The instance stays until the visual is done too. */
     public final void finish() {
         if (resolved) return;
         resolved = true;
         releaseInputLock();
-        if (visual != null && engine != null) visual.onTrigger(Trigger.END, visualState, engine);
-        onFinish();
+        if (engine != null) visual.onTrigger(Trigger.END, visualState, engine);
     }
 
-    /** Base stops the layered particle emitters (spawning halts; live particles age out).
-     *  Subclasses that override MUST call {@code super.onFinish()}. */
-    protected void onFinish() {
-        for (EmitterHandle h : vfxHandles) if (h != null) h.stop();
-        vfxHandles.clear();
-    }
-
-    /** Plays every effect in {@code def.getVfx()}, layered, at {@code anchor}, driven by {@code drive}.
-     *  Call once at the shape's trigger moment; handles are stopped in {@link #onFinish()}. */
-    protected void playVfx(Anchor anchor, Drive drive, SkillContext ctx) {
-        ParticleEngine engine = ctx.particleEngine;
-        if (engine == null || def.getVfx().isEmpty()) return;
-        int dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
-        for (VfxFactory f : def.getVfx()) {
-            vfxHandles.add(f.create(def.getElement(), def.getVfxTint(), dir)
-                            .play(engine, anchor, drive, Channel.COMBAT));
-        }
-    }
-
-    protected void playVfx(Anchor anchor, SkillContext ctx) { playVfx(anchor, Drive.FULL, ctx); }
-
-    /** Ground point at the center of a grid tile — the natural anchor for tile-targeted shapes. */
-    protected static Anchor tileAnchor(int col, int row) {
-        return out -> out.set(Battlefield.floorX(col), 0f, Battlefield.floorZ(row));
-    }
-
+    /** Gameplay done: locks released, effects applied. What sim queries consult. */
     public final boolean isResolved() { return resolved; }
 
-    public final boolean isFinished() {
-        return resolved && (visual == null || visual.isDone());
-    }
+    /** Removable: gameplay done AND the visual has nothing left to show. */
+    public final boolean isFinished() { return resolved && visual.isDone(); }
 
     protected void applyEffectsTo(Combatant target, SkillContext ctx) {
         if (target == null || !target.isAlive()) return;
@@ -169,55 +143,57 @@ public abstract class SkillInstance implements SceneRenderable {
 
     public void coveredTiles(TileSink sink){}
 
+    /** The one entry point CombatSystem calls each frame: gameplay sim while
+     *  unresolved, visual clock always — a visual may outlive its gameplay. */
     public final void tick(float delta, SkillContext ctx) {
-        if (engine == null ) engine = ctx.particleEngine;
-        if (visual != null && !castFired ) {
+        if (engine == null) engine = ctx.particleEngine;
+        if (!castFired) {
             castFired = true;
             writeCasterPos();
             visual.onTrigger(Trigger.CAST, visualState, ctx.particleEngine);
         }
         if (!resolved) update(delta, ctx);
-        if(visual != null){
-            visualState.elapsed += delta;
-            writeCasterPos();
-            visual.update(delta);
-        }
+        visualState.elapsed += delta;
+        writeCasterPos();
+        visual.update(delta);
     }
 
+    /** Enter a phase: resets progress and fires the phase's trigger once.
+     *  Subclasses keep ownership of durations and write phaseProgress each tick. */
     protected final void setPhase(Phase phase, SkillContext ctx) {
         visualState.phase = phase;
         visualState.phaseProgress = 0f;
-        if (visual != null) visual.onTrigger(phase.trigger, visualState,ctx.particleEngine);
+        visual.onTrigger(phase.trigger, visualState, ctx.particleEngine);
     }
 
     protected final void fireImpact(float x, float y, float z, SkillContext ctx) {
-        if (visual == null) return;
         visualState.impactPos.set(x, y, z);
         visual.onTrigger(Trigger.IMPACT, visualState, ctx.particleEngine);
     }
 
-    public final void fireClash(float x, float y, float z, ParticleEngine engine){
-        if (visual == null) return;
+    /** CLASH comes from CombatSystem, which has the engine but no context. */
+    public final void fireClash(float x, float y, float z, ParticleEngine engine) {
         visualState.impactPos.set(x, y, z);
         visual.onTrigger(Trigger.CLASH, visualState, engine);
     }
-
-    public final SkillVisual visual() { return visual; }
 
     public abstract void update(float delta, SkillContext ctx);
 
     public float depth() { return worldZ; }
 
-    public RenderLayer layer() { return visual != null ? visual.layer() : RenderLayer.BILLBOARD; }
+    public RenderLayer layer() { return visual.layer(); }
 
     @Override
     public void render(RenderContext rc) {
         // An instance spawned mid-tick (the lob's cloud) is submitted for
         // render before its first tick: no CAST yet, no phase, nothing to draw.
-        if (visual != null && castFired) visual.render(rc, visualState);
+        if (castFired) visual.render(rc, visualState);
     }
 
+    /** Caster anchor from the tweened visual tile, so a look riding the caster
+     *  (aura, halo) follows a mid-step dash instead of snapping. */
     private void writeCasterPos() {
-        visualState.casterPos.set(Battlefield.floorX(combatant.getVisualCol()), 0f, Battlefield.floorZ(combatant.getVisualRow()));
+        visualState.casterPos.set(Battlefield.floorX(combatant.getVisualCol()), 0f,
+                                  Battlefield.floorZ(combatant.getVisualRow()));
     }
 }

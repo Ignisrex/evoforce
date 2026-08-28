@@ -6,8 +6,6 @@ import com.silverignis.assets.GameAssets;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.skills.elements.Element;
 
-import java.util.Map;
-
 import static com.silverignis.particles.Val.of;
 import static com.silverignis.particles.Val.range;
 
@@ -17,32 +15,6 @@ public final class Vfx {
 
     private static GameAssets assets;
     public static void init(GameAssets a) { assets = a; }
-
-    /** Skill-facing names → catalog factories. Referenced by the {@code "vfx"} list in skills.json. */
-    private static final Map<String, VfxFactory> CATALOG = Map.ofEntries(
-        Map.entry("beamEmbers",  (VfxFactory) (el, tint, dir) -> beamEmbers(tint, dir)),
-        Map.entry("beamFlames",  (VfxFactory) (el, tint, dir) -> beamFlames(dir)),
-        Map.entry("beamIceMist", (VfxFactory) (el, tint, dir) -> beamIceMist(tint, dir)),
-        Map.entry("spark",       (VfxFactory) (el, tint, dir) -> spark(el)),
-        Map.entry("crackle",     (VfxFactory) (el, tint, dir) -> crackle(el)),
-        Map.entry("impact",      (VfxFactory) (el, tint, dir) -> impact(el)),
-        Map.entry("heal",        (VfxFactory) (el, tint, dir) -> heal()),
-        Map.entry("powerUp",     (VfxFactory) (el, tint, dir) -> powerUp()),
-        Map.entry("magicUp",     (VfxFactory) (el, tint, dir) -> magicUp()),
-        Map.entry("voidPull",    (VfxFactory) (el, tint, dir) -> voidPull()),
-        Map.entry("regen",       (VfxFactory) (el, tint, dir) -> regen()),
-        Map.entry("fireTrail",   (VfxFactory) (el, tint, dir) -> fireTrail(dir)),
-        Map.entry("darkTrail",   (VfxFactory) (el, tint, dir) -> darkTrail(dir)),
-        Map.entry("electricArcs",(VfxFactory) (el, tint, dir) -> electricArcs(el)),
-        Map.entry("energyMotes", (VfxFactory) (el, tint, dir) -> energyMotes(el)));
-
-    /** Resolve a skill-def vfx name to its factory. Throws on an unknown name so bad data fails at load. */
-    public static VfxFactory byName(String name) {
-        VfxFactory f = CATALOG.get(name);
-        if (f == null) throw new IllegalArgumentException(
-            "Unknown vfx effect '" + name + "' (known: " + CATALOG.keySet() + ")");
-        return f;
-    }
 
     public static EffectDef ambientEmbers() {
         return EffectDef.effect()

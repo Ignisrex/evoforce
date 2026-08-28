@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Catalogue of every skill the game knows about. Owns the underlying
- * {@link com.badlogic.gdx.graphics.Texture}s for skill icons and VFX —
- * call {@link #dispose()} when the battle ends.
+ * Catalogue of every skill the game knows about. Owns the skill icon
+ * {@link com.badlogic.gdx.graphics.Texture}s — call {@link #dispose()} when
+ * the battle ends. VFX assets belong to the visuals, via {@code GameAssets}.
  *
  * <p>This is the global pool. The subset of skills a specific caster can
  * actually draw from lives on their {@code SkillDeck}, populated from the
@@ -45,9 +45,6 @@ public class SkillLibrary {
     public void dispose() {
         for (Skill s : all) {
             if (s.getIcon() != null) s.getIcon().dispose();
-            if (s.getVfxTexture() != null) s.getVfxTexture().dispose();
-            if (s.getZoneTexture() != null) s.getZoneTexture().dispose();
-            if (s.getVfxAnimationSheet() != null) s.getVfxAnimationSheet().dispose();
         }
     }
 }

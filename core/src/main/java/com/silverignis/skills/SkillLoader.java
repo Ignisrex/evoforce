@@ -2,14 +2,9 @@ package com.silverignis.skills;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
-import com.silverignis.particles.Vfx;
-import com.silverignis.particles.VfxFactory;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.skills.effects.EffectType;
 import com.silverignis.skills.elements.Element;
@@ -55,43 +50,13 @@ public final class SkillLoader {
             .cooldown(requireFloat(node, id, "cooldown"))
             .icon(loadTexture(requireString(node, id, "icon"), id, "icon"));
 
-        // Optional here; Skill.build() enforces it for every shape except a particle-backed aura.
-        String vfxTexPath = node.getString("vfxTexture", null);
-        if (vfxTexPath != null) b.vfxTexture(loadTexture(vfxTexPath, id, "vfxTexture"));
-
         b.powerScale(node.getFloat("powerScale", 0f));
         b.magicScale(node.getFloat("magicScale", 0f));
         b.manaCost(node.getInt("manaCost", 1));
 
-        String tintHex = node.getString("vfxTint", null);
-        if (tintHex != null) b.vfxTint(parseColor(tintHex, id));
-
-        String shader = node.getString("shader", null);
-        if (shader != null) b.shader(shader);
-
-        JsonValue vfx = node.get("vfx");
-        if (vfx != null) b.vfx(parseVfx(vfx, id));
-
         JsonValue effects = node.get("effects");
         if (effects != null) {
             b.effects(parseEffects(effects, id));
-        }
-
-        String zoneTexPath = node.getString("zoneTexture", null);
-        if (zoneTexPath != null) {
-            b.zoneTexture(loadTexture(zoneTexPath, id, "zoneTexture"));
-        }
-
-        JsonValue anim = node.get("vfxAnimation");
-        if (anim != null) {
-            Texture sheet = loadTexture(requireString(anim, id, "vfxAnimation.spritesheet"),
-                                        id, "vfxAnimation.spritesheet");
-            int frameW = requireInt(anim, id, "vfxAnimation.frameWidth");
-            int frameH = requireInt(anim, id, "vfxAnimation.frameHeight");
-            float frameDuration = requireFloat(anim, id, "vfxAnimation.frameDuration");
-            Animation<TextureRegion> built = buildAnimation(sheet, frameW, frameH, frameDuration);
-            if (anim.getBoolean("loop", false)) built.setPlayMode(Animation.PlayMode.LOOP);
-            b.vfxAnimation(built, sheet);
         }
 
         JsonValue shapeCfg = node.get("shapeConfig");
@@ -100,33 +65,6 @@ public final class SkillLoader {
         }
 
         return b.build();
-    }
-
-    private static Color parseColor(String hex, String skillId) {
-        try {
-            return Color.valueOf(hex);
-        } catch (RuntimeException ex) {
-            throw new IllegalStateException(
-                "Skill '" + skillId + "' field 'vfxTint' has invalid color '" + hex + "'", ex);
-        }
-    }
-
-    private static List<VfxFactory> parseVfx(JsonValue arr, String skillId) {
-        if (!arr.isArray()) {
-            throw new IllegalStateException(
-                "Skill '" + skillId + "' field 'vfx' must be a JSON array of effect names");
-        }
-        List<VfxFactory> out = new ArrayList<>();
-        for (JsonValue e = arr.child; e != null; e = e.next) {
-            String name = e.asString();
-            try {
-                out.add(Vfx.byName(name));
-            } catch (IllegalArgumentException ex) {
-                throw new IllegalStateException(
-                    "Skill '" + skillId + "' field 'vfx' references " + ex.getMessage(), ex);
-            }
-        }
-        return out;
     }
 
     private static List<Effect> parseEffects(JsonValue arr, String skillId) {
@@ -197,15 +135,6 @@ public final class SkillLoader {
                 throw new IllegalStateException(
                     "Skill '" + skillId + "' has unsupported movementType '" + movement + "'");
         }
-    }
-
-    private static Animation<TextureRegion> buildAnimation(Texture sheet, int frameW, int frameH,
-                                                           float frameDuration) {
-        int cols = sheet.getWidth() / frameW;
-        TextureRegion[][] grid = TextureRegion.split(sheet, frameW, frameH);
-        TextureRegion[] frames = new TextureRegion[cols];
-        for (int i = 0; i < cols; i++) frames[i] = grid[0][i];
-        return new Animation<>(frameDuration, frames);
     }
 
     private static Texture loadTexture(String path, String skillId, String field) {

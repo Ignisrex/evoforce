@@ -9,7 +9,6 @@
     "cooldown": 2.0,
     "manaCost": 1,
     "powerScale": 0.5,
-    "vfxTexture": "effects/slash.png",
     "effects": [
       { "type": "DAMAGE", "value": 30 }
     ]
@@ -23,8 +22,6 @@
     "element": "FIRE",
     "cooldown": 3.0,
     "manaCost": 1,
-    "vfxTexture": "effects/fireball.png",
-    "vfx": ["fireTrail"],
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
     "effects": [
       { "type": "DAMAGE", "value": 20 },
@@ -40,7 +37,6 @@
     "element": "POISON",
     "cooldown": 3.5,
     "manaCost": 1,
-    "vfxTexture": "effects/venom_ball.png",
     "shapeConfig": { "movementType": "LOB", "targetRange": 2, "arcHeight": 2.0 },
     "effects": [
       { "type": "DAMAGE", "value": 12 },
@@ -56,14 +52,6 @@
     "element": "ICE",
     "cooldown": 4.0,
     "manaCost": 2,
-    "vfxTexture": "effects/ice_beam_vfx.png",
-    "vfxAnimation": {
-      "spritesheet": "skills/animations/icebeam_spritesheet.png",
-      "frameWidth": 256,
-      "frameHeight": 128,
-      "frameDuration": 0.1
-    },
-    "vfx": ["beamIceMist"],
     "effects": [
       { "type": "DAMAGE", "value": 25 },
       { "type": "APPLY_STATUS",  "statusType":"FREEZE", "duration": 2, "chance": 100 }
@@ -78,7 +66,6 @@
     "element": "ICE",
     "cooldown": 3.5,
     "manaCost": 2,
-    "vfxTexture": "effects/zone.png",
     "shapeConfig": { "duration": 5.0 },
     "effects": [
       { "type": "DAMAGE", "value": 5 },
@@ -94,7 +81,6 @@
     "element": "NONE",
     "cooldown": 5.0,
     "manaCost": 2,
-    "vfx": ["heal"],
     "effects": [
       {"type": "HEAL", "value": 15 }
     ]
@@ -108,7 +94,6 @@
     "element": "NONE",
     "cooldown": 5.0,
     "manaCost": 1,
-    "vfx": ["regen"],
     "effects": [
       {"type": "APPLY_STATUS", "statusType":"REGEN", "duration": 4, "value": 6 }
     ]
@@ -122,7 +107,6 @@
     "element": "NONE",
     "cooldown": 4.0,
     "manaCost": 1,
-    "vfxTexture": "effects/aura.png",
     "effects": [
       {"type":"APPLY_STATUS", "statusType":"SHIELD", "duration": 6}
     ]
@@ -136,7 +120,6 @@
     "element": "NONE",
     "cooldown": 0.5,
     "manaCost": 1,
-    "vfxTexture": "effects/wind_slash.png",
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 12.0 },
     "effects": [
       { "type": "DAMAGE", "value": 5 }
@@ -151,7 +134,6 @@
     "element": "NONE",
     "cooldown": 12.0,
     "manaCost": 1,
-    "vfx": ["powerUp"],
     "effects": [
       { "type": "APPLY_STATUS", "statusType": "POWER_UP", "duration": 10 }
     ]
@@ -165,7 +147,6 @@
     "element": "NONE",
     "cooldown": 12.0,
     "manaCost": 1,
-    "vfx": ["magicUp"],
     "effects": [
       { "type": "APPLY_STATUS", "statusType": "MAGIC_UP", "duration": 10 }
     ]
@@ -180,15 +161,7 @@
     "cooldown": 3.0,
     "manaCost": 1,
     "powerScale": 0.6,
-    "vfxTexture": "effects/slash.png",
-    "vfxAnimation": {
-      "spritesheet": "skills/animations/flame_claw_spritesheet.png",
-      "frameWidth": 192,
-      "frameHeight": 192,
-      "frameDuration": 0.03
-    },
     "shapeConfig": { "dashTiles": 1, "hitTiles": 2 },
-    "vfx": ["spark"],
     "effects": [
       { "type": "DAMAGE", "value": 22 },
       { "type": "APPLY_STATUS", "statusType": "BURN", "duration": 5, "value": 2, "chance": 100 }
@@ -204,14 +177,6 @@
     "cooldown": 4.5,
     "manaCost": 2,
     "magicScale": 0.7,
-    "vfxTexture": "effects/beam.png",
-    "vfxAnimation": {
-      "spritesheet": "skills/animations/thunder_spritesheet.png",
-      "frameWidth": 192,
-      "frameHeight": 192,
-      "frameDuration": 0.08
-    },
-    "vfx": ["beamEmbers", "crackle"],
     "effects": [
       { "type": "DAMAGE", "value": 28 },
       { "type": "APPLY_STATUS", "statusType": "STUN", "duration": 1.0, "chance": 50 }
@@ -226,16 +191,7 @@
     "element": "DARK",
     "cooldown": 8.0,
     "manaCost": 2,
-    "vfxTexture": "effects/void_zone.png",
-    "vfxTint": "8a2be2ff",
-    "vfxAnimation": {
-      "spritesheet": "skills/animations/void_pull_spritesheet.png",
-      "frameWidth": 192,
-      "frameHeight": 192,
-      "frameDuration": 0.08
-    },
     "shapeConfig": { "pull": true, "duration": 6.0, "tickInterval": 1.0 },
-    "vfx": ["voidPull"],
     "effects": [
       { "type": "DAMAGE", "value": 6 }
     ]
@@ -251,9 +207,6 @@
     "manaCost": 1,
     "powerScale": 0.1,
     "magicScale": 0.8,
-    "vfxTexture": "effects/dark_blast.png",
-    "shader": "dark_blast",
-    "vfx": ["darkTrail"],
     "shapeConfig": { "movementType": "STRAIGHT", "speed": 8.0 },
     "effects": [
       { "type": "DAMAGE", "value": 18 }
@@ -269,15 +222,6 @@
     "cooldown": 5.0,
     "manaCost": 2,
     "magicScale": 0.6,
-    "vfxTexture": "effects/flame_torrent_beam.png",
-    "vfxAnimation": {
-      "spritesheet": "skills/animations/flame_torrent_spritesheet.png",
-      "frameWidth": 256,
-      "frameHeight": 128,
-      "frameDuration": 0.09,
-      "loop": true
-    },
-    "vfx": ["beamFlames"],
     "effects": [
       { "type": "DAMAGE", "value": 16 },
       { "type": "APPLY_STATUS", "statusType": "BURN", "value": 3, "duration": 4, "chance": 15 }
@@ -292,9 +236,6 @@
     "element": "LIGHTNING",
     "cooldown": 6.0,
     "manaCost": 2,
-    "vfxTexture": "effects/electro_ball.png",
-    "zoneTexture": "effects/electro_zone.png",
-    "vfx": ["electricArcs", "energyMotes"],
     "shapeConfig": { "movementType": "LOB", "targetRange": 2, "arcHeight": 2.0, "zoneDuration": 3.0, "zoneTickInterval": 1.0 },
     "effects": [
       { "type": "DAMAGE", "value": 10 },
