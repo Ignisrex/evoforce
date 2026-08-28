@@ -16,6 +16,7 @@ public final class ShaderCheck extends ApplicationAdapter {
         {"ui/shaders/sprite_batch.vert", "skills/shaders/dark_blast.frag"},
         {"ui/shaders/sprite_batch.vert", "skills/shaders/wind_slash.frag"},
         {"ui/shaders/sprite_batch.vert", "skills/shaders/shield.frag"},
+        {"ui/shaders/sprite_batch.vert", "skills/shaders/frost_trap.frag"},
     };
 
     @Override

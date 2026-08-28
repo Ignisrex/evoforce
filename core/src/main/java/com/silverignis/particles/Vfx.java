@@ -332,6 +332,36 @@ public final class Vfx {
             .build();
     }
 
+    /** Cold fog creeping off a frozen tile — low, slow, translucent, with the odd glint of frost. */
+    public static EffectDef frostFog() {
+        Color thick = new Color(0.80f, 0.90f, 1.00f, 0.40f);   // dense near the ice
+        Color thin  = new Color(0.60f, 0.80f, 1.00f, 0f);      // gone as it rises
+        return EffectDef.effect()
+            // 1. Fog — cold air is heavy: it pools over the slab, spreads out and sinks,
+            //    never rises. Spawned across the panel (1.25 x 1.0) just above the floor,
+            //    near-zero speed so it stays on the tile and only blooms in place.
+            .emitter(e -> e
+                .continuous(8f)
+                .speed(range(0f, 0.04f)).life(range(1.0f, 1.6f)).size(range(0.35f, 0.55f)).spread(180f)
+                .jitter(0.45f, 0.02f, 0.3f)
+                .offset(0f, 0.12f, 0f)
+                .drift(0f, -0.06f, 0f)
+                .spin(range(-12f, 12f)).fadeIn(0.4f)
+                .alphaBlend()
+                .texturesOverLife(assets.smoke(2), assets.smoke(4), assets.smoke(6), assets.smoke(8), assets.smoke(10))
+                .sizeOverLife(Interpolation.pow2Out, 1.5f)
+                .colorOverLife(Interpolation.linear, thick, thin))
+            // 2. Glints — tiny frost sparkles winking on the surface.
+            .emitter(e -> e
+                .continuous(3f)
+                .speed(range(0f, 0.05f)).life(range(0.2f, 0.4f)).size(range(0.05f, 0.09f)).spread(10f)
+                .jitter(0.45f, 0f, 0.25f)
+                .texture(assets.star(4))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .color(new Color(0.95f, 1f, 1f, 1f)))
+            .build();
+    }
+
     /** Icy vapor rolling off a beam — soft translucent puffs that bloom and thin out, not glowing embers.
      *  Each puff morphs through the smoke frames over its life; the order is authored right here. */
     public static EffectDef beamIceMist(Color tint, int dir) {

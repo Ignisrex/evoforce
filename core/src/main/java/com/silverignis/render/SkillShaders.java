@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public final class SkillShaders implements Disposable {
 
-    private static final String[] IDS = { "dark_blast", "wind_slash", "shield" };
+    private static final String[] IDS = { "dark_blast", "wind_slash", "shield", "frost_trap" };
 
     private final Map<String, ShaderProgram> programs = new HashMap<>();
     private final Texture pixel;
@@ -56,7 +56,7 @@ public final class SkillShaders implements Disposable {
         ShaderProgram p = programs.get(id);
         batch.setShader(p);  // flushes pending default-shader quads, binds p
         p.setUniformf("u_time", time);
-        p.setUniformf("u_dir", dir);
+        if (p.hasUniform("u_dir")) p.setUniformf("u_dir", dir);
         p.setUniformf("u_tint", tint.r, tint.g, tint.b);
         // Optional envelope: shaders that fade with their phase declare u_alpha
         // and get the tint's alpha; the rest ignore it.
