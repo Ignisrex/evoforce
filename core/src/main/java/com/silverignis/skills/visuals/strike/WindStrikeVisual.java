@@ -1,5 +1,7 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.strike;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.silverignis.particles.ParticleEngine;
@@ -9,7 +11,7 @@ import com.silverignis.render.RenderContext;
 import java.util.ArrayList;
 import java.util.List;
 
-final class WindStrikeVisual extends AbstractSkillVisual {
+public final class WindStrikeVisual extends AbstractSkillVisual {
 
     private final TextureRegion slash = new TextureRegion(SkillVisuals.assets.texture("skills/sprites/slash.png"));
     private final List<SlashFlash> slashes = new ArrayList<>();

@@ -1,5 +1,7 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.zone;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.silverignis.particles.ParticleEngine;
@@ -7,7 +9,7 @@ import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 
 /** Frost Trap: a freezing decal on the tile ahead, drawn on the ground. */
-final class FrostTrapVisual extends AbstractSkillVisual {
+public final class FrostTrapVisual extends AbstractSkillVisual {
 
     private final GroundQuad quad = new GroundQuad(
         new TextureRegion(SkillVisuals.assets.texture("skills/sprites/zone.png")), null, Color.WHITE);

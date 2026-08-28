@@ -1,5 +1,11 @@
 package com.silverignis.skills.visuals;
 
+import com.silverignis.skills.visuals.projectile.*;
+import com.silverignis.skills.visuals.lob.*;
+import com.silverignis.skills.visuals.beam.*;
+import com.silverignis.skills.visuals.strike.*;
+import com.silverignis.skills.visuals.zone.*;
+import com.silverignis.skills.visuals.aura.*;
 import com.silverignis.assets.GameAssets;
 
 import java.util.Map;
@@ -9,7 +15,7 @@ public final class SkillVisuals {
 
     private SkillVisuals() {}
 
-    static GameAssets assets;
+    public static GameAssets assets;
     public static void init(GameAssets a) { assets = a; }
 
     private static final Map<String, Supplier<SkillVisual>> CATALOG = Map.ofEntries(

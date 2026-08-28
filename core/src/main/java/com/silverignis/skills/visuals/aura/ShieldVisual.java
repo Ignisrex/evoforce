@@ -1,5 +1,7 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.aura;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.particles.ParticleEngine;
@@ -7,7 +9,7 @@ import com.silverignis.render.RenderContext;
 
 /** Shield: a translucent blue dome held in front of the caster (shield.frag),
  *  blooming in and holding until the status drops. */
-final class ShieldVisual extends AbstractSkillVisual {
+public final class ShieldVisual extends AbstractSkillVisual {
 
     private static final float SIZE_SCALE = 1.6f;   // vs the larger panel dimension
     private static final float HOLD_ALPHA = 1.0f;

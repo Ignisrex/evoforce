@@ -1,5 +1,7 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.strike;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -10,7 +12,7 @@ import com.silverignis.render.RenderContext;
 import java.util.ArrayList;
 import java.util.List;
 
-final class FlameClawVisual extends AbstractSkillVisual {
+public final class FlameClawVisual extends AbstractSkillVisual {
 
     private final Animation<TextureRegion> claw = SkillVisuals.assets.sheet("skills/animations/flame_claw_spritesheet.png", 192, 192, 0.03f);
     private final List<SlashFlash> slashes = new ArrayList<>();

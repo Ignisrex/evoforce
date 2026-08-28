@@ -1,5 +1,6 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.draw;
 
+import com.silverignis.skills.visuals.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -8,7 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.silverignis.render.RenderContext;
 
-final class SlashFlash {
+public final class SlashFlash {
 
     private static final float DURATION = 0.25f;
     private static final float START_SCALE = 0.6f;
@@ -20,22 +21,22 @@ final class SlashFlash {
     private final Vector3 at = new Vector3();
     private float elapsed;
 
-    SlashFlash(TextureRegion region, Animation<TextureRegion> animation, Color tint, Vector3 pos){
+    public SlashFlash(TextureRegion region, Animation<TextureRegion> animation, Color tint, Vector3 pos){
         this.region = region;
         this.animation = animation;
         this.tint = tint;
         this.at.set(pos);
     }
 
-    void update(float delta) {
+    public void update(float delta) {
         elapsed += delta;
     }
 
-    boolean isDone() {
+    public boolean isDone() {
         return elapsed >= DURATION;
     }
 
-    void render(RenderContext rc) {
+    public void render(RenderContext rc) {
         float t = MathUtils.clamp(elapsed/DURATION, 0f, 1f);
         float scale = MathUtils.lerp(START_SCALE, END_SCALE, t);
 

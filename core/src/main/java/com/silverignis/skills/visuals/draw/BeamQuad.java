@@ -1,5 +1,6 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.draw;
 
+import com.silverignis.skills.visuals.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -14,26 +15,26 @@ import com.silverignis.render.RenderContext;
  *  ahead of the caster to the far grid edge, growing out during WINDUP, held
  *  through ACTIVE, and receding downrange (far end pinned) through RECOVERY.
  *  A tool per-skill visuals call from their own render — not a base class. */
-final class BeamQuad {
+public final class BeamQuad {
 
     private final Animation<TextureRegion> animation;
     private final Color tint;
     private final Vector2 nearScratch = new Vector2();
     private final Vector2 farScratch = new Vector2();
 
-    BeamQuad(Animation<TextureRegion> animation, Color tint) {
+    public BeamQuad(Animation<TextureRegion> animation, Color tint) {
         this.animation = animation;
         this.tint = tint;
     }
 
     /** Random ground point along the beam span — where emitters spawn. */
-    static Anchor alongSpan(VisualState vs) {
+    public static Anchor alongSpan(VisualState vs) {
         return out -> out.set(MathUtils.random(Battlefield.floorX(vs.nearCol), Battlefield.floorX(vs.farCol)),
                               0f, Battlefield.floorZ(vs.row));
     }
 
     /** Emitter drive: full while firing, dying with the fade. */
-    static Drive intensity(VisualState vs) {
+    public static Drive intensity(VisualState vs) {
         return () -> switch (vs.phase) {
             case ACTIVE   -> 1f;
             case RECOVERY -> 1f - vs.phaseProgress;
@@ -41,7 +42,7 @@ final class BeamQuad {
         };
     }
 
-    void draw(RenderContext rc, VisualState vs) {
+    public void draw(RenderContext rc, VisualState vs) {
         if (vs.nearCol < 0 || vs.nearCol >= Battlefield.COLS) return;
 
         float scale = rc.tileDepthScale(vs.row);

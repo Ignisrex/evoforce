@@ -1,5 +1,7 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.beam;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -9,7 +11,7 @@ import com.silverignis.render.RenderContext;
 
 /** Flame Torrent: animated stream of fire across the row with flames and
  *  sooty smoke licking off it. */
-final class FlameTorrentVisual extends AbstractSkillVisual {
+public final class FlameTorrentVisual extends AbstractSkillVisual {
 
     private final BeamQuad quad = new BeamQuad(looping(), Color.WHITE);
 

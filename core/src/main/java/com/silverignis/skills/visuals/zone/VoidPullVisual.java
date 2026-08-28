@@ -1,6 +1,8 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.zone;
 
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -9,7 +11,7 @@ import com.silverignis.particles.Vfx;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 
-final class VoidPullVisual extends AbstractSkillVisual {
+public final class VoidPullVisual extends AbstractSkillVisual {
 
     private static final Color VIOLET = Color.valueOf("8a2be2ff");
 

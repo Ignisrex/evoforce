@@ -1,5 +1,7 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.beam;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.particles.Vfx;
@@ -7,7 +9,7 @@ import com.silverignis.render.RenderContext;
 
 /** Thunder: animated lightning beam across the row, embers and crackling
  *  discharge coming off it. */
-final class ThunderVisual extends AbstractSkillVisual {
+public final class ThunderVisual extends AbstractSkillVisual {
 
     private final BeamQuad quad = new BeamQuad(
         SkillVisuals.assets.sheet("skills/animations/thunder_spritesheet.png", 192, 192, 0.08f),

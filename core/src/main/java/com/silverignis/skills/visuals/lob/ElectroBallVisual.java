@@ -1,23 +1,27 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.lob;
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.particles.Vfx;
 import com.silverignis.render.RenderContext;
 
-final class VenomBombVisual extends AbstractSkillVisual {
+public final class ElectroBallVisual extends AbstractSkillVisual {
 
     private static final float BALL_SCALE = 0.55f;
 
-    private final Sprite sprite = new Sprite(SkillVisuals.assets.texture("skills/sprites/venom_ball.png"));
+    private final Sprite sprite = new Sprite(SkillVisuals.assets.texture("skills/sprites/electro_ball.png"));
 
     @Override
-    protected void react(Trigger t, VisualState visualState, ParticleEngine engine) {
+    protected void react(Trigger t, VisualState vs, ParticleEngine engine) {
         switch (t) {
             case CAST -> {
-                visualState.pose.enterAttack();
-                if (visualState.dir < 0) sprite.setFlip(true, false);
+                vs.pose.enterAttack();
+                if (vs.dir < 0) sprite.setFlip(true, false);
+                play(engine, Vfx.electricArcs(vs.element), track(vs.bodyPos));
+                play(engine, Vfx.energyMotes(vs.element), track(vs.bodyPos));
             }
             default -> {}
         }

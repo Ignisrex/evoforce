@@ -1,6 +1,8 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.projectile;
 
 
+import com.silverignis.skills.visuals.*;
+import com.silverignis.skills.visuals.draw.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.particles.ParticleEngine;
@@ -11,7 +13,7 @@ import com.silverignis.skills.elements.Element;
 /** Dark Blast: void sphere drawn entirely by the dark_blast fragment shader,
  *  a dark-lightning trail riding the ball, dark-tinted bursts on impact and
  *  clash. */
-final class DarkBlastVisual extends AbstractSkillVisual {
+public final class DarkBlastVisual extends AbstractSkillVisual {
 
     private static final float QUAD_SCALE = 1.4f;
     private static final Color TINT = Color.WHITE;

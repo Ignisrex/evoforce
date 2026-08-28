@@ -1,12 +1,13 @@
-package com.silverignis.skills.visuals;
+package com.silverignis.skills.visuals.draw;
 
+import com.silverignis.skills.visuals.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.render.RenderContext;
 
-final class GroundQuad {
+public final class GroundQuad {
 
     private static final float HOLD_ALPHA = 0.8f;
 
@@ -14,13 +15,13 @@ final class GroundQuad {
     private final Animation<TextureRegion> animation;
     private final Color tint;
 
-    GroundQuad(TextureRegion region, Animation<TextureRegion> animation, Color tint){
+    public GroundQuad(TextureRegion region, Animation<TextureRegion> animation, Color tint){
         this.region = region;
         this.animation = animation;
         this.tint = tint;
     }
 
-    void draw(RenderContext rc, VisualState vs) {
+    public void draw(RenderContext rc, VisualState vs) {
         float scale, alpha;
         switch(vs.phase) {
             case WINDUP -> { scale = 1f + 0.3f * (1f - vs.phaseProgress); alpha = vs.phaseProgress; }
