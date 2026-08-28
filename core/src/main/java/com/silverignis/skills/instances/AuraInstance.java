@@ -1,92 +1,68 @@
 package com.silverignis.skills.instances;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
-import com.silverignis.particles.Anchor;
-import com.silverignis.render.RenderContext;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.skills.effects.EffectType;
+import com.silverignis.skills.visuals.Phase;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.Trigger;
 import com.silverignis.systems.combat.event.TriggerEvent;
 
+/** Self-cast aura: expands, applies its effects once, holds for the status
+ *  duration (or a default), fades. Pure sim — the look rides the caster via
+ *  the visual state's casterPos. */
 public class AuraInstance extends SkillInstance {
 
     private static final float EXPAND_TIME    = 0.20f;
     private static final float ACTIVE_TIME    = 3.00f;
     private static final float FADE_TIME      = 0.20f;
 
-    private enum Phase { EXPAND, ACTIVE, FADE, DONE }
-
-    private Phase phase = Phase.EXPAND;
     private float phaseTime = 0f;
-
-    private final Sprite sprite;
     private float activeDuration;
 
     public AuraInstance(Skill def, Combatant combatant) {
         super(def, combatant);
-        // Sprite-less when the skill is particle-backed (vfx list, no vfxTexture).
-        if (def.getVfxTexture() != null) {
-            this.sprite = new Sprite(def.getVfxTexture());
-            Color tint = def.getVfxTint();
-            if (tint != null) sprite.setColor(tint);
-        } else {
-            this.sprite = null;
-        }
-        combatant.getAnimController().enterCast();
     }
 
     @Override
     public void update(float delta, SkillContext ctx) {
         if (!combatant.isAlive()) { finish(); return; }
+        if (visualState.phase == null) setPhase(Phase.WINDUP, ctx);
         phaseTime += delta;
 
-        switch (phase) {
-            case EXPAND:
+        switch (visualState.phase) {
+            case WINDUP -> {
+                visualState.phaseProgress = Math.min(phaseTime / EXPAND_TIME, 1f);
                 if (phaseTime >= EXPAND_TIME) enterActive(ctx);
-                break;
-            case ACTIVE:
-                if (shouldFade()) enterFade();
-                break;
-            case FADE:
-                if (phaseTime >= FADE_TIME) {
-                    phase = Phase.DONE;
-                    finish();
-                }
-                break;
-            case DONE:
-                break;
+            }
+            case ACTIVE -> {
+                visualState.phaseProgress = Math.min(phaseTime / activeDuration, 1f);
+                if (shouldFade()) { phaseTime = 0f; setPhase(Phase.RECOVERY, ctx); }
+            }
+            case RECOVERY -> {
+                visualState.phaseProgress = Math.min(phaseTime / FADE_TIME, 1f);
+                if (phaseTime >= FADE_TIME) finish();
+            }
         }
     }
 
     private void enterActive(SkillContext ctx) {
-        phase = Phase.ACTIVE;
         phaseTime = 0f;
-        combatant.getAnimController().enterIdle();
         activeDuration = computeActiveDuration();
-        playVfx(Anchor.follow(combatant), ctx);   // layered particle effects centered on the caster
-        if (combatant.isAlive()){
+        setPhase(Phase.ACTIVE, ctx);
+        if (combatant.isAlive()) {
             applyEffectsTo(combatant, ctx);
             ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_TICK, combatant, null)); //might need move to status onTick??
         }
     }
 
-    private void enterFade() {
-        phase = Phase.FADE;
-        phaseTime = 0f;
-    }
-
     private float computeActiveDuration() {
         float max = 0f;
         boolean hasStatusEffect = false;
-        for (Effect e : def.getEffects()){
-            if (e.getType() == EffectType.APPLY_STATUS){
+        for (Effect e : def.getEffects()) {
+            if (e.getType() == EffectType.APPLY_STATUS) {
                 hasStatusEffect = true;
                 max = Math.max(e.getDuration(), max);
             }
@@ -94,60 +70,23 @@ public class AuraInstance extends SkillInstance {
         return hasStatusEffect ? max : ACTIVE_TIME;
     }
 
-    public boolean shouldFade(){
+    public boolean shouldFade() {
         if (phaseTime >= activeDuration) return true;
 
         boolean hasStatusEffect = false;
-        for(Effect effect : def.getEffects()){
+        for (Effect effect : def.getEffects()) {
             hasStatusEffect = true;
-            if(combatant.getStatusContainer().has(effect.getStatusType())){
+            if (combatant.getStatusContainer().has(effect.getStatusType())) {
                 return false;
             }
         }
         return hasStatusEffect;
     }
 
-    @Override
-    public void render(RenderContext rc) {
-        if (sprite == null || phase == Phase.DONE) return;
-
-        float panelW = rc.panelWidth();
-        float panelH = rc.panelHeight();
-
-        // Centred on the caster's *visual* tile, so the aura rides a mid-step dash.
-        Vector2 p = rc.tileWorld(combatant.getVisualCol(), combatant.getVisualRow());
-        float cx = p.x;
-        float cy = p.y + panelH * 0.5f;
-
-        float scale;
-        float alpha;
-
-        switch (phase) {
-            case EXPAND:
-                scale = 0.3f + 0.7f * (phaseTime / EXPAND_TIME);
-                alpha = 0.5f + 0.5f * (phaseTime / EXPAND_TIME);
-                break;
-            case ACTIVE:
-                scale = 1f;
-                alpha = 0.7f;
-                break;
-            case FADE:
-                scale = 1f + 0.2f * (phaseTime / FADE_TIME);
-                alpha = 0.7f * (1f - phaseTime / FADE_TIME);
-                break;
-            default:
-                return;
-        }
-
-        float size = Math.max(panelW, panelH) * 1.6f * scale;
-        sprite.setBounds(cx - size * 0.5f, cy - size * 0.5f, size, size);
-        sprite.setAlpha(alpha);
-        sprite.draw(rc.batch);
-        sprite.setAlpha(1f);
-    }
-
+    /** Sorts where it's drawn — the caster's tweened tile, same as the caster's
+     *  own billboard — so a row step can't flip it in front of the sprite. */
     @Override
     public float depth() {
-        return combatant.getGridPosition().getWorldZ();
+        return visualState.casterPos.z;
     }
 }

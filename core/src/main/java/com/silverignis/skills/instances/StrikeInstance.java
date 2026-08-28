@@ -1,7 +1,7 @@
 package com.silverignis.skills.instances;
 
-import com.silverignis.components.Team;
-import com.silverignis.entities.ClashEffect;
+import com.silverignis.entities.Battlefield;
+import com.silverignis.skills.visuals.Phase;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
@@ -14,9 +14,6 @@ public class StrikeInstance extends SkillInstance {
     private static final float HIT_TIME          = 0.20f;
     private static final float DASH_BACK_TIME    = 0.10f;
 
-    private enum Phase { DASH_FORWARD, HIT, DASH_BACK, DONE }
-
-    private Phase phase = Phase.DASH_FORWARD;
     private float phaseTime = 0f;
     private boolean primed = false;
 
@@ -28,7 +25,7 @@ public class StrikeInstance extends SkillInstance {
 
     public StrikeInstance(Skill def, Combatant combatant) {
         super(def, combatant);
-        this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
+        this.dir = visualState.dir;
 
         StrikeConfig cfg = def.getShapeConfig() instanceof StrikeConfig
             ? (StrikeConfig) def.getShapeConfig()
@@ -46,55 +43,43 @@ public class StrikeInstance extends SkillInstance {
     public void update(float delta, SkillContext ctx) {
         if (!primed) {
             ctx.movementSystem.forceGridTeleport(combatant, strikeFromCol, row);
+            setPhase(Phase.WINDUP, ctx);
             primed = true;
         }
         phaseTime += delta;
 
-        switch (phase) {
-            case DASH_FORWARD:
+        switch (visualState.phase) {
+            case WINDUP -> {
+                visualState.phaseProgress = Math.min(phaseTime / DASH_FORWARD_TIME, 1f);
                 if (phaseTime >= DASH_FORWARD_TIME) enterHit(ctx);
-                break;
-
-            case HIT:
+            }
+            case ACTIVE -> {
+                visualState.phaseProgress = Math.min(phaseTime/ HIT_TIME, 1f);
                 if (phaseTime >= HIT_TIME) enterDashBack(ctx);
-                break;
-
-            case DASH_BACK:
-                if (phaseTime >= DASH_BACK_TIME) {
-                    phase = Phase.DONE;
-                    finish();
-                }
-                break;
-
-            case DONE:
-                break;
+            }
+            case RECOVERY -> {
+                visualState.phaseProgress = Math.min(phaseTime/ DASH_BACK_TIME, 1f);
+                if (phaseTime >= DASH_BACK_TIME) finish();
+            }
         }
     }
 
     private void enterHit(SkillContext ctx) {
-        phase = Phase.HIT;
         phaseTime = 0f;
-        combatant.getAnimController().enterAttack();
-
-        for (int i = 0; i < hitTiles; i++) {
+        setPhase(Phase.ACTIVE, ctx);
+        visualState.hitTiles.clear();
+        for(int i = 0; i < hitTiles; i++) {
             int col = firstTargetCol + dir * i;
-            spawnSlashVfx(ctx, col);
+            visualState.hitTiles.add(col);
+            fireImpact(Battlefield.floorX(col), 0f, Battlefield.floorZ(row), ctx);
             applyHit(ctx, col);
         }
-        playVfx(tileAnchor(firstTargetCol, row), ctx);   // layered particle effects at the struck tile
     }
 
     private void enterDashBack(SkillContext ctx) {
-        phase = Phase.DASH_BACK;
         phaseTime = 0f;
+        setPhase(Phase.RECOVERY, ctx);
         ctx.movementSystem.forceGridTeleport(combatant, originCol, originRow);
-    }
-
-    /** VFX lands on the target tile regardless of whether anyone is standing there.
-     *  Named by tile — the effect resolves its own screen position when drawn. */
-    private void spawnSlashVfx(SkillContext ctx, int col) {
-        ctx.vfxSink.add(new ClashEffect(def.getVfxTexture(), def.getVfxAnimation(),
-                                        def.getVfxTint(), col, row));
     }
 
     private void applyHit(SkillContext ctx, int col) {
@@ -105,7 +90,9 @@ public class StrikeInstance extends SkillInstance {
     }
 
     public void coveredTiles(TileSink sink) {
-        if (phase != Phase.DASH_FORWARD && phase != Phase.HIT) return;
-        for (int i = 0; i < hitTiles; i++) sink.tile(firstTargetCol + dir * i, row);
+        if (visualState.phase == Phase.WINDUP || visualState.phase == Phase.ACTIVE) {
+            for (int i = 0; i < hitTiles; i++) sink.tile(firstTargetCol + dir * i, row);
+        }
+
     }
 }

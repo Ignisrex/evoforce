@@ -3,7 +3,6 @@ package com.silverignis.systems;
 import com.silverignis.components.Direction;
 import com.silverignis.components.ManaPool;
 import com.silverignis.components.ManaStats;
-import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.particles.ParticleEngine;
@@ -45,10 +44,6 @@ public final class Encounter {
     private final TriggerBus triggerBus;
     private final DamageSystem damageSystem;
 
-    // ponytail: presentation sink, here because CombatSystem needs it at
-    // construction. Goes when instances emit events instead (see SkillContext).
-    private final List<BattleVfx> vfx = new ArrayList<>();
-
     /**
      * Step order matters: the combatants and their systems exist first, and only
      * then do traits apply — slot capacity is recomputed absolute, and every
@@ -61,7 +56,7 @@ public final class Encounter {
         this.battleState    = new BattleState(player, enemies);
         this.movementSystem = new MovementSystem(battleState);
         this.combatSystem   = new CombatSystem(battleState, damageSystem, triggerBus,
-                                               movementSystem, particles, vfx);
+                                               movementSystem, particles);
 
         for (Enemy e : enemies) enemyAis.add(new EnemyAi(e));
 
@@ -91,9 +86,6 @@ public final class Encounter {
     /** Public because presentation submits its renderables and drains its tiles.
      *  Wrapping the whole API in delegates would be ceremony. */
     public CombatSystem combat() { return combatSystem; }
-
-    /** Short-lived visual effects spawned by skills. Presentation ticks and culls. */
-    public List<BattleVfx> vfx() { return vfx; }
 
     // ── per-frame ─────────────────────────────────────────────────────────
 

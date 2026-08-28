@@ -17,6 +17,7 @@ import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.render.SceneRenderable;
 import com.silverignis.skills.effects.Effect;
+import com.silverignis.skills.visuals.*;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
 import com.silverignis.systems.combat.StatusFactory;
@@ -45,8 +46,14 @@ public abstract class SkillInstance implements SceneRenderable {
     protected final int originRow;
     protected final float worldZ;
 
-    private boolean finished  = false;
+    private boolean resolved  = false;
     private boolean lockTaken = false;
+
+    protected final SkillVisual visual;
+    protected final VisualState visualState = new VisualState();
+    private boolean castFired = false;
+    //cached for end state
+    private ParticleEngine engine;
 
     /** Handles for the skill's layered particle effects (from {@code def.getVfx()}), stopped on finish. */
     private final Array<EmitterHandle> vfxHandles = new Array<>(false, 4);
@@ -59,6 +66,12 @@ public abstract class SkillInstance implements SceneRenderable {
         this.originCol = pos.getCol();
         this.originRow = pos.getRow();
         this.worldZ    = Battlefield.floorZ(originRow);
+
+        this.visual = SkillVisuals.has(def.getId()) ? SkillVisuals.create(def.getId()) : null;
+        visualState.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
+        visualState.row = originRow;
+        visualState.element = def.getElement();
+        visualState.pose = combatant.getAnimController();
     }
 
     public Skill        getDef()       { return def; }
@@ -80,9 +93,10 @@ public abstract class SkillInstance implements SceneRenderable {
     }
 
     public final void finish() {
-        if (finished) return;
-        finished = true;
+        if (resolved) return;
+        resolved = true;
         releaseInputLock();
+        if (visual != null && engine != null) visual.onTrigger(Trigger.END, visualState, engine);
         onFinish();
     }
 
@@ -112,7 +126,11 @@ public abstract class SkillInstance implements SceneRenderable {
         return out -> out.set(Battlefield.floorX(col), 0f, Battlefield.floorZ(row));
     }
 
-    public final boolean isFinished() { return finished; }
+    public final boolean isResolved() { return resolved; }
+
+    public final boolean isFinished() {
+        return resolved && (visual == null || visual.isDone());
+    }
 
     protected void applyEffectsTo(Combatant target, SkillContext ctx) {
         if (target == null || !target.isAlive()) return;
@@ -151,12 +169,55 @@ public abstract class SkillInstance implements SceneRenderable {
 
     public void coveredTiles(TileSink sink){}
 
+    public final void tick(float delta, SkillContext ctx) {
+        if (engine == null ) engine = ctx.particleEngine;
+        if (visual != null && !castFired ) {
+            castFired = true;
+            writeCasterPos();
+            visual.onTrigger(Trigger.CAST, visualState, ctx.particleEngine);
+        }
+        if (!resolved) update(delta, ctx);
+        if(visual != null){
+            visualState.elapsed += delta;
+            writeCasterPos();
+            visual.update(delta);
+        }
+    }
+
+    protected final void setPhase(Phase phase, SkillContext ctx) {
+        visualState.phase = phase;
+        visualState.phaseProgress = 0f;
+        if (visual != null) visual.onTrigger(phase.trigger, visualState,ctx.particleEngine);
+    }
+
+    protected final void fireImpact(float x, float y, float z, SkillContext ctx) {
+        if (visual == null) return;
+        visualState.impactPos.set(x, y, z);
+        visual.onTrigger(Trigger.IMPACT, visualState, ctx.particleEngine);
+    }
+
+    public final void fireClash(float x, float y, float z, ParticleEngine engine){
+        if (visual == null) return;
+        visualState.impactPos.set(x, y, z);
+        visual.onTrigger(Trigger.CLASH, visualState, engine);
+    }
+
+    public final SkillVisual visual() { return visual; }
+
     public abstract void update(float delta, SkillContext ctx);
 
     public float depth() { return worldZ; }
 
-    public RenderLayer layer() { return RenderLayer.BILLBOARD; }
+    public RenderLayer layer() { return visual != null ? visual.layer() : RenderLayer.BILLBOARD; }
 
     @Override
-    public void render(RenderContext rc) {}
+    public void render(RenderContext rc) {
+        // An instance spawned mid-tick (the lob's cloud) is submitted for
+        // render before its first tick: no CAST yet, no phase, nothing to draw.
+        if (visual != null && castFired) visual.render(rc, visualState);
+    }
+
+    private void writeCasterPos() {
+        visualState.casterPos.set(Battlefield.floorX(combatant.getVisualCol()), 0f, Battlefield.floorZ(combatant.getVisualRow()));
+    }
 }

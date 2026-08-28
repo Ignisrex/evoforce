@@ -10,7 +10,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.silverignis.components.Direction;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.environment.BattlefieldDecor;
@@ -118,8 +117,7 @@ public class PlayState implements GameScreenState {
 
         particles.update(delta);
         environment.update(delta);
-        if (checkBattleOver()) return;
-        tickAndCullEffects(delta);
+        checkBattleOver();
     }
 
     /** The encounter reports the result; deciding what a result *means* for the
@@ -144,11 +142,6 @@ public class PlayState implements GameScreenState {
         screen.game.setScreen(offers.isEmpty() ? new OverworldScreen(screen.game)
                                                : new RewardScreen(screen.game, offers));
         return true;
-    }
-
-    private void tickAndCullEffects(float delta) {
-        for (BattleVfx e : encounter.vfx()) e.update(delta);
-        encounter.vfx().removeIf(e -> !e.isAlive());
     }
 
     @Override
@@ -193,7 +186,6 @@ public class PlayState implements GameScreenState {
             worldRenderer.submit(enemyHpLabels[i]);
         }
         encounter.combat().submitRenderables(worldRenderer);
-        worldRenderer.submit(encounter.vfx());
         worldRenderer.submit(particles.emitters());
         worldRenderer.flush(renderContext);
     }

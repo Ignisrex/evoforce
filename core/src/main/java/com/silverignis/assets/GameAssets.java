@@ -5,6 +5,7 @@ import com.badlogic.gdx.assets.loaders.TextureLoader;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
@@ -234,5 +235,28 @@ public final class GameAssets implements Disposable {
     @Override
     public void dispose() {
         mgr.dispose();
+    }
+
+    /** On-demand texture for skill visuals: queued and finish-loaded on first
+     *  request, then cached by the manager like everything else. The plain
+     *  {@link #texture} stays fail-fast for the preloaded sets. */
+    public Texture textureOnDemand(String path) {
+        if (!mgr.isLoaded(path, Texture.class)) {
+            mgr.load(path, Texture.class);
+            mgr.finishLoadingAsset(path);
+        }
+        return mgr.get(path, Texture.class);
+    }
+
+    /** Strip animation from a one-row spritesheet, loaded on demand. Frame
+     *  count is derived from the sheet width, so a re-exported sheet with
+     *  more frames just works. */
+    public Animation<TextureRegion> sheetOnDemand(String path, int frameW, int frameH,
+                                                  float frameDuration) {
+        Texture sheet = textureOnDemand(path);
+        TextureRegion[][] grid = TextureRegion.split(sheet, frameW, frameH);
+        TextureRegion[] frames = new TextureRegion[sheet.getWidth() / frameW];
+        for (int i = 0; i < frames.length; i++) frames[i] = grid[0][i];
+        return new Animation<>(frameDuration, frames);
     }
 }

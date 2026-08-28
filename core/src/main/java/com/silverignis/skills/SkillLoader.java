@@ -66,6 +66,9 @@ public final class SkillLoader {
         String tintHex = node.getString("vfxTint", null);
         if (tintHex != null) b.vfxTint(parseColor(tintHex, id));
 
+        String shader = node.getString("shader", null);
+        if (shader != null) b.shader(shader);
+
         JsonValue vfx = node.get("vfx");
         if (vfx != null) b.vfx(parseVfx(vfx, id));
 

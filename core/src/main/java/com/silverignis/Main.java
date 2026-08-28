@@ -20,9 +20,11 @@ import com.silverignis.particles.ParticleEngine;
 import com.silverignis.particles.Vfx;
 import com.silverignis.registry.MonsterRegistry;
 import com.silverignis.render.RenderContext;
+import com.silverignis.render.SkillShaders;
 import com.silverignis.render.WorldRenderer;
 import com.silverignis.screens.MainMenuScreen;
 import com.silverignis.sessions.GameSession;
+import com.silverignis.skills.visuals.SkillVisuals;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends Game {
@@ -36,6 +38,7 @@ public class Main extends Game {
     public GeneratedAssets generated;
     public GameEnvironment environment;
     public WorldRenderer worldRenderer;
+    public SkillShaders skillShaders;
     public RenderContext renderContext;
     public VfxManager vfxManager;
     public BloomEffect bloomEffect;
@@ -50,13 +53,15 @@ public class Main extends Game {
         viewport = new FitViewport(16, 9);
         loadAssets();
         Vfx.init(assets);
+        SkillVisuals.init(assets);
 
         this.generated = new GeneratedAssets();
         EmitterSpec.init(generated.pixel());
 
         this.environment = new GameEnvironment(viewport, CaveTheme.cave(assets.caveWall(), assets.caveFloor(), null));
         this.worldRenderer = new WorldRenderer();
-        this.renderContext = new RenderContext(batch, font, environment);
+        this.skillShaders = new SkillShaders(generated.pixel());
+        this.renderContext = new RenderContext(batch, font, environment, skillShaders);
 
         this.particles = new ParticleEngine();
         Vfx.ambientDust().play(particles, Anchor.region(0f, 2.5f, -5f,  7f, 2.5f, 1.8f), Channel.AMBIENT);  // back
@@ -99,6 +104,7 @@ public class Main extends Game {
         batch.dispose();
         font.dispose();
         screen.dispose();
+        if(skillShaders != null) skillShaders.dispose();
         if(generated != null) generated.dispose();
         if(bloomEffect != null) bloomEffect.dispose();
         if(vfxManager != null) vfxManager.dispose();

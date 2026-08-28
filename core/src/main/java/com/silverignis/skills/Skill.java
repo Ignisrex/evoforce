@@ -57,6 +57,11 @@ public final class Skill {
      *  Defaults to white (no tint). */
     private final Color vfxTint;
 
+    /** Optional procedural in-flight visual: the id of a fragment shader in
+     *  {@code assets/skills/shaders/}. When set, renderers that support it draw
+     *  the shader quad instead of {@link #vfxTexture}. {@code null} = sprite. */
+    private final String shader;
+
     /** Particle effects layered on top of the sprite VFX, played by the {@link SkillInstance}.
      *  Resolved from the {@code "vfx"} name list in skills.json. Empty = none. */
     private final List<VfxFactory> vfx;
@@ -80,6 +85,7 @@ public final class Skill {
         this.vfxAnimationSheet = b.vfxAnimationSheet;
         this.shapeConfig = b.shapeConfig;
         this.vfxTint = b.vfxTint;
+        this.shader = b.shader;
         this.vfx = Collections.unmodifiableList(new ArrayList<>(b.vfx));
         this.powerScale = b.powerScale;
         this.magicScale = b.magicScale;
@@ -102,6 +108,7 @@ public final class Skill {
     public Texture      getVfxAnimationSheet() { return vfxAnimationSheet; }
     public ShapeConfig  getShapeConfig() { return shapeConfig; }
     public Color        getVfxTint()    { return vfxTint; }
+    public String       getShader()     { return shader; }
     public List<VfxFactory> getVfx()    { return vfx; }
     public float        getPowerScale() {return powerScale; }
     public float        getMagicScale() { return magicScale; }
@@ -124,6 +131,7 @@ public final class Skill {
         private Texture vfxAnimationSheet;
         private ShapeConfig shapeConfig;
         private Color vfxTint = Color.WHITE;
+        private String shader;
         private final List<VfxFactory> vfx = new ArrayList<>();
         private float powerScale = 0f;
         private float magicScale = 0f;
@@ -142,6 +150,7 @@ public final class Skill {
         public Builder zoneTexture(Texture v)                       { this.zoneTexture = v; return this; }
         public Builder shapeConfig(ShapeConfig v)                   { this.shapeConfig = v; return this; }
         public Builder vfxTint(Color v)                             { this.vfxTint = v == null ? Color.WHITE : v; return this; }
+        public Builder shader(String v)                             { this.shader = v; return this; }
         public Builder vfx(List<VfxFactory> v)                      { this.vfx.clear(); if (v != null) this.vfx.addAll(v); return this; }
         public Builder powerScale(float v)                          { this.powerScale = v; return this; }
         public Builder magicScale(float v)                          { this.magicScale = v; return this; }
@@ -169,11 +178,8 @@ public final class Skill {
             require(icon,        "icon");
             require(shape,       "shape");
             require(element,     "element");
-            // Non-aura shapes build sprites from vfxTexture, so it stays required there.
-            // A particle-backed aura (has a vfx list) may go sprite-less.
-            if (vfxTexture == null && !(shape == Shape.AURA && !vfx.isEmpty())) {
-                throw missing("vfxTexture");
-            }
+            // vfxTexture is no longer required: a skill's look lives in its
+            // SkillVisual, which owns its own assets.
             if (!cooldownSet) throw missing("cooldown");
             return new Skill(this);
         }

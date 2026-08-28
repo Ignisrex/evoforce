@@ -21,19 +21,24 @@ public final class RenderContext {
     public final SpriteBatch batch;
     public final BitmapFont font;
 
+    /** Procedural skill visuals; {@code null} in screen-space contexts. */
+    public final SkillShaders skillShaders;
+
     private final GameEnvironment env;
 
     private final Vector2 scratch = new Vector2();
 
-    public RenderContext(SpriteBatch batch, BitmapFont font, GameEnvironment gameEnvironment) {
+    public RenderContext(SpriteBatch batch, BitmapFont font, GameEnvironment gameEnvironment,
+                         SkillShaders skillShaders) {
         this.batch = batch;
         this.font = font;
         this.env = gameEnvironment;
+        this.skillShaders = skillShaders;
     }
 
     /** Identity projection for flat UI stages: (x, z) pass through as screen coords. */
     public static RenderContext screenSpace(SpriteBatch batch) {
-        return new RenderContext(batch, null, null);
+        return new RenderContext(batch, null, null, null);
     }
 
     public Vector2 project(float worldX, float worldZ) { return env.project(worldX, worldZ); }

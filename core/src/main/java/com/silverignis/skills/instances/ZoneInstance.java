@@ -1,20 +1,13 @@
 package com.silverignis.skills.instances;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Vector2;
 import com.silverignis.components.Direction;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.render.RenderContext;
-import com.silverignis.render.RenderLayer;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.ZoneConfig;
+import com.silverignis.skills.visuals.Phase;
 import com.silverignis.systems.combat.Combatant;
 
 public class ZoneInstance extends SkillInstance {
@@ -24,23 +17,15 @@ public class ZoneInstance extends SkillInstance {
     private static final float FADE_TIME         = 0.25f;
     private static final float DEFAULT_TICK      = 0.33f;
 
-    private enum Phase { APPEAR, ACTIVE, FADE, DONE }
-
-    private Phase phase = Phase.APPEAR;
     private float phaseTime = 0f;
     private float tickTimer = 0f;
-    private float stateTime = 0f;
 
     private final float activeTime;
     private final float tickInterval;
     private final boolean pull;
 
-    private final Sprite sprite;
-    private final Animation<TextureRegion> animation;
-    private final Color tint;
     private final int targetCol;
     private final int targetRow;
-    private boolean rendersUnder = true;
 
     public ZoneInstance(Skill def, Combatant combatant) {
         this(def, combatant,
@@ -57,52 +42,30 @@ public class ZoneInstance extends SkillInstance {
         this.activeTime   = cfg != null ? cfg.duration     : DEFAULT_ACTIVE;
         this.tickInterval = cfg != null ? cfg.tickInterval : DEFAULT_TICK;
         this.pull         = cfg != null && cfg.pull;
-
-        this.sprite    = new Sprite(def.getVfxTexture());
-        this.animation = def.getVfxAnimation();
-        this.tint      = def.getVfxTint() != null ? def.getVfxTint() : Color.WHITE;
-        sprite.setColor(tint);
+        visualState.bodyPos.set(Battlefield.floorX(targetCol), 0f, Battlefield.floorZ(targetRow));
     }
-
-    public boolean isRenderUnder() { return rendersUnder; }
 
     @Override
     public void update(float delta, SkillContext ctx) {
+        if (visualState.phase == null) setPhase(Phase.WINDUP, ctx);
         phaseTime += delta;
-        stateTime += delta;
 
-        switch (phase) {
-            case APPEAR:
-                if (phaseTime >= APPEAR_TIME) enterActive(ctx);
-                break;
-            case ACTIVE:
+        switch(visualState.phase) {
+            case WINDUP -> {
+                visualState.phaseProgress = Math.min(phaseTime / APPEAR_TIME, 1f);
+                if (phaseTime >= APPEAR_TIME) { phaseTime = 0f; setPhase(Phase.ACTIVE, ctx); }
+            }
+            case ACTIVE -> {
+                visualState.phaseProgress = Math.min(phaseTime/ activeTime, 1f);
                 tickTimer += delta;
-                if (tickTimer >= tickInterval) {
-                    tickTimer -= tickInterval;
-                    applyTick(ctx);
-                }
-                if (phaseTime >= activeTime) enterFade();
-                break;
-            case FADE:
-                if (phaseTime >= FADE_TIME) {
-                    phase = Phase.DONE;
-                    finish();
-                }
-                break;
-            case DONE:
-                break;
+                if (tickTimer >= tickInterval) { tickTimer -= tickInterval; applyTick(ctx); }
+                if (phaseTime >= activeTime) { phaseTime = 0f; setPhase(Phase.RECOVERY, ctx); }
+            }
+            case RECOVERY -> {
+                visualState.phaseProgress = Math.min(phaseTime/FADE_TIME, 1f);
+                if (phaseTime >= FADE_TIME) finish();
+            }
         }
-    }
-
-    private void enterActive(SkillContext ctx) {
-        phase = Phase.ACTIVE;
-        phaseTime = 0f;
-        playVfx(tileAnchor(targetCol, targetRow), ctx);   // layered particle effects on the zone tile
-    }
-
-    private void enterFade() {
-        phase = Phase.FADE;
-        phaseTime = 0f;
     }
 
     private void applyTick(SkillContext ctx) {
@@ -163,62 +126,8 @@ public class ZoneInstance extends SkillInstance {
     }
 
     @Override
-    public void render(RenderContext rc) {
-        if (phase == Phase.DONE) return;
-        SpriteBatch batch = rc.batch;
-
-        float depthScale = rc.tileDepthScale(targetRow);
-        float panelW = rc.panelWidth() * depthScale;
-        float panelH = rc.panelRenderHeight() * depthScale;
-        Vector2 tilePos = rc.tileWorld(targetCol, targetRow);
-        float tileX = tilePos.x;
-        float tileY = tilePos.y;
-
-        float scale;
-        float alpha;
-
-        switch (phase) {
-            case APPEAR:
-                // Edges expand inward: start oversized and shrink to tile bounds.
-                scale = 1f + 0.3f * (1f - phaseTime / APPEAR_TIME);
-                alpha = phaseTime / APPEAR_TIME;
-                break;
-            case ACTIVE:
-                scale = 1f;
-                alpha = 0.8f;
-                break;
-            case FADE:
-                scale = 1f;
-                alpha = 0.8f * (1f - phaseTime / FADE_TIME);
-                break;
-            default:
-                return;
-        }
-
-        float w = panelW * scale;
-        float h = panelH * scale;
-        float cx = tileX;
-        float cy = tileY;
-
-        if (animation != null) {
-            TextureRegion frame = animation.getKeyFrame(stateTime, true);
-            batch.setColor(tint.r, tint.g, tint.b, tint.a * alpha);
-            batch.draw(frame, cx - w * 0.5f, cy - h * 0.5f, w, h);
-            batch.setColor(1f, 1f, 1f, 1f);
-        } else {
-            sprite.setBounds(cx - w * 0.5f, cy - h * 0.5f, w, h);
-            sprite.setAlpha(alpha);
-            sprite.draw(batch);
-            sprite.setAlpha(1f);
-        }
-    }
-
-    @Override
     public void coveredTiles(TileSink sink) {
-        if (phase == Phase.APPEAR) sink.tile(targetCol, targetRow);
+        if (visualState.phase == Phase.WINDUP) sink.tile(targetCol, targetRow);
     }
 
-    public RenderLayer layer() {
-        return isRenderUnder() ? RenderLayer.GROUND : RenderLayer.BILLBOARD;
-    }
 }

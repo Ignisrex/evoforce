@@ -58,6 +58,17 @@ dependencies {
 
 def os = System.properties['os.name'].toLowerCase(Locale.ROOT)
 
+tasks.register('shaderPreview', JavaExec) {
+  group = 'verification'
+  description = 'Draws one skill shader quad animated, for eyeballing. -Pshader=<id>'
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'com.silverignis.lwjgl3.ShaderPreview'
+  workingDir = rootProject.file('assets').path
+  args = [project.findProperty('shader') ?: 'wind_slash', project.findProperty('ratio') ?: '1']
+  jvmArgs += "--enable-native-access=ALL-UNNAMED"
+  if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
+}
+
 tasks.register('shaderCheck', JavaExec) {
   group = 'verification'
   description = 'Compiles every ui shader against a real GL context and reports failures.'

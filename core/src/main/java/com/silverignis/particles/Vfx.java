@@ -90,7 +90,7 @@ public final class Vfx {
         Color smoke = new Color(0.55f, 0.55f, 0.6f, 0.35f);   // cool grey, translucent
         return EffectDef.effect()
             // 1. Shockwave ring
-            .emitter(e -> e
+            /*.emitter(e -> e
                 .burst(1).speed(0f).life(0.2f).size(0.4f)
                 .texture(assets.circle(1))
                 .sizeOverLife(Interpolation.pow2Out, 1.25f)
@@ -102,11 +102,11 @@ public final class Vfx {
                 .sizeOverLife(Interpolation.pow2Out, 1.5f)
                 .color(Color.WHITE))*/
             // 3. Main Flash
-            .emitter(e -> e
+            /*.emitter(e -> e
                 .burst(1).speed(0f).life(0.3f).size(0.7f)
                 .textures(assets.star(8), assets.starA(8))
                 .sizeOverLife(Interpolation.pow2Out, 2.4f)
-                .color(tint))
+                .color(tint))*/
             // 4. Mana dust — the explosion displaces it radially out of the clash point:
             // every mote flies outward from the center (full-sphere spread, near-zero
             // jitter), drag bleeding the blast off while wander keeps each one fluttering.
@@ -203,7 +203,7 @@ public final class Vfx {
             .emitter(e -> e
                 .continuous(20f)
                 .followAnchor()
-                .speed(0f).life(of(0.1f)).size(range(0.5f, 0.65f))
+                .speed(0f).life(of(0.1f)).size(range(0.4f, 0.55f))
                 .jitter(0.04f, 0.04f, 0f)
                 .texture(assets.light(1))
                 .color(new Color(0.6f, 0.3f, 1f, 0.75f)))
@@ -218,19 +218,19 @@ public final class Vfx {
                 .colorOverLife(Interpolation.linear, violet, deep))
             // 3. Unstable motes — energy leaking off in ALL directions, not a neat tail.
             .emitter(e -> e
-                .continuous(16f)
+                .continuous(28f)
                 .speed(range(0.15f, 0.45f)).life(range(0.3f, 0.55f)).size(range(0.1f, 0.2f)).spread(180f)
                 .jitter(0.15f, 0.15f, 0f)
-                .drift(-dir * 0.8f, 0.05f, 0f)
+                .drift(-dir * 1.6f, 0.05f, 0f)
                 .textures(assets.magic(3), assets.magic(4), assets.star(9))
                 .sizeOverLife(Interpolation.pow2In, 0f)
                 .colorOverLife(Interpolation.linear, violet, deep))
             // 4. Void smoke wisps — the soft tail end.
             .emitter(e -> e
-                .continuous(8f)
+                .continuous(12f)
                 .speed(range(0.05f, 0.15f)).life(range(0.5f, 0.9f)).size(range(0.25f, 0.4f)).spread(40f)
                 .jitter(0.1f, 0.1f, 0f)
-                .drift(-dir * 0.9f, 0.15f, 0f)
+                .drift(-dir * 1.6f, 0.15f, 0f)
                 .alphaBlend()
                 .texturesOverLife(
                     assets.smoke(2), assets.smoke(4), assets.smoke(6), assets.smoke(8))
@@ -270,6 +270,36 @@ public final class Vfx {
                 .speed(0f).life(of(0.15f)).size(range(0.45f, 0.6f))
                 .texture(assets.light(1))
                 .color(new Color(tint.r, tint.g, tint.b, 0.5f)))
+            .build();
+    }
+
+    /** Toxic vapor rolling off a poisoned tile — soft sickly-green puffs that
+     *  bloom as they rise and thin out, with a few bubbles popping up from the
+     *  ooze underneath. Continuous while the zone is active. */
+    public static EffectDef toxicClouds() {
+        Color thick = new Color(0.45f, 0.85f, 0.25f, 0.45f);   // dense near the ground
+        Color thin  = new Color(0.55f, 0.90f, 0.35f, 0f);      // faded out as it rises
+        return EffectDef.effect()
+            // 1. Vapor puffs — slow, rolling, translucent.
+            .emitter(e -> e
+                .continuous(9f)
+                .speed(range(0.05f, 0.15f)).life(range(1.0f, 1.8f)).size(range(0.35f, 0.6f)).spread(50f)
+                .jitter(0.4f, 0.02f, 0.25f)
+                .drift(0f, 0.35f, 0f)
+                .spin(range(-20f, 20f)).fadeIn(0.3f)
+                .alphaBlend()
+                .texturesOverLife(assets.smoke(1), assets.smoke(3), assets.smoke(5), assets.smoke(7), assets.smoke(9))
+                .sizeOverLife(Interpolation.pow2Out, 1.8f)
+                .colorOverLife(Interpolation.linear, thick, thin))
+            // 2. Bubbles — small bright dots popping up and vanishing fast.
+            .emitter(e -> e
+                .continuous(5f)
+                .speed(range(0.2f, 0.4f)).life(range(0.25f, 0.45f)).size(range(0.06f, 0.12f)).spread(20f)
+                .jitter(0.35f, 0f, 0.2f)
+                .drift(0f, 0.5f, 0f)
+                .texture(assets.circle(1))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .color(new Color(0.7f, 1f, 0.5f, 0.9f)))
             .build();
     }
 

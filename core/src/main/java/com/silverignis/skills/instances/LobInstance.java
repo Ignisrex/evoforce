@@ -1,18 +1,13 @@
 package com.silverignis.skills.instances;
 
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
-import com.silverignis.components.Team;
 import com.silverignis.entities.Battlefield;
-import com.silverignis.render.RenderContext;
 import com.silverignis.skills.ProjectileConfig;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillContext;
 import com.silverignis.skills.SkillInstance;
 import com.silverignis.skills.ZoneConfig;
+import com.silverignis.skills.visuals.Phase;
 import com.silverignis.systems.combat.Combatant;
 
 /** Arcing (lobbed) projectile: flies a fixed-time parabola to the target tile,
@@ -29,7 +24,6 @@ public class LobInstance extends SkillInstance {
     private static final float BASE_HEIGHT = 0.45f;
 
     private final ProjectileConfig config;
-    private final Sprite sprite;
     private final int   row;
     private final int   dir;       // +1 = player (rightward); -1 = enemy (leftward)
     private final int   landCol;
@@ -38,16 +32,11 @@ public class LobInstance extends SkillInstance {
     private float colPos;
     private float flightElapsed = 0f;
 
-    private boolean trailStarted = false;
-
     public LobInstance(Skill def, Combatant combatant) {
         super(def, combatant);
         this.row = originRow;
-        this.dir = combatant.getTeam() == Team.PLAYER ? 1 : -1;
+        this.dir = visualState.dir;
         this.config = (ProjectileConfig) def.getShapeConfig();
-
-        this.sprite = new Sprite(def.getVfxTexture());
-        if (dir < 0) this.sprite.setFlip(true, false);
 
         // Resolved once: the landing tile is what both the damage and the cloud
         // key off, and they disagreed when each clamped it separately.
@@ -55,27 +44,29 @@ public class LobInstance extends SkillInstance {
                                        0, Battlefield.COLS - 1);
         this.colPos    = originCol;
         this.arcHeight = config.getArcHeight();
-        combatant.getAnimController().enterAttack();
+        writeBodyPos();
     }
 
     @Override
     public void update(float delta, SkillContext ctx) {
-        if (!trailStarted) {
-            trailStarted = true;
-            // A projectile's vfx list is its travel trail: the anchor follows the
-            // ball in flight and base onFinish() stops emission at impact.
-            playVfx(this::trailPoint, ctx);
-        }
+        if (visualState.phase == null) setPhase(Phase.ACTIVE, ctx);
 
         flightElapsed += delta;
         float t = progress();
         colPos = originCol + (landCol - originCol) * t;
+        visualState.phaseProgress = t;
+        writeBodyPos();
 
         if (t >= 1f) {
+            fireImpact(visualState.bodyPos.x, 0f, visualState.bodyPos.z, ctx);
             applyLandingDamage(ctx);
             spawnLandingEffect(ctx);
             finish();
         }
+    }
+
+    private void writeBodyPos() {
+        visualState.bodyPos.set(Battlefield.floorX(colPos), BASE_HEIGHT + arcOffset(progress()), Battlefield.floorZ(row));
     }
 
     /** 0 at launch, 1 at landing. */
@@ -106,19 +97,10 @@ public class LobInstance extends SkillInstance {
                 .element(def.getElement())
                 .effects(def.getEffects())
                 .cooldown(0f)
-                .vfxTexture(def.getZoneTexture() != null ? def.getZoneTexture() : def.getVfxTexture())
-                .vfxTint(def.getVfxTint())
-                .vfx(def.getVfx())
                 .shapeConfig(new ZoneConfig(false, config.getZoneDuration(), config.getZoneTickInterval()))
                 .build();
         ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row);
         ctx.combatSystem.spawn(cloud);
-    }
-
-    /** Trail anchor in grid-world space, straight off the logical position —
-     *  no unprojection, because the position was never in screen space. */
-    private void trailPoint(Vector3 out) {
-        out.set(Battlefield.floorX(colPos), BASE_HEIGHT + arcOffset(progress()), Battlefield.floorZ(row));
     }
 
     @Override
@@ -126,18 +108,5 @@ public class LobInstance extends SkillInstance {
         if (flightElapsed <= 0f) return;
         int col = Math.round(colPos);
         if (col >= 0 && col < Battlefield.COLS) sink.tile(col, row);
-    }
-
-    @Override
-    public void render(RenderContext rc) {
-        // 1:1 — panel render height would squash the ball
-        float s = rc.panelWidth() * 0.55f;
-        sprite.setSize(s, s);
-
-        Vector2 p = rc.tileWorld(colPos, row);
-        // Billboard convention: drawn y = floor y + height * depthScale.
-        float y = p.y + arcOffset(progress()) * rc.tileDepthScale(row);
-        sprite.setPosition(p.x - s * 0.5f, y);
-        sprite.draw(rc.batch);
     }
 }

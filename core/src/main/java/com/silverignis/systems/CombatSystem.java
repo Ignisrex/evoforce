@@ -1,7 +1,6 @@
 package com.silverignis.systems;
 
 import com.silverignis.components.Caster;
-import com.silverignis.entities.BattleVfx;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
@@ -33,15 +32,14 @@ public class CombatSystem {
                         DamageSystem damageSystem,
                         TriggerBus triggerBus,
                         MovementSystem movementSystem,
-                        ParticleEngine particleEngine,
-                        List<BattleVfx> vfxSink) {
+                        ParticleEngine particleEngine) {
         this.battleState    = battleState;
         this.particleEngine = particleEngine;
         // Lob needs to spawn a child Zone, so the context has to name this
         // system. Building it here keeps that cycle immutable — it used to be a
         // mutable field set from outside after construction.
         this.ctx = new SkillContext(battleState, damageSystem, triggerBus,
-                                    movementSystem, this, particleEngine, vfxSink);
+                                    movementSystem, this, particleEngine);
     }
 
     /** Create and spawn a fresh instance for {@code skill}, cast by {@code combatant}. */
@@ -58,7 +56,7 @@ public class CombatSystem {
         // Iterate over a snapshot index so an instance that spawns another
         // mid-update doesn't get double-ticked this frame.
         for (int i = 0, n = active.size(); i < n; i++){
-            active.get(i).update(delta, ctx);
+            active.get(i).tick(delta, ctx);
         }
 
         resolveProjectileClashes();
@@ -80,12 +78,12 @@ public class CombatSystem {
     private void resolveProjectileClashes() {
         for (int i = 0; i < active.size(); i++) {
             SkillInstance ai = active.get(i);
-            if (ai.isFinished() || !(ai instanceof ProjectileInstance)) continue;
+            if (ai.isResolved() || !(ai instanceof ProjectileInstance)) continue;
             ProjectileInstance a = (ProjectileInstance) ai;
 
             for (int j = i + 1; j < active.size(); j++) {
                 SkillInstance bi = active.get(j);
-                if (bi.isFinished() || !(bi instanceof ProjectileInstance)) continue;
+                if (bi.isResolved() || !(bi instanceof ProjectileInstance)) continue;
                 ProjectileInstance b = (ProjectileInstance) bi;
                 if (a.getCaster().getTeam() == b.getCaster().getTeam()) continue;
                 if (a.getRow() != b.getRow()) continue;
@@ -107,9 +105,10 @@ public class CombatSystem {
 
     private void spawnClash(ProjectileInstance a, ProjectileInstance b) {
         float midCol = (a.getColPos() + b.getColPos()) * 0.5f;
-        Vfx.impact(Element.NONE).play(particleEngine,
-            Anchor.at(Battlefield.floorX(midCol), IMPACT_HEIGHT, Battlefield.floorZ(a.getRow())),
-            Channel.COMBAT);
+        float x = Battlefield.floorX(midCol);
+        float z = Battlefield.floorZ(a.getRow());
+        a.fireClash(x, IMPACT_HEIGHT, z, particleEngine);
+        b.fireClash(x, IMPACT_HEIGHT, z, particleEngine);
     }
 
     public void submitRenderables(WorldRenderer renderer) {
@@ -168,12 +167,13 @@ public class CombatSystem {
 
     public void collectCoveredTiles(SkillInstance.TileSink sink) {
         for (SkillInstance s : active) {
-            if (!s.isFinished()) s.coveredTiles(sink);
+            if (!s.isResolved()) s.coveredTiles(sink);
         }
     }
 
     public boolean hasActive(){
-        return !active.isEmpty();
+        for (SkillInstance s : active) if (!s.isResolved()) return true;
+        return false;
     }
 
 }
