@@ -15,6 +15,7 @@ public class ShieldStatus extends Status {
     protected void onApply(Combatant owner, TriggerBus bus) {
         this.subscription = bus.subscribe(Trigger.ON_DAMAGE_TAKEN_PRE, owner, ev -> {
             DamageEvent dmg = (DamageEvent) ev.payload;
+            if(dmg.sourceTag == DamageEvent.Source.STATUS || dmg.sourceTag == DamageEvent.Source.PANEL) return;
             dmg.amount = 0;
             this.remaining = 0f;
 

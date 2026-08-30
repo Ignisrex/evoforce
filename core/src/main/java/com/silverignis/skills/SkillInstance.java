@@ -109,6 +109,7 @@ public abstract class SkillInstance implements SceneRenderable {
     protected void applyEffectsTo(Combatant target, SkillContext ctx) {
         if (target == null || !target.isAlive()) return;
 
+        boolean landed = true;
         for (Effect e : def.getEffects()) {
             switch (e.getType()) {
                 case DAMAGE:
@@ -119,12 +120,13 @@ public abstract class SkillInstance implements SceneRenderable {
                     int scaledBase = e.getValue()
                         + Math.round(casterStats.getPower() * powerMul * def.getPowerScale())
                         + Math.round(casterStats.getMagic() * magicMul * def.getMagicScale());
-                    ctx.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
+                    landed = ctx.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
                     break;
                 case HEAL:
                     ctx.damageSystem.heal(new HealEvent(target, e.getValue()));
                     break;
                 case APPLY_STATUS:
+                    if (!landed) break;
                     if (MathUtils.random(99) < e.getChance()) {
                         target.getStatusContainer().apply(
                             StatusFactory.create(e.getStatusType(), e.getDuration(), e.getValue()),
@@ -133,6 +135,7 @@ public abstract class SkillInstance implements SceneRenderable {
                     }
                     break;
                 case KNOCKBACK:
+                    if (!landed) break;
                     //reserved
                     break;
             }

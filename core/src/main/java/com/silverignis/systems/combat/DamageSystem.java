@@ -19,11 +19,11 @@ public class DamageSystem {
         this.bus = bus;
     }
 
-    public void apply(DamageEvent ev){
+    public boolean apply(DamageEvent ev){
         System.out.println("[dmg] target=" + ev.target + " amount=" + ev.amount
             + " alive=" + (ev.target != null && ev.target.isAlive()));
-        if(ev.target == null || !ev.target.isAlive())  return;
-        if(ev.amount <= 0) return;
+        if(ev.target == null || !ev.target.isAlive())  return false;
+        if(ev.amount <= 0) return false;
 
         // 1. Defense calc — percent reduction with diminishing returns.
         //    mitigated = max (1, raw * 100 / (100 + defense))
@@ -32,7 +32,7 @@ public class DamageSystem {
 
         // 2. Pre-damage hook. Shields/parries can zero ev.amount here.
         bus.fire(new TriggerEvent(Trigger.ON_DAMAGE_TAKEN_PRE, ev.target, ev));
-        if (ev.amount <= 0) return;
+        if (ev.amount <= 0) return false;
 
         //3.Mutation
         ev.target.getHealth().damage(ev.amount);
@@ -53,6 +53,7 @@ public class DamageSystem {
             ev.target.getAnimController().enterDeath();
         }
 
+        return true;
     }
 
     public void heal(HealEvent ev){
