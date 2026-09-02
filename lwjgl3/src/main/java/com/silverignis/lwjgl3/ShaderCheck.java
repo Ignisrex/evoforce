@@ -17,6 +17,15 @@ public final class ShaderCheck extends ApplicationAdapter {
         {"ui/shaders/sprite_batch.vert", "skills/shaders/wind_slash.frag"},
         {"ui/shaders/sprite_batch.vert", "skills/shaders/shield.frag"},
         {"ui/shaders/sprite_batch.vert", "skills/shaders/frost_trap.frag"},
+        {"panels/shaders/fire.vert", "panels/shaders/fire.frag"},
+        {"panels/shaders/ice.vert", "panels/shaders/ice.frag"},
+        {"panels/shaders/lightning.vert", "panels/shaders/lightning.frag"},
+        {"panels/shaders/dark.vert", "panels/shaders/dark.frag"},
+        {"panels/shaders/poison.vert", "panels/shaders/poison.frag"},
+        {"panels/shaders/nature.vert", "panels/shaders/nature.frag"},
+        {"panels/shaders/grass.vert", "panels/shaders/grass.frag"},
+        {"panels/shaders/arc.vert", "panels/shaders/arc.frag"},
+        {"panels/shaders/flame.vert", "panels/shaders/flame.frag"},
     };
 
     @Override

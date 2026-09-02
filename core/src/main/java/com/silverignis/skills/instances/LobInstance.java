@@ -100,6 +100,7 @@ public class LobInstance extends SkillInstance {
                 .shapeConfig(new ZoneConfig(false, config.getZoneDuration(), config.getZoneTickInterval()))
                 .build();
         ZoneInstance cloud = new ZoneInstance(zoneDef, combatant, landCol, row);
+        cloud.setPanelBoost(panelBoost);
         ctx.combatSystem.spawn(cloud);
     }
 

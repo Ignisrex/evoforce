@@ -28,8 +28,8 @@ import com.silverignis.skills.Skill;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.environment.GameEnvironment;
+import com.silverignis.environment.PanelSurfaces;
 import com.silverignis.systems.Encounter;
-import com.silverignis.util.PanelGenerator;
 
 import java.util.List;
 
@@ -55,6 +55,7 @@ public class PlayState implements GameScreenState {
     private final SceneRenderable[] enemyShadows;
     private final SceneRenderable[] enemyHpLabels;
     private final BattlefieldDecor battlefieldDecor;
+    private final PanelSurfaces panelSurfaces;
 
     public PlayState(GameScreen screen) {
         this.screen = screen;
@@ -64,12 +65,13 @@ public class PlayState implements GameScreenState {
         this.player    = encounter.player();
         this.enemies   = encounter.enemies();
 
-        battlefield = new Battlefield(PanelGenerator.generatePanels());
+        battlefield = this.encounter.battleState().battlefield;
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
         environment.rebuild(MathUtils.random.nextLong());
         this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
+        this.panelSurfaces = new PanelSurfaces(battlefield, screen.game.assets, screen.game.particles);
 
         Texture shadowTex = screen.game.generated.shadow();
         this.renderContext = screen.game.renderContext;
@@ -116,6 +118,8 @@ public class PlayState implements GameScreenState {
         battlefieldDecor.update(delta);
 
         particles.update(delta);
+        player.statusFx().update(delta, particles);
+        for (Enemy e : enemies) e.statusFx().update(delta, particles);
         environment.update(delta);
         checkBattleOver();
     }
@@ -155,6 +159,7 @@ public class PlayState implements GameScreenState {
 
         // ── 3D cave pass ──────────────────────────────────────────────────
         environment.render(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        panelSurfaces.render(environment.camera());
         // Clear depth so 2D sprites always draw on top regardless of 3D depth
         Gdx.gl.glClear(GL20.GL_DEPTH_BUFFER_BIT);
 
@@ -192,6 +197,7 @@ public class PlayState implements GameScreenState {
 
     public void dispose() {
         BattlefieldDecor.clear(environment);
+        panelSurfaces.dispose();
     }
 
     private void handleReleaseSkills(){

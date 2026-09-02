@@ -56,6 +56,7 @@ public abstract class SkillInstance implements SceneRenderable {
     private boolean castFired = false;
     //cached for end state
     private ParticleEngine engine;
+    protected float panelBoost = 1f;
 
     protected SkillInstance(Skill def, Combatant combatant) {
         this.def       = def;
@@ -120,6 +121,7 @@ public abstract class SkillInstance implements SceneRenderable {
                     int scaledBase = e.getValue()
                         + Math.round(casterStats.getPower() * powerMul * def.getPowerScale())
                         + Math.round(casterStats.getMagic() * magicMul * def.getMagicScale());
+                    scaledBase = Math.round(scaledBase * panelBoost);
                     landed = ctx.damageSystem.apply(new DamageEvent(combatant, target, scaledBase, DamageEvent.Source.SKILL, def));
                     break;
                 case HEAL:
@@ -199,4 +201,6 @@ public abstract class SkillInstance implements SceneRenderable {
         visualState.casterPos.set(Battlefield.floorX(combatant.getVisualCol()), 0f,
                                   Battlefield.floorZ(combatant.getVisualRow()));
     }
+
+    public void setPanelBoost(float v) { panelBoost = v; }
 }

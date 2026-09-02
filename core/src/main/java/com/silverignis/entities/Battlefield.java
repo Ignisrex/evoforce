@@ -1,5 +1,7 @@
 package com.silverignis.entities;
 
+import com.silverignis.skills.elements.Element;
+
 /**
  * A {@value #COLS} x {@value #ROWS} grid of panels. Left half belongs to
  * the player, right half to the enemy. Pure geometry + panel-state container;
@@ -21,14 +23,27 @@ public class Battlefield {
 
 
     public enum PanelType {
-        NORMAL_BLUE,
-        NORMAL_RED,
-        CRACKED,
-        BROKEN,
-        ICE,
-        LAVA,
-        GRASS,
-        POISON
+        NORMAL (Element.NONE, 0, 0f),
+        FIRE (Element.FIRE, -5, 1f),
+        ICE (Element.ICE, 0, 0f),
+        LIGHTNING (Element.LIGHTNING, 0, 0f),
+        DARK (Element.DARK, 0, 0f),
+        POISON (Element.POISON, -4, 1f),
+        NATURE (Element.NATURE, 3, 1f),
+        CRACKED (Element.NONE, 0, 0f),
+        BROKEN (Element.NONE, 0, 0f);
+
+        public final Element element;
+        public final int hpPerTick;
+        public final float tickInterval;
+
+        PanelType(Element element, int hpPerTick, float tickInterval) {
+            this.element = element;
+            this.hpPerTick = hpPerTick;
+            this.tickInterval = tickInterval;
+        }
+
+        public boolean ticksHp() { return hpPerTick != 0; }
     }
 
     private final PanelType[][] panels;
@@ -82,5 +97,9 @@ public class Battlefield {
 
     public void setPanel(int col, int row, PanelType type) {
         panels[col][row] = type;
+    }
+
+    public void setColumn(int col, PanelType type) {
+        for (int row = 0; row < ROWS; row++) panels[col][row] = type;
     }
 }

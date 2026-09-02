@@ -481,6 +481,8 @@ public class GameEnvironment implements Disposable {
         sceneCamera.resize(w, h);
     }
 
+    public PerspectiveCamera camera() { return sceneCamera.getCamera(); }
+
     public Vector2 project(float worldX, float worldZ){ return sceneCamera.project(worldX, worldZ); }
 
     public Vector2 project(float worldX, float worldZ, Vector2 out) {

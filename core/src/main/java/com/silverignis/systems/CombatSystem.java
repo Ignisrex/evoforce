@@ -1,6 +1,7 @@
 package com.silverignis.systems;
 
 import com.silverignis.components.Caster;
+import com.silverignis.components.GridPosition;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
@@ -16,15 +17,22 @@ import com.silverignis.skills.instances.ProjectileInstance;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
+import com.silverignis.systems.combat.event.DamageEvent;
+import com.silverignis.systems.combat.event.HealEvent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CombatSystem {
 
     private final BattleState battleState;
     private final ParticleEngine particleEngine;
     private final SkillContext ctx;
+
+    private static final float PANEL_BOOST = 1.5f;
+    private final Map<Combatant, Float> panelStand = new HashMap<>();
 
     private final List<SkillInstance> active = new ArrayList<>();
 
@@ -44,7 +52,12 @@ public class CombatSystem {
 
     /** Create and spawn a fresh instance for {@code skill}, cast by {@code combatant}. */
     public void spawn(Skill skill, Combatant combatant){
-        active.add(SkillFactory.create(skill, combatant));
+        SkillInstance inst = SkillFactory.create(skill, combatant);
+        GridPosition pos = combatant.getGridPosition();
+        Battlefield.PanelType panel = battleState.battlefield.getPanel(pos.getCol(), pos.getRow());
+
+        if(panel.element != Element.NONE && panel.element == inst.getDef().getElement()) inst.setPanelBoost(PANEL_BOOST);
+        active.add(inst);
     }
 
     /** Spawn an already-built instance — for derived/synthetic instances (e.g. a lingering cloud). */
@@ -73,6 +86,29 @@ public class CombatSystem {
             if(!enemy.isAlive()) continue;
             enemy.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
         }
+    }
+
+    public void tickPanels(float delta) {
+        tickPanelFor(battleState.player, delta);
+        for (Combatant c : battleState.enemies) tickPanelFor(c, delta);
+    }
+
+    private void tickPanelFor(Combatant combatant, float delta) {
+        if (!combatant.isAlive()) { panelStand.remove(combatant); return; }
+        GridPosition pos = combatant.getGridPosition();
+        Battlefield.PanelType panel = battleState.battlefield.getPanel(pos.getCol(), pos.getRow());
+        if (!panel.ticksHp()) { panelStand.remove(combatant); return; }
+
+        float t = panelStand.getOrDefault(combatant, 0f) + delta;
+        if (t >= panel.tickInterval) {
+            t -= panel.tickInterval;
+            if (panel.hpPerTick > 0) {
+                ctx.damageSystem.apply(new DamageEvent(null, combatant, -panel.hpPerTick, DamageEvent.Source.PANEL, null));
+            } else {
+                ctx.damageSystem.heal(new HealEvent(combatant, panel.hpPerTick));
+            }
+        }
+        panelStand.put(combatant, t);
     }
 
     private void resolveProjectileClashes() {

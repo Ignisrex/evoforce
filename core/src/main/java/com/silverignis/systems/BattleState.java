@@ -1,5 +1,6 @@
 package com.silverignis.systems;
 
+import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.systems.combat.Combatant;
@@ -20,10 +21,12 @@ public final class BattleState {
 
     public final Player player;
     public final List<Enemy> enemies;
+    public final Battlefield battlefield;
 
-    public BattleState(Player player, List<Enemy> enemies) {
+    public BattleState(Battlefield battlefield, Player player, List<Enemy> enemies) {
         this.player  = player;
         this.enemies = enemies;
+        this.battlefield = battlefield;
     }
 
     public boolean tilesOccupied(int col, int row) {

@@ -3,6 +3,7 @@ package com.silverignis.systems;
 import com.silverignis.components.Direction;
 import com.silverignis.components.ManaPool;
 import com.silverignis.components.ManaStats;
+import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.particles.ParticleEngine;
@@ -13,7 +14,10 @@ import com.silverignis.systems.ai.EnemyAi;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
+import com.silverignis.systems.combat.StatusFactory;
+import com.silverignis.systems.combat.StatusType;
 import com.silverignis.traits.TraitsContainer;
+import com.silverignis.util.PanelGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +57,8 @@ public final class Encounter {
         this.mana           = new ManaPool(manaStats);
         this.triggerBus     = new TriggerBus();
         this.damageSystem   = new DamageSystem(triggerBus);
-        this.battleState    = new BattleState(player, enemies);
+        Battlefield battlefield = new Battlefield(PanelGenerator.generateMixedPanels());
+        this.battleState    = new BattleState(battlefield, player, enemies);
         this.movementSystem = new MovementSystem(battleState);
         this.combatSystem   = new CombatSystem(battleState, damageSystem, triggerBus,
                                                movementSystem, particles);
@@ -64,6 +69,13 @@ public final class Encounter {
         player.getSlots().setSlotCapacity(SkillSlots.BASE_CAPACITY + traits.slotCapacityBonus());
         traits.applyBattleHooks(player, triggerBus, damageSystem);
         for (Enemy e : enemies) e.getCaster().getTraits().applyBattleHooks(e, triggerBus, damageSystem);
+
+        // TEMP: seed every enemy with poison/burn/freeze to eyeball status visuals. Delete me.
+        for (Enemy e : enemies) {
+            e.getStatusContainer().apply(StatusFactory.create(StatusType.POISON, 15f, 1), triggerBus);
+            e.getStatusContainer().apply(StatusFactory.create(StatusType.BURN,   15f, 1), triggerBus);
+            e.getStatusContainer().apply(StatusFactory.create(StatusType.FREEZE, 15f, 0), triggerBus);
+        }
     }
 
     /**
@@ -102,6 +114,7 @@ public final class Encounter {
         }
 
         combatSystem.tickStatuses(delta);
+        combatSystem.tickPanels(delta);
         combatSystem.update(delta);
     }
 

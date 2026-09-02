@@ -9,9 +9,7 @@ public class PanelGenerator {
         Battlefield.PanelType[][] panels = new Battlefield.PanelType[Battlefield.COLS][Battlefield.ROWS];
         for (int col = 0; col < Battlefield.COLS; col++) {
             for (int row = 0; row < Battlefield.ROWS; row++) {
-                panels[col][row] = col < Battlefield.COLS / 2
-                    ? Battlefield.PanelType.NORMAL_BLUE
-                    : Battlefield.PanelType.NORMAL_RED;
+                panels[col][row] = Battlefield.PanelType.NORMAL;
             }
         }
         return panels;
@@ -32,24 +30,21 @@ public class PanelGenerator {
         Battlefield.PanelType[][] panels = new Battlefield.PanelType[cols][rows];
         for (int col = 0; col < cols; col++) {
             for (int row = 0; row < rows; row++) {
-                panels[col][row] = col < mid ? Battlefield.PanelType.NORMAL_BLUE : Battlefield.PanelType.NORMAL_RED;
+                panels[col][row] = Battlefield.PanelType.NORMAL;
             }
         }
 
-        // Sprinkle a mixture of themed panels across both sides.
-        // Player (blue) side: some grass and ice for a cool / natural feel.
-        panels[0][0] = Battlefield.PanelType.GRASS;
-        panels[1][rows - 1] = Battlefield.PanelType.ICE;
-        panels[2][1] = Battlefield.PanelType.CRACKED;
-        if (mid - 1 >= 0) {
-            panels[mid - 1][rows / 2] = Battlefield.PanelType.BROKEN;
-        }
+        // Player (blue) side.
+        panels[0][0] = Battlefield.PanelType.ICE;
+        panels[1][rows - 1] = Battlefield.PanelType.LIGHTNING;
+        panels[2][1] = Battlefield.PanelType.NATURE;
+        panels[mid - 1][rows / 2] = Battlefield.PanelType.FIRE;
 
-        // Enemy (red) side: lava and poison to match the hostile vibe.
+        // Enemy (red) side.
         panels[mid][0] = Battlefield.PanelType.POISON;
-        panels[mid + 1][rows - 1] = Battlefield.PanelType.LAVA;
-        panels[cols - 2][1] = Battlefield.PanelType.CRACKED;
-        panels[cols - 1][rows / 2] = Battlefield.PanelType.LAVA;
+        panels[mid + 1][rows - 1] = Battlefield.PanelType.FIRE;
+        panels[cols - 2][1] = Battlefield.PanelType.DARK;
+        panels[cols - 1][rows / 2] = Battlefield.PanelType.FIRE;
 
         return panels;
     }

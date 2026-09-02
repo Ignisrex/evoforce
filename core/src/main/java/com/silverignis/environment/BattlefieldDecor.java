@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.silverignis.entities.Battlefield;
 
+/** Side-colored slabs + skill-coverage glow. Elemental identity is drawn by PanelSurfaces on top. */
 public class BattlefieldDecor {
 
     private static final Color GLOW_COLOR = new Color(0.14f, 0.12f, 0.05f, 1f);
@@ -45,7 +46,7 @@ public class BattlefieldDecor {
             for (int r = 0; r < Battlefield.ROWS; r++) {
                 float g = glow[c][r];
                 ColorAttribute em = (ColorAttribute)
-                    panels[c][r].materials. get(0).get(ColorAttribute.Emissive);
+                    panels[c][r].materials.get(0).get(ColorAttribute.Emissive);
                 em.color.set(GLOW_COLOR.r * g, GLOW_COLOR.g * g, GLOW_COLOR.b * g, 1f);
                 glow[c][r] = Math.max(0f, g - DECAY_PER_SEC * delta);
             }

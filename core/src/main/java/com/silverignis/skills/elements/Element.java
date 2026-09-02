@@ -6,6 +6,7 @@ public enum Element {
     POISON,
     ICE,
     LIGHTNING,
-    DARK
+    DARK,
+    NATURE,
 }
 
