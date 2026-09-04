@@ -141,37 +141,8 @@ public class SlotsHud extends Group {
         return g;
     }
 
-    /**
-     * Downward offset of each stacked card from the top card. Uniform
-     * {@link #SLIVER_MAX} while everything fits in {@code space}; otherwise a
-     * geometric ratio (found by bisection) shrinks deeper slivers to fit.
-     */
     private static float[] sliverOffsets(int n, float space) {
-        float[] offsets = new float[n];
-        int slivers = n - 1;
-        if (slivers <= 0) return offsets;
-
-        float ratio = 1f;
-        if (slivers * SLIVER_MAX > space) {
-            float lo = 0f, hi = 1f;
-            for (int it = 0; it < 24; it++) {
-                float mid = (lo + hi) / 2f, sum = 0f, h = SLIVER_MAX;
-                for (int i = 0; i < slivers; i++) {
-                    sum += Math.max(SLIVER_MIN, h);
-                    h *= mid;
-                }
-                if (sum > space) hi = mid; else lo = mid;
-            }
-            ratio = lo;
-        }
-
-        float h = SLIVER_MAX, off = 0f;
-        for (int i = 1; i < n; i++) {
-            off += Math.max(SLIVER_MIN, h);
-            offsets[i] = off;
-            h *= ratio;
-        }
-        return offsets;
+        return UiUtil.stackOffsets(n, space, SLIVER_MAX, SLIVER_MIN);
     }
 
     public void dispose() {

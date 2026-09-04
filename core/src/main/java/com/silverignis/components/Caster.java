@@ -8,6 +8,7 @@ import com.silverignis.traits.TraitsContainer;
 import com.silverignis.util.InputLock;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -65,6 +66,11 @@ public class Caster {
 
     public boolean areSkillsLoaded(){
         return !this.loadedSkills.isEmpty();
+    }
+
+    /** Read-only, in load (= fire) order. */
+    public List<LoadedSkill> loadedView() {
+        return Collections.unmodifiableList(loadedSkills);
     }
 
     public List<LoadedSkill> releaseLoadedSkills() {

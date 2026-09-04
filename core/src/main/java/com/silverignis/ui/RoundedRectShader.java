@@ -43,6 +43,13 @@ public final class RoundedRectShader implements Disposable {
     void draw(Batch batch, float x, float y, float w, float h,
               Color fill, Color border, float borderWidth, float radius,
               Color glow, float glowWidth) {
+        draw(batch, x, y, w, h, fill, border, borderWidth, radius, glow, glowWidth, 0f);
+    }
+
+    /** {@code fadeHeight} > 0 ramps the whole rect (border and glow too) to transparent over that many units above its bottom edge. */
+    void draw(Batch batch, float x, float y, float w, float h,
+              Color fill, Color border, float borderWidth, float radius,
+              Color glow, float glowWidth, float fadeHeight) {
         if (fill == null && border == null) return;
         float spill = glow == null ? 0f : glowWidth;
         batch.setShader(program); // flushes pending default-shader quads, binds program
@@ -50,6 +57,7 @@ public final class RoundedRectShader implements Disposable {
         program.setUniformf("u_radius", radius);
         program.setUniformf("u_borderWidth", border == null ? 0f : borderWidth);
         program.setUniformf("u_glowWidth", spill);
+        program.setUniformf("u_fadeHeight", fadeHeight);
         color("u_fillColor", fill == null ? TRANSPARENT : fill);
         color("u_borderColor", border == null ? fill : border);
         color("u_glowColor", glow == null ? TRANSPARENT : glow);

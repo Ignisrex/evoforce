@@ -19,6 +19,7 @@ uniform float u_glowWidth;    // glow reach past the edge, same units (0 = none)
 uniform vec4 u_fillColor;
 uniform vec4 u_borderColor;
 uniform vec4 u_glowColor;
+uniform float u_fadeHeight;  // alpha ramps to 0 over this many units above the bottom edge (0 = none)
 
 float roundBoxDist(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - halfSize + r;
@@ -41,5 +42,7 @@ void main() {
 
     vec3 rgb = mix(u_glowColor.rgb, body.rgb, shape);
     float alpha = mix(u_glowColor.a * glowFall, body.a, shape);
+    // v runs 1 -> 0 bottom to top, so +p.y is the rect's bottom edge
+    if (u_fadeHeight > 0.0) alpha *= smoothstep(0.0, u_fadeHeight, u_halfSize.y - p.y);
     gl_FragColor = vec4(rgb, alpha) * v_color * texture2D(u_texture, v_texCoords);
 }

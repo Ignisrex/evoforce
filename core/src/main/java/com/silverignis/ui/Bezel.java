@@ -11,6 +11,7 @@ final class Bezel extends Actor {
     private float borderWidth;
     private float radius;
     private float glowWidth;
+    private float fadeHeight;
 
     Bezel(RoundedRectShader shader) { this.shader = shader; }
 
@@ -18,11 +19,12 @@ final class Bezel extends Actor {
     Bezel border(Color c, float width) { this.border = c; this.borderWidth = width; return this; }
     Bezel radius(float r) { this.radius = r; return this; }
     Bezel glow(Color c, float width) { this.glow = c; this.glowWidth = width; return this; }
+    Bezel fade(float height) { this.fadeHeight = height; return this; }
 
     @Override
     public void draw(Batch b, float parentAlpha) {
         b.setColor(1f, 1f, 1f, getColor().a * parentAlpha);
         shader.draw(b, getX(), getY(), getWidth(), getHeight(),
-                    fill, border, borderWidth, radius, glow, glowWidth);
+                    fill, border, borderWidth, radius, glow, glowWidth, fadeHeight);
     }
 }

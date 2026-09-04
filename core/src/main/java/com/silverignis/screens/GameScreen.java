@@ -8,6 +8,7 @@ import com.silverignis.Main;
 import com.silverignis.components.Team;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
+import com.silverignis.input.GameAction;
 import com.silverignis.input.InputManager;
 import com.silverignis.registry.Monster;
 import com.silverignis.screens.state.GameScreenState;
@@ -39,6 +40,7 @@ public class GameScreen implements Screen {
     private final Stage hudStage;
     private final ManaBarHud manaBarHud;
     private final SlotsHud slotsHud;
+    private final LoadedHud loadedHud;
     private final LifeBarHud lifeBarHud;
     private final StatusHud statusHud;
     private final FpsHud fpsHud = new FpsHud();
@@ -63,12 +65,14 @@ public class GameScreen implements Screen {
         this.hudShader      = new RoundedRectShader(pixel);
         this.manaBarHud     = new ManaBarHud(hudShader);
         this.slotsHud       = new SlotsHud(hudShader, game.viewport);
+        this.loadedHud      = new LoadedHud(hudShader, game.viewport);
         this.lifeBarHud     = new LifeBarHud(hudShader);
         this.statusHud      = new StatusHud(hudShader, game.viewport);
         this.basicAttackHud = new BasicAttackHud(game.generated);
 
         this.hudStage = new Stage(game.viewport, game.batch);
         hudStage.addActor(slotsHud);
+        hudStage.addActor(loadedHud);
 
         Table bars = new Table();
         bars.setRound(false); // world-unit stage; see SkillSelectOverlay.newTable()
@@ -123,6 +127,7 @@ public class GameScreen implements Screen {
         // Stage manages its own begin()/end(), so it draws outside the block above.
         if (!overlayUp) {
             slotsHud.refresh(playState.getPlayer().getSlots());
+            loadedHud.refresh(playState.getPlayer().getCaster(), input.isActionPressed(GameAction.TRIGGER_RIGHT));
             lifeBarHud.refresh(playState.getPlayer());
             manaBarHud.refresh(encounter.mana());
             statusHud.refresh(playState.getPlayer());
@@ -159,6 +164,7 @@ public class GameScreen implements Screen {
         skillSelectState.dispose();
         hudStage.dispose(); // external batch — stage doesn't dispose it
         slotsHud.dispose();
+        loadedHud.dispose();
         statusHud.dispose();
         hudShader.dispose();
     }
