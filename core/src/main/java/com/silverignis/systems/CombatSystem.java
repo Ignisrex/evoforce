@@ -2,23 +2,24 @@ package com.silverignis.systems;
 
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
+import com.silverignis.components.ManaPool;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.particles.Vfx;
 import com.silverignis.render.WorldRenderer;
-import com.silverignis.skills.Skill;
-import com.silverignis.skills.SkillContext;
-import com.silverignis.skills.SkillFactory;
-import com.silverignis.skills.SkillInstance;
+import com.silverignis.skills.*;
 import com.silverignis.skills.elements.Element;
 import com.silverignis.skills.instances.ProjectileInstance;
+import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
+import com.silverignis.systems.combat.Trigger;
 import com.silverignis.systems.combat.TriggerBus;
 import com.silverignis.systems.combat.event.DamageEvent;
 import com.silverignis.systems.combat.event.HealEvent;
+import com.silverignis.systems.combat.event.TriggerEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,19 +41,19 @@ public class CombatSystem {
                         DamageSystem damageSystem,
                         TriggerBus triggerBus,
                         MovementSystem movementSystem,
-                        ParticleEngine particleEngine) {
+                        ParticleEngine particleEngine,
+                        ManaPool mana,
+                        SkillVars skillVars) {
         this.battleState    = battleState;
         this.particleEngine = particleEngine;
-        // Lob needs to spawn a child Zone, so the context has to name this
-        // system. Building it here keeps that cycle immutable — it used to be a
-        // mutable field set from outside after construction.
         this.ctx = new SkillContext(battleState, damageSystem, triggerBus,
-                                    movementSystem, this, particleEngine);
+                                    movementSystem, this, particleEngine, mana, skillVars);
     }
 
     /** Create and spawn a fresh instance for {@code skill}, cast by {@code combatant}. */
-    public void spawn(Skill skill, Combatant combatant){
+    public void spawn(Skill skill, Combatant combatant, CastInfo castInfo){
         SkillInstance inst = SkillFactory.create(skill, combatant);
+        inst.setCastInfo(castInfo);
         GridPosition pos = combatant.getGridPosition();
         Battlefield.PanelType panel = battleState.battlefield.getPanel(pos.getCol(), pos.getRow());
 
@@ -79,12 +80,12 @@ public class CombatSystem {
 
     public void tickStatuses(float delta){
         if (battleState.player.isAlive()){
-            battleState.player.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
+            battleState.player.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus, battleState.battlefield, ctx.particleEngine);
         }
 
         for (var enemy : battleState.enemies){
             if(!enemy.isAlive()) continue;
-            enemy.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus);
+            enemy.getStatusContainer().update(delta, ctx.damageSystem, ctx.triggerBus, battleState.battlefield, ctx.particleEngine);
         }
     }
 
@@ -179,25 +180,32 @@ public class CombatSystem {
      * been popped off the slot by now, so re-gating would silently swallow it
      * instead of refusing it.
      */
-    public void cast(Combatant combatant, Skill skill) {
+    public void cast(Combatant combatant, Skill skill, CastInfo castInfo) {
         combatant.getCaster().getDeck().onUsed(skill);
-        spawn(skill, combatant);
+        ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_SKILL_RESOLVED, combatant, skill));
+        spawn(skill, combatant, castInfo);
     }
 
-    public void loadSkill(Combatant combatant, Skill skill) {
-        combatant.getCaster().loadSkill(skill);
+    public void cast(Combatant combatant, Skill skill){
+        cast(combatant, skill, CastInfo.DIRECT);
+    }
+
+    public void loadSkill(Combatant combatant, Skill skill, SlotKey from) {
+        combatant.getCaster().loadSkill(skill, from);
     }
 
     public void resolveLoadedSkills(Combatant combatant) {
         Caster caster = combatant.getCaster();
-        List<Skill> loaded = caster.releaseLoadedSkills();
+        List<Caster.LoadedSkill> loaded = caster.releaseLoadedSkills();
 
         //handle advance skill check or rapid cast
         Skill advanced = null; //matchRecipe(loaded) -> future impl
         if(advanced != null) {
             cast(combatant, advanced);
         } else {
-            for (Skill s : loaded) cast(combatant, s);
+            for (int i =0; i < loaded.size(); i++) {
+                cast(combatant, loaded.get(i).skill(), new CastInfo(loaded.get(i).from(), i));
+            }
         }
     }
 

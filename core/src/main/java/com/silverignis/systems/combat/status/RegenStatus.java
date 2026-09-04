@@ -1,5 +1,7 @@
 package com.silverignis.systems.combat.status;
 
+import com.silverignis.entities.Battlefield;
+import com.silverignis.particles.ParticleEngine;
 import com.silverignis.systems.combat.*;
 import com.silverignis.systems.combat.event.HealEvent;
 
@@ -13,7 +15,7 @@ public class RegenStatus extends Status {
     }
 
     @Override
-    protected void onTick(Combatant owner, DamageSystem dmg, TriggerBus bus) {
+    protected void onTick(Combatant owner, DamageSystem dmg, TriggerBus bus, Battlefield battlefield, ParticleEngine particles) {
         dmg.heal(new HealEvent(owner, healPerTick));
     }
 }

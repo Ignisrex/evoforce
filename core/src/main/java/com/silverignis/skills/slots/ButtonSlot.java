@@ -6,6 +6,8 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * A single button's stack. LIFO: the last skill staged sits on top and
@@ -49,4 +51,12 @@ public class ButtonSlot {
     public List<Skill> view() {
         return Collections.unmodifiableList(new java.util.ArrayList<>(stack));
     }
+
+    public void addBottom(Skill skill) {
+        stack.addLast(skill);
+    }
+
+    public void removeIf(Predicate<Skill> test) { stack.removeIf(test); }
+
+    public void forEach(Consumer<Skill> action) { stack.forEach(action);}
 }

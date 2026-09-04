@@ -1,5 +1,8 @@
 package com.silverignis.systems.combat;
 
+import com.silverignis.entities.Battlefield;
+import com.silverignis.particles.ParticleEngine;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -19,7 +22,7 @@ public class StatusContainer {
     public Status apply(Status s, TriggerBus bus) {
         Status existing = byType.get(s.getType());
         if(existing != null){
-            existing.refresh(s.getRemaining());
+            existing.mergeFrom(s);
             return existing;
         }
 
@@ -36,6 +39,12 @@ public class StatusContainer {
     public boolean blocksAttack() {return  anyAlive(Status::blocksAttack); }
     public boolean blocksCasting() {return anyAlive(Status::blocksCasting); }
 
+    public float recoveryFactor() {
+        float f = 1f;
+        for (Status s : byType.values()) if (!s.isExpired()) f *= s.recoveryFactor();
+        return f;
+    }
+
     private boolean anyAlive(Predicate<Status> p){
         for (Status s: byType.values()){
             if (!s.isExpired() && p.test(s)) return true;
@@ -43,11 +52,19 @@ public class StatusContainer {
         return false;
     }
 
-    public void update(float delta, DamageSystem dmg, TriggerBus bus){
+    /** First live status that consumes the attempt wins; the step then fails. */
+    public boolean consumeMoveAttempt(){
+        for (Status s : byType.values()) {
+            if (!s.isExpired() && s.consumesMoveAttempt()) return true;
+        }
+        return false;
+    }
+
+    public void update(float delta, DamageSystem dmg, TriggerBus bus, Battlefield battlefield, ParticleEngine particles){
         // Snapshot: an onTick may publish damage that kills the owner; an
         // onExpire may fire triggers that mutate the container indirectly.
         List<Status> snap = new ArrayList<>(byType.values());
-        for (Status s: snap) s.tick(delta, owner, dmg,  bus);
+        for (Status s: snap) s.tick(delta, owner, dmg,  bus, battlefield, particles);
         byType.values().removeIf(Status::isExpired);
     }
 }

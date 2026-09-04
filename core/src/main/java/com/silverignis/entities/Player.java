@@ -15,6 +15,7 @@ import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
+import com.silverignis.systems.combat.status.visuals.StatusFx;
 import com.silverignis.util.InputLock;
 
 public class Player implements Combatant, SceneRenderable {
@@ -24,9 +25,12 @@ public class Player implements Combatant, SceneRenderable {
     private final Health          health;
     private final Stats           stats;
     private final StatusContainer statusContainer;
+    private final StatusFx        statusFx;
     private final GridMovement    gridMovement;
 
     public float visualHeight = 0f;
+
+    private final Color spriteTint = new Color();
 
     public Player(int col, int row, AnimSet animSet, Caster caster, Stats stats) {
         this.gridMovement = new GridMovement(
@@ -36,6 +40,7 @@ public class Player implements Combatant, SceneRenderable {
         this.stats  = stats;
         this.health = new Health(stats.getVitality());
         this.statusContainer = new StatusContainer(this);
+        this.statusFx = new StatusFx(this);
         this.animController = new AnimController(animSet);
     }
 
@@ -69,6 +74,7 @@ public class Player implements Combatant, SceneRenderable {
     public Health          getHealth()          { return health; }
     public Stats           getStats()           { return stats; }
     public StatusContainer getStatusContainer() { return statusContainer; }
+    public StatusFx        statusFx()           { return statusFx; }
 
     public void update(float delta) {
         caster.update(delta);
@@ -87,9 +93,9 @@ public class Player implements Combatant, SceneRenderable {
         if (frame == null) return;
 
         Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
-        float pw = Battlefield.panelFloorWidth() * rc.tileDepthScale(getVisualRow());
+        float pw = rc.panelWidth() * rc.tileDepthScale(getVisualRow());
         float alpha = animController.getRenderAlpha();
-        rc.batch.setColor(1f, 1f, 1f, alpha);
+        rc.batch.setColor(statusFx.spriteColor(spriteTint, alpha));
         rc.batch.draw(frame, p.x - pw * 0.5f, p.y + visualHeight, pw, pw);
         rc.batch.setColor(Color.WHITE);
     }

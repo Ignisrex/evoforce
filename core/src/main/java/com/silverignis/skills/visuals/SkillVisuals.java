@@ -24,26 +24,37 @@ public final class SkillVisuals {
         Map.entry("dark_blast", DarkBlastVisual::new),
         Map.entry("fire_blast", FireBlastVisual::new),
         Map.entry("wind_slash", WindSlashVisual::new),
+        Map.entry("toxic_spine", ToxicSpineVisual::new),
+        Map.entry("arc_bolt", ArcBoltVisual::new),
+        Map.entry("umbral_wave", UmbralWaveVisual::new),
+        Map.entry("volt_lance", VoltLanceVisual::new),
+        Map.entry("void_collapse", VoidCollapseVisual::new),
         //lob skills
         Map.entry("venom_bomb", VenomBombVisual::new),
         Map.entry("electro_ball", ElectroBallVisual::new),
+        Map.entry("seed_bomb", SeedBombVisual::new),
         //beam skills
         Map.entry("ice_beam", IceBeamVisual::new),
         Map.entry("thunder", ThunderVisual::new),
         Map.entry("flame_torrent", FlameTorrentVisual::new),
+        Map.entry("miasma_beam", MiasmaBeamVisual::new),
         //strike skills
         Map.entry("wind_strike", WindStrikeVisual::new),
         Map.entry("flame_claw", FlameClawVisual::new),
+        Map.entry("verdant_fang", VerdantFangVisual::new),
         //zone skills
         Map.entry("frost_trap", FrostTrapVisual::new),
         Map.entry("void_pull", VoidPullVisual::new),
         //lob clouds — synthetic zones named <parent>_cloud
         Map.entry("venom_bomb_cloud", VenomBombCloudVisual::new),
         Map.entry("electro_ball_cloud", ElectroBallCloudVisual::new),
+        // ponytail: green venom cloud stands in for the seed bomb's landing puff
+        Map.entry("seed_bomb_cloud", VenomBombCloudVisual::new),
         //aura skills
         Map.entry("shield", ShieldVisual::new),
         Map.entry("heal", HealVisual::new),
         Map.entry("regen", RegenVisual::new),
+        Map.entry("spore_draught", SporeDraughtVisual::new),
         Map.entry("power_up", PowerUpVisual::new),
         Map.entry("magic_up", MagicUpVisual::new)
     );

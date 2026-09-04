@@ -52,7 +52,7 @@ public class BeamInstance extends SkillInstance {
         }
     }
 
-    private void applyHit(SkillContext ctx) {
+    protected void applyHit(SkillContext ctx) {
         if (hitApplied) return;
         hitApplied = true;
         for (Combatant target : ctx.battleState.opposingOnRow(combatant, row)) {

@@ -1,19 +1,40 @@
 package com.silverignis.systems.combat.status;
 
+import com.silverignis.entities.Battlefield;
+import com.silverignis.particles.ParticleEngine;
 import com.silverignis.systems.combat.*;
 import com.silverignis.systems.combat.event.DamageEvent;
 
 public class PoisonStatus extends Status {
 
-    private final int dmgPerTick;
+    private static final int DMG_PER_STACK = 3;
 
-    public PoisonStatus(float duration, int dmgPerTick) {
-        super(StatusType.POISON, duration, 1.0f);
-        this.dmgPerTick = dmgPerTick;
+    private int stacks;
+
+    public PoisonStatus(int stacks) {
+        super(StatusType.POISON, stacks, 1.0f);
+        this.stacks = stacks;
     }
 
     @Override
-    protected void onTick(Combatant owner, DamageSystem dmg, TriggerBus bus) {
-        dmg.apply(new DamageEvent(null, owner, dmgPerTick, DamageEvent.Source.STATUS, null));
+    public void mergeFrom(Status incoming) {
+        stacks += incoming.stacks();
+        remaining = stacks;
+    }
+
+    @Override
+    public int stacks() {
+        return stacks;
+    }
+
+    @Override
+    public boolean isExpired() {
+        return stacks <= 0;
+    }
+
+    @Override
+    protected void onTick(Combatant owner, DamageSystem dmg, TriggerBus bus, Battlefield battlefield, ParticleEngine particles) {
+        dmg.apply(new DamageEvent(null, owner, DMG_PER_STACK * stacks, DamageEvent.Source.STATUS, null));
+        stacks--;
     }
 }

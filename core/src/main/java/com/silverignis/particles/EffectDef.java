@@ -34,6 +34,6 @@ public class EffectDef {
             return this;
         }
 
-        public EffectDef build() { return new EffectDef(specs.toArray(EmitterSpec.class));}
+        public EffectDef build() { return new EffectDef(specs.toArray(EmitterSpec[]::new));}
     }
 }

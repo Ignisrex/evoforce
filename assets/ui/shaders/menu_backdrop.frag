@@ -1,8 +1,7 @@
 ﻿// Menu backdrop: the painted mainmenu_background.png with its living regions
 // animated in place â€” water, dust, frost, wind and clouds are found in the
-// painting by colour keys gated to hand-placed boxes; the stars are a layer baked
-// by tools/extract_menu_layers.py, and the lightning is drawn from scratch, so the
-// base painting ships without either.
+// painting by colour keys gated to hand-placed boxes; the lightning is drawn
+// from scratch, so the base painting ships without it.
 // Blend: none â€” this is an opaque background pass.
 
 #ifdef GL_ES
@@ -13,7 +12,6 @@ varying vec4 v_color;
 varying vec2 v_texCoords;
 
 uniform sampler2D u_texture;   // mainmenu_background.png, bound by SpriteBatch on unit 0
-uniform sampler2D u_stars;     // ui/menu_stars.png â€” the sky's stars on transparent
 uniform float u_time;          // seconds, free-running
 uniform float u_aspect;        // width / height, so ripples aren't stretched
 uniform float u_intensity;     // master multiplier on every mover, 0 = still painting
@@ -135,14 +133,6 @@ const float CRACKLE_HALO   = 0.014; // reach of its glow
 const float CRACKLE_DECAY  = 5.5;   // how fast it dies, per second
 const vec3  CRACKLE_CORE   = vec3(0.95, 0.90, 1.00);
 const vec3  CRACKLE_GLOW   = vec3(0.70, 0.45, 1.00);
-
-// ---- tuning: stars ---------------------------------------------------------
-// The star layer (u_stars), each star breathing on its own phase.
-const float TWINKLE_SPEED  = 0.4;    // breaths per second, roughly
-const float TWINKLE_DIM    = 0.30;   // how faint a star gets at the bottom of its breath
-const float TWINKLE_FLARE  = 0.30;   // extra glow at the top of it
-const float TWINKLE_GRAIN  = 30.0;   // how close two stars must be to share a phase; higher = more independent
-const vec3  STAR_TINT      = vec3(0.92, 0.95, 1.00);
 
 // ---- tuning: tower ---------------------------------------------------------
 // The citadel's rings and tip star hold a steady glow: their own pixels are lit
@@ -747,24 +737,6 @@ vec3 lightning(vec3 col, vec3 still, vec2 uv, float t) {
     return col;
 }
 
-// ---- stars -----------------------------------------------------------------
-
-// Brightness multiplier that breathes on a phase drawn from a smooth field, so
-// each star has its own rhythm without needing an id.
-float twinkle(vec2 q, float t) {
-    float phase = valueNoise(q * TWINKLE_GRAIN) * 6.28318 * 3.0;
-    float rate  = 0.7 + 0.6 * valueNoise(q * TWINKLE_GRAIN + 17.0);
-    return 0.5 + 0.5 * sin(t * TWINKLE_SPEED * rate * 6.28318 + phase);
-}
-
-vec3 stars(vec3 col, vec2 uv, float t) {
-    vec2  q     = vec2(uv.x * u_aspect, uv.y);
-    vec4  layer = texture2D(u_stars, uv);
-    float level = mix(TWINKLE_DIM, 1.0 + TWINKLE_FLARE, twinkle(q, t));
-    col = mix(col, layer.rgb, layer.a * min(level, 1.0) * u_intensity);
-    return col + STAR_TINT * layer.a * max(level - 1.0, 0.0) * u_intensity;
-}
-
 // ---- tower -----------------------------------------------------------------
 
 // How much of this pixel is a ring: lavender-bright inside the box (the white
@@ -905,7 +877,6 @@ void main() {
     col = tower(col, still, uv, t);
     col = wind(col, still, uv, t);
     col = lightning(col, still, uv, t);
-    col = stars(col, uv, t);
 
     gl_FragColor = vec4(col * v_color.rgb, 1.0);
 }

@@ -816,7 +816,196 @@ Color green = new Color(0.5f, 1f, 0.6f, 1f);
             case POISON    -> new Color(0.55f, 0.9f, 0.3f, 1f);
             case LIGHTNING -> new Color(1f, 0.95f, 0.4f, 1f);
             case DARK      -> new Color(0.6f, 0.4f, 0.9f, 1f);
+            case NATURE -> new Color(Color.GREEN);
             case NONE      -> new Color(Color.WHITE);
         };
+    }
+
+    /** Small smolder riding a burning combatant — flames licking the body plus
+     *  stray embers. Continuous: the status visual's handle stops it on expiry. */
+    public static EffectDef burnSmolder() {
+        Color orange = new Color(1f, 0.6f, 0.25f, 1f);
+        Color red    = new Color(1f, 0.35f, 0.2f, 1f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(8f)
+                .followAnchor()
+                .speed(range(0.1f, 0.3f)).life(range(0.35f, 0.6f)).size(range(0.18f, 0.3f)).spread(25f)
+                .atBody()
+                .jitter(0.25f, 0.3f, 0.1f)
+                .drift(0f, 0.7f, 0f)
+                .textures(
+                    assets.flame(1), assets.flame(2), assets.flame(3),
+                    assets.flame(4), assets.flame(5), assets.flame(6))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, orange, red))
+            .emitter(e -> e
+                .continuous(5f)
+                .followAnchor()
+                .speed(range(0.3f, 0.7f)).life(range(0.4f, 0.7f)).size(range(0.06f, 0.12f)).spread(35f)
+                .atBody()
+                .jitter(0.25f, 0.25f, 0.1f)
+                .drift(0f, 1.0f, 0f)
+                .texture(assets.star(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, orange, red))
+            .build();
+    }
+
+    /** Static charge crawling over a conductive body — short spark blinks all
+     *  over the sprite. Continuous: the status visual's handle stops it. */
+    public static EffectDef conductiveStatic() {
+        Color bolt = new Color(1f, 0.95f, 0.45f, 1f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(7f)
+                .followAnchor()
+                .atBody()
+                .jitter(0.28f, 0.35f, 0.12f)
+                .speed(range(0.1f, 0.4f)).life(range(0.06f, 0.18f)).size(range(0.13f, 0.26f)).spread(180f)
+                .textures(
+                    assets.spark(1), assets.spark(2), assets.spark(3), assets.spark(4),
+                    assets.spark(5), assets.spark(6), assets.spark(7))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, bolt))
+            .build();
+    }
+
+    /** Gravity dragging a body down — thin violet streaks in the sprite's bottom
+     *  third, each falling to the floor and respawning at a new height, so the
+     *  pull reads as constant. Continuous: the status visual's handle stops it,
+     *  and the sub-half-second particle life means it vanishes almost instantly
+     *  when the status is consumed. */
+    public static EffectDef gravityStreaks() {
+        Color violet = new Color(0.6f, 0.35f, 0.95f, 0.9f);
+        Color deep   = new Color(0.4f, 0.2f, 0.7f, 0.9f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(14f)
+                .followAnchor()
+                .offset(0f, 0.22f, 0f)
+                .jitter(0.28f, 0.08f, 0.1f)
+                .direction(0f, -1f, 0f)
+                .speed(range(0.5f, 0.9f)).life(range(0.25f, 0.4f)).size(range(0.03f, 0.06f)).spread(6f)
+                .stretch(0.8f)
+                .textures(assets.spotlightA(2), assets.spotlightA(5), assets.spotlightA(8))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, violet, deep))
+            .build();
+    }
+
+    /** Conductive discharge, one-shot on the victim's tile — the stored charge
+     *  arcing out when a thunder hit detonates it. Lean read: flash -> sparks. */
+    public static EffectDef conductiveZap() {
+        Color bolt = new Color(1f, 0.95f, 0.45f, 1f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.1f).size(0.7f)
+                .texture(assets.flare(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.8f)
+                .color(Color.WHITE))
+            .emitter(e -> e
+                .burst(10)
+                .speed(range(1.5f, 3f)).life(range(0.2f, 0.45f)).size(range(0.08f, 0.2f)).spread(180f)
+                .drag(2f).stretch(0.7f)
+                .textures(
+                    assets.spark(1), assets.spark(2), assets.spark(4),
+                    assets.spark(5), assets.spark(7))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, bolt))
+            .build();
+    }
+
+    /** Combustion detonation, one-shot on the victim's tile. Classic explosion
+     *  anatomy, hot-and-fast layers dying before cold-and-slow ones:
+     *  flash -> shockwave ring -> fireball -> radial sparks -> lingering smoke. */
+    public static EffectDef combustionExplosion() {
+        Color orange = new Color(1f, 0.55f, 0.2f, 1f);
+        Color red    = new Color(1f, 0.25f, 0.1f, 1f);
+        Color smoke  = new Color(0.45f, 0.42f, 0.42f, 0.4f);
+        return EffectDef.effect()
+            // 1. Flash — hottest, biggest, dies first.
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.12f).size(0.9f)
+                .texture(assets.flare(1))
+                .sizeOverLife(Interpolation.pow2Out, 2.2f)
+                .color(Color.WHITE))
+            // 2. Shockwave ring, gone almost as fast.
+            .emitter(e -> e
+                .burst(1).speed(0f).life(0.25f).size(0.5f)
+                .texture(assets.circle(1))
+                .sizeOverLife(Interpolation.pow2Out, 3f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, orange))
+            // 3. Fireball — flame mass shoved outward, easing as it cools.
+            .emitter(e -> e
+                .burst(7, 0.03f)
+                .speed(range(0.4f, 1.1f)).life(range(0.25f, 0.45f)).size(range(0.3f, 0.5f)).spread(180f)
+                .jitter(0.1f, 0.15f, 0.1f)
+                .drag(2f)
+                .textures(
+                    assets.flame(1), assets.flame(2), assets.flame(3),
+                    assets.flame(4), assets.flame(5), assets.flame(6))
+                .sizeOverLife(Interpolation.pow2Out, 1.7f)
+                .colorOverLife(Interpolation.pow2In, orange, red))
+            // 4. Sparks — fast stretched debris cooling white -> orange.
+            .emitter(e -> e
+                .burst(14)
+                .speed(range(1.8f, 3.5f)).life(range(0.3f, 0.6f)).size(range(0.08f, 0.18f)).spread(180f)
+                .drag(2.5f).stretch(0.6f)
+                .textures(assets.spark(1), assets.spark(3), assets.spark(5), assets.spark(7))
+                .sizeOverLife(Interpolation.pow2In, 0f)
+                .colorOverLife(Interpolation.linear, Color.WHITE, orange))
+            // 5. Smoke — the cold slow tail of the read.
+            .emitter(e -> e
+                .burst(4, 0.1f)
+                .speed(range(0.15f, 0.4f)).life(range(0.8f, 1.3f)).size(range(0.35f, 0.6f)).spread(180f)
+                .drift(0f, 0.25f, 0f)
+                .spin(range(-40f, 40f)).fadeIn(0.15f)
+                .alphaBlend()
+                .texturesOverLife(
+                    assets.smoke(1), assets.smoke(3), assets.smoke(5), assets.smoke(7), assets.smoke(9))
+                .sizeOverLife(Interpolation.pow2Out, 1.6f)
+                .colorOverLife(Interpolation.linear, smoke, new Color(smoke.r, smoke.g, smoke.b, 0f)))
+            .build();
+    }
+
+    /** Sick green bubbles floating off a poisoned body, swelling then gone.
+     *  Continuous: the status visual's handle stops it on expiry. */
+    public static EffectDef poisonBubbles() {
+        Color bright = new Color(0.5f, 0.95f, 0.4f, 0.9f);
+        Color murk   = new Color(0.25f, 0.55f, 0.2f, 0f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(6f)
+                .followAnchor()
+                .speed(range(0.05f, 0.15f)).life(range(0.6f, 1.0f)).size(range(0.06f, 0.14f)).spread(20f)
+                .atBody()
+                .jitter(0.25f, 0.35f, 0.1f)
+                .drift(0f, 0.45f, 0f)
+                .alphaBlend()
+                .textures(assets.circleA(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.6f)
+                .colorOverLife(Interpolation.linear, bright, murk))
+            .build();
+    }
+
+    /** Teal spores swirling up a body digesting them into mana. Same read as
+     *  poisonBubbles but unmistakably not poison. Continuous while driven. */
+    public static EffectDef metabolizeSpores() {
+        Color bright = new Color(0.3f, 0.95f, 0.85f, 0.9f);
+        Color murk   = new Color(0.15f, 0.5f, 0.5f, 0f);
+        return EffectDef.effect()
+            .emitter(e -> e
+                .continuous(6f)
+                .followAnchor()
+                .speed(range(0.05f, 0.15f)).life(range(0.6f, 1.0f)).size(range(0.06f, 0.14f)).spread(20f)
+                .atBody()
+                .jitter(0.25f, 0.35f, 0.1f)
+                .drift(0f, 0.45f, 0f)
+                .alphaBlend()
+                .textures(assets.circleA(1))
+                .sizeOverLife(Interpolation.pow2Out, 1.6f)
+                .colorOverLife(Interpolation.linear, bright, murk))
+            .build();
     }
 }

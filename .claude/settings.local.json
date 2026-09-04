@@ -55,5 +55,9 @@
       "Bash(git *)",
       "PowerShell(.\\\\gradlew.bat core:compileJava -q)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "ai-game-developer"
+  ],
+  "enableAllProjectMcpServers": true
 }

@@ -7,5 +7,7 @@ public enum Trigger {
     ON_HEAL,
     ON_DEATH,
     ON_KILL,
-    ON_TICK
+    ON_TICK,
+    ON_MOVE,
+    ON_SKILL_RESOLVED
 }

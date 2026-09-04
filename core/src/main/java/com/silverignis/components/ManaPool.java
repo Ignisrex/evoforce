@@ -12,6 +12,7 @@ public final class ManaPool {
 
     private final ManaStats stats;
     private float current;
+    private float debt;
 
     public ManaPool(ManaStats stats) {
         this.stats = stats;
@@ -20,15 +21,33 @@ public final class ManaPool {
 
     public int   getMax()     { return stats.getMax(); }
     public float getCurrent() { return current; }
+    public float getDebt() { return debt; }
 
     public void update(float delta) {
-        current = Math.min(stats.getMax(), current + stats.getRegenPerSecond() * delta);
+        float gain = stats.getRegenPerSecond() * delta;
+        float payment = Math.min(debt, gain);
+        debt -= payment;
+        current = Math.min(stats.getMax(), current + gain - payment);
     }
 
-    /** Committing to a staged loadout costs the whole bar, whatever it held. */
-    public void drain() { current = 0f; }
+    public void commitStaged(int staged) {
+        debt += Math.max(0f, staged - current);
+        current = 0f;
+    }
 
     /** Backing out still costs — half the bar, so reading your hand and
      *  cancelling to redraw is not free. */
     public void drainHalf() { current *= 0.5f; }
+
+    /** Spend exactly {@code cost} if the bar holds it. */
+    public boolean trySpend(int cost) {
+        if (current < cost) return false;
+        current -= cost;
+        return true;
+    }
+    public void recover(int amount) {
+        float payment = Math.min(debt, amount);
+        debt -= payment;
+        current = Math.min(stats.getMax(), current + amount - payment);
+    }
 }

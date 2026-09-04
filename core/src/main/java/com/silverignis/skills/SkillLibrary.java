@@ -1,6 +1,6 @@
 package com.silverignis.skills;
 
-import com.badlogic.gdx.Gdx;
+import com.silverignis.skills.catalog.SkillCatalog;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,11 +22,9 @@ public class SkillLibrary {
     private final Map<String, Skill> byId = new HashMap<>();
     private final List<Skill> all = new ArrayList<>();
 
-    /**
-     * Load the starter pool from {@code assets/skills/skills.json}. Only
-     */
+    /** The starter pool, defined in {@link SkillCatalog}. */
     public static SkillLibrary defaults() {
-        return SkillLoader.load(Gdx.files.internal("skills/skills.json"));
+        return SkillCatalog.build();
     }
 
     public void add(Skill skill) {

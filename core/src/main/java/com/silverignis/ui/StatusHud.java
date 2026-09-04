@@ -100,18 +100,8 @@ public class StatusHud extends Group {
         return font;
     }
 
-    // ponytail: skill icons stand in for status art until dedicated icons exist
     private static String iconPath(StatusType t) {
-        return "skills/" + switch (t) {
-            case FREEZE -> "frost_trap";
-            case BURN -> "fire_blast";
-            case POISON -> "venom_bomb";
-            case STUN -> "thunder";
-            case REGEN -> "regen";
-            case SHIELD -> "shield";
-            case POWER_UP -> "power_up";
-            case MAGIC_UP -> "magic_up";
-        } + ".png";
+        return "status/icons/" + t.name().toLowerCase() + ".png";
     }
 
     public void dispose() {

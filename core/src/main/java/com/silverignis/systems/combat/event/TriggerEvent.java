@@ -11,11 +11,14 @@ import com.silverignis.systems.combat.TriggerListener;
  *   - ON_HIT_LAND / ON_KILL → the attacker
  *   - ON_DAMAGE_TAKEN(_PRE) / ON_HEAL / ON_DEATH → the target
  *   - ON_TICK → the owner of the status or aura that ticked
+ *   - ON_MOVE → the combatant that completed a voluntary step
+ *   - ON_SKILL_RESOLVED → the caster
  *
  * {@code payload} is the contextual event:
  *   - DamageEvent for ON_HIT_LAND, ON_DAMAGE_TAKEN_PRE, ON_DAMAGE_TAKEN, ON_DEATH, ON_KILL
  *   - HealEvent for ON_HEAL
- *   - null for ON_TICK
+ *   - null for ON_TICK, ON_MOVE
+ *   - the resolved Skill for ON_SKILL_RESOLVED
  *
  * Listeners cast {@code payload} to the type they expect for the trigger they
  * subscribed to. This is intentionally untyped (Object) to keep the bus small —

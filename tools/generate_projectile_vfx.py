@@ -139,9 +139,113 @@ def generate_venom_ball(out: Path, size: int) -> None:
     print(f"Wrote {out} ({size}x{size})")
 
 
+def generate_seed_ball(out: Path, size: int) -> None:
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    cx = cy = size / 2.0
+    max_r = size * 0.42
+
+    for y in range(size):
+        for x in range(size):
+            dx = x - cx
+            dy = y - cy
+
+            # Seed body — slightly egg-shaped (taller than wide).
+            body_r = math.sqrt((dx * 1.15) ** 2 + dy * dy)
+            if body_r <= max_r:
+                t = body_r / max_r
+
+                # Husk ridges: angular distortion, fewer/broader than venom's bumps.
+                angle = math.atan2(dy, dx)
+                ridge = 0.06 * math.sin(angle * 5)
+                t = min(1.0, max(0.0, t + ridge))
+
+                alpha = max(0.0, (1.0 - t) ** 1.2)
+
+                # Pale sprout-green core → leaf green → brown husk edge.
+                if t < 0.3:
+                    k = t / 0.3
+                    rr = int(190 - 80 * k)
+                    gg = int(230 - 40 * k)
+                    bb = int(140 - 60 * k)
+                elif t < 0.65:
+                    k = (t - 0.3) / 0.35
+                    rr = int(110 - 30 * k)
+                    gg = int(190 - 60 * k)
+                    bb = int(80 - 30 * k)
+                else:
+                    k = (t - 0.65) / 0.35
+                    rr = int(80 + 30 * k)
+                    gg = int(130 - 60 * k)
+                    bb = int(50 - 20 * k)
+
+                img.putpixel((x, y), (rr, gg, bb, int(255 * alpha)))
+                continue
+
+            # Trailing leaf-mote flecks above the seed (it tumbles as it flies).
+            fleck_top = cy - max_r * 1.15
+            if y < cy - max_r * 0.5 and y > fleck_top:
+                wave = math.sin(y * 0.35) * max_r * 0.25
+                if abs(x - (cx + wave)) < max_r * 0.08:
+                    ft = (cy - max_r * 0.5 - y) / (max_r * 0.65)
+                    alpha = max(0.0, (1.0 - ft)) ** 2 * 0.5
+                    img.putpixel((x, y), (140, 210, 90, int(255 * alpha)))
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out, "PNG")
+    print(f"Wrote {out} ({size}x{size})")
+
+
+def generate_void_orb(out: Path, size: int) -> None:
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    cx = cy = size / 2.0
+    max_r = size * 0.46
+
+    for y in range(size):
+        for x in range(size):
+            dx = x - cx
+            dy = y - cy
+            r = math.sqrt(dx * dx + dy * dy)
+            if r > max_r:
+                continue
+            t = r / max_r
+
+            # Swirling rim: angular distortion that tightens toward the edge.
+            angle = math.atan2(dy, dx)
+            swirl = 0.07 * math.sin(angle * 3 + t * 6)
+            t = min(1.0, max(0.0, t + swirl))
+
+            alpha = max(0.0, (1.0 - t) ** 0.8)
+
+            # Near-black core → deep violet → bright magenta rim glow.
+            if t < 0.4:
+                k = t / 0.4
+                rr = int(15 + 35 * k)
+                gg = int(5 + 10 * k)
+                bb = int(30 + 60 * k)
+            elif t < 0.75:
+                k = (t - 0.4) / 0.35
+                rr = int(50 + 110 * k)
+                gg = int(15 + 25 * k)
+                bb = int(90 + 110 * k)
+            else:
+                k = (t - 0.75) / 0.25
+                rr = int(160 + 60 * k)
+                gg = int(40 + 60 * k)
+                bb = int(200 + 40 * k)
+                alpha *= (1.0 - k * 0.5)  # rim glow feathers out
+
+            img.putpixel((x, y), (rr, gg, bb, int(255 * alpha)))
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out, "PNG")
+    print(f"Wrote {out} ({size}x{size})")
+
+
 def main() -> None:
     generate_fireball(ASSETS_DIR / "fireball.png", SIZE)
     generate_venom_ball(ASSETS_DIR / "venom_ball.png", SIZE)
+    generate_seed_ball(ASSETS_DIR / "seed_ball.png", SIZE)
+    generate_void_orb(ASSETS_DIR / "void_orb.png", SIZE)
 
 
 if __name__ == "__main__":

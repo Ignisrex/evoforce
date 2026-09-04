@@ -5,6 +5,9 @@ import com.badlogic.gdx.math.Rectangle;
 import com.silverignis.components.*;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.systems.combat.Combatant;
+import com.silverignis.systems.combat.Trigger;
+import com.silverignis.systems.combat.TriggerBus;
+import com.silverignis.systems.combat.event.TriggerEvent;
 
 /**
  * Sole owner of entity position writes. Input steps go through
@@ -19,14 +22,17 @@ import com.silverignis.systems.combat.Combatant;
 public final class MovementSystem {
 
     private final BattleState battleState;
+    private final TriggerBus triggerBus;
 
-    public MovementSystem(BattleState battleState) {
+    public MovementSystem(BattleState battleState, TriggerBus triggerBus) {
         this.battleState = battleState;
+        this.triggerBus = triggerBus;
     }
 
     public boolean tryGridStep(Combatant combatant, Direction dir) {
         if (combatant.isInputLocked()) return false;
         if (combatant.getStatusContainer().blocksMovement()) return false;
+        if (combatant.getStatusContainer().consumeMoveAttempt()) return false;
 
         GridMovement gridMovement = combatant.getGridMovement();
         GridBounds bounds = gridMovement.getBounds();
@@ -44,6 +50,7 @@ public final class MovementSystem {
         // refusable concern that can no longer affect where the body is.
         gridMovement.stepTo(newCol, newRow);
         combatant.getAnimController().enterMove();
+        triggerBus.fire(new TriggerEvent(Trigger.ON_MOVE, combatant, null));
         return true;
     }
 

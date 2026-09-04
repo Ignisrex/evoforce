@@ -17,26 +17,26 @@ import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.StatusContainer;
-import com.silverignis.systems.combat.StatusType;
+import com.silverignis.systems.combat.status.visuals.StatusFx;
 import com.silverignis.util.InputLock;
 
 import java.util.List;
 
 public class Enemy implements Combatant, SceneRenderable {
 
-    private static final Color FREEZE_TINT = new Color(0.5f, 0.7f, 1f, 1f);
-
     private final AnimController  animController;
     private final Health          health;
     private final Stats           stats;
     private final StatusContainer statusContainer;
+    private final StatusFx        statusFx;
     private final GridMovement    gridMovement;
 
     /** Visual height above the ground plane (world units). Non-zero for jumps/floats. */
     public float visualHeight = 0f;
 
     private final Caster      caster   = new Caster(Team.ENEMY);
-    private final GlyphLayout hpLayout = new GlyphLayout();
+    private final GlyphLayout hpLayout   = new GlyphLayout();
+    private final Color       spriteTint = new Color();
 
     public Enemy(int col, int row, AnimSet animSet, Stats stats) {
         this.stats  = stats;
@@ -45,6 +45,7 @@ public class Enemy implements Combatant, SceneRenderable {
             new GridPosition(col, row),
             new GridBounds(Battlefield.COLS / 2, Battlefield.COLS - 1, 0, Battlefield.ROWS - 1));
         this.statusContainer = new StatusContainer(this);
+        this.statusFx = new StatusFx(this);
         this.animController = new AnimController(animSet);
     }
 
@@ -78,10 +79,13 @@ public class Enemy implements Combatant, SceneRenderable {
     public Health          getHealth()          { return health; }
     public Stats           getStats()           { return stats; }
     public StatusContainer getStatusContainer() { return statusContainer; }
+    public StatusFx        statusFx()           { return statusFx; }
 
     /** Same shape as Player.update — deciding what this enemy does is EnemyAi's job. */
     public void update(float delta) {
-        caster.update(delta);
+        // Only the caster tick is slowed by e.g. miasma — scaling the whole
+        // delta would drag the move tween and death fade with it.
+        caster.update(delta * statusContainer.recoveryFactor());
         gridMovement.update(delta);
         animController.update(delta);
     }
@@ -108,9 +112,7 @@ public class Enemy implements Combatant, SceneRenderable {
         Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
         float pw = rc.panelWidth() * rc.tileDepthScale(getVisualRow());
         float alpha = animController.getRenderAlpha();
-        boolean frozen = statusContainer.has(StatusType.FREEZE);
-        if (frozen) rc.batch.setColor(FREEZE_TINT.r, FREEZE_TINT.g, FREEZE_TINT.b, alpha);
-        else        rc.batch.setColor(1f, 1f, 1f, alpha);
+        rc.batch.setColor(statusFx.spriteColor(spriteTint, alpha));
         rc.batch.draw(frame, p.x - pw * 0.5f, p.y + visualHeight, pw, pw);
         rc.batch.setColor(Color.WHITE);
     }

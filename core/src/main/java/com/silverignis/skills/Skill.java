@@ -4,10 +4,12 @@ import com.badlogic.gdx.graphics.Texture;
 import com.silverignis.skills.effects.Effect;
 import com.silverignis.skills.elements.Element;
 import com.silverignis.skills.visuals.SkillVisuals;
+import com.silverignis.systems.combat.Combatant;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 
 /** Gameplay definition of a skill. Its look lives in a {@code SkillVisual}
  *  registered under the same id in {@link SkillVisuals}; nothing here names a
@@ -39,6 +41,10 @@ public final class Skill {
     private final float powerScale;
     private final float magicScale;
     private final int manaCost;
+    private final int debt;
+
+    private final BiFunction<Skill, Combatant, SkillInstance> instanceFactory;
+
 
     private Skill(Builder b) {
         this.id = b.id;
@@ -53,6 +59,8 @@ public final class Skill {
         this.powerScale = b.powerScale;
         this.magicScale = b.magicScale;
         this.manaCost = b.manaCost;
+        this.debt = b.debt;
+        this.instanceFactory = b.instanceFactory;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -66,9 +74,11 @@ public final class Skill {
     public List<Effect> getEffects()     { return effects; }
     public float        getCooldown()    { return cooldown; }
     public ShapeConfig  getShapeConfig() { return shapeConfig; }
-    public float        getPowerScale() {return powerScale; }
+    public float        getPowerScale() { return powerScale; }
     public float        getMagicScale() { return magicScale; }
     public int          getManaCost()   { return manaCost; }
+    public int          getDebt()       { return debt; }
+    public BiFunction<Skill, Combatant, SkillInstance> getInstanceFactory() { return this.instanceFactory; }
 
 
     public static final class Builder {
@@ -85,6 +95,8 @@ public final class Skill {
         private float powerScale = 0f;
         private float magicScale = 0f;
         private int manaCost = 1;
+        private int debt = 0;
+        private BiFunction<Skill, Combatant, SkillInstance> instanceFactory;
 
         private Builder() {}
 
@@ -99,6 +111,8 @@ public final class Skill {
         public Builder powerScale(float v)                          { this.powerScale = v; return this; }
         public Builder magicScale(float v)                          { this.magicScale = v; return this; }
         public Builder manaCost(int v)                              { this.manaCost = v; return this; }
+        public Builder debt(int v)                                  { this.debt = v; return this; }
+        public Builder instance(BiFunction<Skill, Combatant, SkillInstance> v) {this.instanceFactory = v; return  this; }
 
         public Builder effect(Effect e)                             { this.effects.add(e); return this; }
         public Builder effects(List<Effect> e) {

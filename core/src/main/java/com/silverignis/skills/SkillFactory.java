@@ -10,6 +10,9 @@ public final class SkillFactory {
     /** No context: an instance is constructed from its definition and caster
      *  alone, and only meets the simulation when it is first ticked. */
     public static SkillInstance create(Skill skill, Combatant combatant) {
+        if (skill.getInstanceFactory() != null) {
+            return skill.getInstanceFactory().apply(skill, combatant);
+        }
         switch (skill.getShape()) {
             case STRIKE:     return new StrikeInstance(skill, combatant);
             case PROJECTILE: return isLob(skill)

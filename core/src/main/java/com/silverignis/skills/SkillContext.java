@@ -1,9 +1,11 @@
 package com.silverignis.skills;
 
+import com.silverignis.components.ManaPool;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.systems.BattleState;
 import com.silverignis.systems.CombatSystem;
 import com.silverignis.systems.MovementSystem;
+import com.silverignis.systems.SkillVars;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
 
@@ -31,17 +33,24 @@ public final class SkillContext {
     // a skill names a world point, never a screen point.
     public final ParticleEngine   particleEngine;
 
+    public final ManaPool mana;
+    public final SkillVars skillVars;
+
     public SkillContext(BattleState battleState,
                         DamageSystem damageSystem,
                         TriggerBus triggerBus,
                         MovementSystem movementSystem,
                         CombatSystem combatSystem,
-                        ParticleEngine particleEngine) {
+                        ParticleEngine particleEngine,
+                        ManaPool mana,
+                        SkillVars skillVars) {
         this.battleState    = battleState;
         this.damageSystem   = damageSystem;
         this.triggerBus     = triggerBus;
         this.movementSystem = movementSystem;
         this.combatSystem   = combatSystem;
         this.particleEngine = particleEngine;
+        this.mana = mana;
+        this.skillVars = skillVars;
     }
 }

@@ -7,6 +7,8 @@ import com.silverignis.entities.Player;
 import com.silverignis.input.GameAction;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.skills.Skill;
+import com.silverignis.skills.elements.Element;
+import com.silverignis.skills.keywords.Keywords;
 import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
@@ -34,7 +36,11 @@ public class SkillSelectState implements GameScreenState {
     private boolean exiting; // overlay is playing its exit animation; input is done
 
     private final Map<SlotKey, List<Skill>> slotsSnapshot = new EnumMap<>(SlotKey.class);
-    private final Deque<SlotKey> selectHistory = new ArrayDeque<SlotKey>();
+
+    private record Pick(SlotKey slot, int costPaid, int chillUsed) {}
+    private final Deque<Pick> selectHistory = new ArrayDeque<>();
+    private int chillUsedTotal;
+
     private int pendingCost;
 
     public SkillSelectState(GameScreen screen) {
@@ -51,9 +57,13 @@ public class SkillSelectState implements GameScreenState {
         tucked = false;
         exiting = false;
         pendingCost = 0;
+        chillUsedTotal = 0;
 
-        snapshotSlots();
         Player p = screen.playState.getPlayer();
+        // Bargain-returned cards don't survive a staging entry — expire before
+        // the snapshot so they can't be laundered back through the hand.
+        Keywords.expireBargains(screen.encounter.skillVars(), p);
+        snapshotSlots();
         hand = new ArrayList<>(p.getDeck().drawHand(HAND_SIZE, p.getSlots()));
         cursor = 0;
         overlay.onShow();
@@ -128,21 +138,24 @@ public class SkillSelectState implements GameScreenState {
 
     private void tryUndo() {
         if (zone == Zone.OPERATOR) return;
+
         SlotKey key;
-        if (zone == Zone.STACKS) {
-            key = SlotKey.values()[slotCursor];
-        } else if(!selectHistory.isEmpty()) {
-            key = selectHistory.pop();
-        }else{
-            return;
-        }
+        if (zone == Zone.STACKS) key = SlotKey.values()[slotCursor];
+        else if (!selectHistory.isEmpty()) key = selectHistory.peek().slot();
+        else return;
 
         ButtonSlot slot = screen.playState.getPlayer().getSlots().get(key);
-        Skill s = slot.pop(); // top = most recently staged
-        if (s == null) return;
-        if (!isPrepaid(s)) pendingCost -= s.getManaCost();
-        if (zone == Zone.STACKS) selectHistory.removeFirstOccurrence(key);
-        hand.add(s);
+        Skill skill = slot.pop();
+        if (skill == null) return;
+
+        Pick pick = null;
+        for (Pick p : selectHistory) if (p.slot() == key) { pick = p; break; }
+        if (pick != null) {
+            selectHistory.remove(pick);
+            pendingCost -= pick.costPaid();
+            chillUsedTotal -= pick.chillUsed();
+        }
+        hand.add(skill);
     }
 
 
@@ -220,13 +233,22 @@ public class SkillSelectState implements GameScreenState {
         ButtonSlot slot = slots.get(key);
 
         Skill picked = hand.get(cursor);
+
         int cost = isPrepaid(picked) ? 0 : picked.getManaCost();
-        if (pendingCost + cost > screen.encounter.mana().getCurrent()) return;
+        int chillUsed = 0;
+        if(picked.getElement() == Element.ICE) {
+            chillUsed = Math.clamp(
+                Keywords.chillStacks(screen.playState.getPlayer()) - chillUsedTotal, 0, cost);
+            cost -= chillUsed;
+        }
+        float shortFall = pendingCost + cost - screen.encounter.mana().getCurrent();
+        if (shortFall > picked.getDebt()) return;
 
         hand.remove(cursor);
         slot.add(picked);
-        selectHistory.push(key);
+        selectHistory.push(new Pick(key, cost, chillUsed));
         pendingCost += cost;
+        chillUsedTotal += chillUsed;
 
         if (cursor >= hand.size()) cursor = Math.max(0, hand.size() - 1);
     }
@@ -241,12 +263,13 @@ public class SkillSelectState implements GameScreenState {
     /** Committing costs the whole bar, not the staged total: mana is the budget
      *  that limits what can be staged, not a per-card price. */
     private void confirm() {
-        screen.encounter.mana().drain();
+        Keywords.consumeChill(screen.playState.getPlayer(), chillUsedTotal);
+        screen.encounter.mana().commitStaged(pendingCost);
         overlay.confirmFlourish(screen.playState.getPlayer().getSlots());
         exit();
     }
 
-    /** Play the overlay's exit animation, then hand back to PlayState. */
+    /** Play the overlay's exit animation, then hand back to PlayState.**/
     private void exit() {
         exiting = true;
         overlay.onHide(() -> screen.setState(screen.playState));

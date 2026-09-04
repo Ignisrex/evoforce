@@ -33,7 +33,10 @@ public class StatusIndicator extends Group {
     }
 
     void update(Status s) {
-        timer.setText(String.format("%.1fs", Math.max(0f, s.getRemaining())));
+        // Stacked statuses count down in stacks, not seconds.
+        timer.setText(s.stacks() > 0
+            ? "x" + s.stacks()
+            : String.format("%.1fs", Math.max(0f, s.getRemaining())));
         timer.pack();
         timer.setPosition((WIDTH - timer.getWidth()) / 2f, 0f);
     }

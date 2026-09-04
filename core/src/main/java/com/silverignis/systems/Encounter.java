@@ -9,13 +9,13 @@ import com.silverignis.entities.Player;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillInstance;
+import com.silverignis.skills.keywords.Keywords;
 import com.silverignis.skills.slots.SkillSlots;
+import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.systems.ai.EnemyAi;
 import com.silverignis.systems.combat.Combatant;
 import com.silverignis.systems.combat.DamageSystem;
 import com.silverignis.systems.combat.TriggerBus;
-import com.silverignis.systems.combat.StatusFactory;
-import com.silverignis.systems.combat.StatusType;
 import com.silverignis.traits.TraitsContainer;
 import com.silverignis.util.PanelGenerator;
 
@@ -48,6 +48,8 @@ public final class Encounter {
     private final TriggerBus triggerBus;
     private final DamageSystem damageSystem;
 
+    private final SkillVars skillVars;
+
     /**
      * Step order matters: the combatants and their systems exist first, and only
      * then do traits apply — slot capacity is recomputed absolute, and every
@@ -59,9 +61,10 @@ public final class Encounter {
         this.damageSystem   = new DamageSystem(triggerBus);
         Battlefield battlefield = new Battlefield(PanelGenerator.generateMixedPanels());
         this.battleState    = new BattleState(battlefield, player, enemies);
-        this.movementSystem = new MovementSystem(battleState);
+        this.movementSystem = new MovementSystem(battleState, triggerBus);
+        this.skillVars      = new SkillVars();
         this.combatSystem   = new CombatSystem(battleState, damageSystem, triggerBus,
-                                               movementSystem, particles);
+                                               movementSystem, particles, mana, skillVars);
 
         for (Enemy e : enemies) enemyAis.add(new EnemyAi(e));
 
@@ -70,12 +73,6 @@ public final class Encounter {
         traits.applyBattleHooks(player, triggerBus, damageSystem);
         for (Enemy e : enemies) e.getCaster().getTraits().applyBattleHooks(e, triggerBus, damageSystem);
 
-        // TEMP: seed every enemy with poison/burn/freeze to eyeball status visuals. Delete me.
-        for (Enemy e : enemies) {
-            e.getStatusContainer().apply(StatusFactory.create(StatusType.POISON, 15f, 1), triggerBus);
-            e.getStatusContainer().apply(StatusFactory.create(StatusType.BURN,   15f, 1), triggerBus);
-            e.getStatusContainer().apply(StatusFactory.create(StatusType.FREEZE, 15f, 0), triggerBus);
-        }
     }
 
     /**
@@ -106,7 +103,11 @@ public final class Encounter {
         battleState.player.update(delta);
         for (Enemy e : battleState.enemies) e.update(delta);
 
-        mana.update(delta);
+        // Miasma on the player slows the bar; enemy miasma slows their caster
+        // instead (see Enemy.update) — who a recoveryFactor bites is decided
+        // by which tick site reads it.
+        mana.update(delta * battleState.player.getStatusContainer().recoveryFactor());
+        Keywords.tickStagedTime(skillVars, battleState.player, delta);
 
         for (EnemyAi ai : enemyAis) {
             ai.update(delta, battleState, movementSystem,
@@ -143,9 +144,11 @@ public final class Encounter {
         combatSystem.cast(combatant, skill);
     }
 
-    public void loadSkill(Combatant combatant, Skill skill) {
-        combatSystem.loadSkill(combatant, skill);
+    public void loadSkill(Combatant combatant, Skill skill, SlotKey from) {
+        combatSystem.loadSkill(combatant, skill, from);
     }
+
+    public SkillVars skillVars() { return this.skillVars; }
 
     public void releaseLoadedSkills(Combatant combatant) {
         combatSystem.resolveLoadedSkills(combatant);

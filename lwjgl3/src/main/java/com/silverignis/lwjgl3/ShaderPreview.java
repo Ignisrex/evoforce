@@ -51,8 +51,8 @@ public final class ShaderPreview extends ApplicationAdapter {
         batch.begin();
         batch.setShader(shader);
         shader.setUniformf("u_time", time);
-        shader.setUniformf("u_dir", 1f);
-        shader.setUniformf("u_tint", 1f, 1f, 1f);
+        if (shader.hasUniform("u_dir")) shader.setUniformf("u_dir", 1f);
+        if (shader.hasUniform("u_tint")) shader.setUniformf("u_tint", 1f, 1f, 1f);
         if (shader.hasUniform("u_alpha")) shader.setUniformf("u_alpha", 1f);
         batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_ALPHA);
         batch.draw(pixel, cx - w * 0.5f, cy - h * 0.5f, w, h);

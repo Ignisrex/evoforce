@@ -231,7 +231,7 @@ public class PlayState implements GameScreenState {
         Skill skill = slot.pop();
 
         if (input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
-            encounter.loadSkill(player, skill);
+            encounter.loadSkill(player, skill, key);
         } else {
             encounter.cast(player, skill);
         }

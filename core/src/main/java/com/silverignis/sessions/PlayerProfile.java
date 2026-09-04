@@ -22,7 +22,8 @@ public class PlayerProfile {
         this.caster = new Caster(Team.PLAYER);
 
         caster.setBasicAttack(library.get("wind_slash"));
-        for (String id : List.of("wind_strike", "fire_blast", "heal", "ice_beam", "shield", "electro_ball")) {
+        // TEMP session 6 testing: void_collapse + miasma_beam + seed_bomb in the starting deck
+        for (String id : List.of("wind_strike", "fire_blast", "heal", "ice_beam", "shield", "electro_ball", "void_collapse", "miasma_beam", "seed_bomb")) {
             caster.getDeck().add(library.get(id));
         }
 

@@ -3,6 +3,7 @@ package com.silverignis.components;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.SkillDeck;
 import com.silverignis.skills.slots.SkillSlots;
+import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.traits.TraitsContainer;
 import com.silverignis.util.InputLock;
 
@@ -32,8 +33,11 @@ public class Caster {
     private final SkillSlots slots     = new SkillSlots();
     private final InputLock  inputLock = new InputLock();
 
-    private final List<Skill> loadedSkills = new ArrayList<>();
     private Skill basicAttack;
+
+    public record LoadedSkill(Skill skill, SlotKey from) { }
+
+    private final List<LoadedSkill> loadedSkills = new ArrayList<>();
 
     private final TraitsContainer traits = new TraitsContainer();
 
@@ -55,16 +59,16 @@ public class Caster {
         deck.update(delta);
     }
 
-    public void loadSkill(Skill skill) {
-        this.loadedSkills.add(skill);
+    public void loadSkill(Skill skill, SlotKey from) {
+        this.loadedSkills.add(new LoadedSkill(skill, from));
     }
 
     public boolean areSkillsLoaded(){
         return !this.loadedSkills.isEmpty();
     }
 
-    public List<Skill> releaseLoadedSkills() {
-        List<Skill> drained = new ArrayList<>(this.loadedSkills);
+    public List<LoadedSkill> releaseLoadedSkills() {
+        List<LoadedSkill> drained = new ArrayList<>(this.loadedSkills);
         this.loadedSkills.clear();
         return drained;
     }

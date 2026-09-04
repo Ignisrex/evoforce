@@ -57,6 +57,7 @@ public abstract class SkillInstance implements SceneRenderable {
     //cached for end state
     private ParticleEngine engine;
     protected float panelBoost = 1f;
+    protected CastInfo castInfo = CastInfo.DIRECT;
 
     protected SkillInstance(Skill def, Combatant combatant) {
         this.def       = def;
@@ -203,4 +204,6 @@ public abstract class SkillInstance implements SceneRenderable {
     }
 
     public void setPanelBoost(float v) { panelBoost = v; }
+
+    public void setCastInfo(CastInfo v) { castInfo = v; }
 }

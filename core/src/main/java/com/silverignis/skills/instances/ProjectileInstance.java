@@ -32,7 +32,8 @@ public class ProjectileInstance extends SkillInstance {
      *  at sprite height, not on the ground. */
     private static final float FLIGHT_HEIGHT = 0.45f;
 
-    private final int   row;
+    private final int   row;       // base of the covered span
+    private final int   rowSpan;
     private final int   dir;       // +1 = player (rightward); -1 = enemy (leftward)
     private final float colsPerSecond;
 
@@ -41,13 +42,16 @@ public class ProjectileInstance extends SkillInstance {
 
     public ProjectileInstance(Skill def, Combatant combatant) {
         super(def, combatant);
-        this.row = originRow;
         this.dir = visualState.dir;
 
         ProjectileConfig config = def.getShapeConfig() instanceof ProjectileConfig
                 ? (ProjectileConfig) def.getShapeConfig()
                 : ProjectileConfig.straight(DEFAULT_SPEED);
         this.colsPerSecond = config.getSpeed() / LEGACY_PANEL_WIDTH;
+        // A wide projectile keeps its whole span on the grid: cast from the
+        // last row it covers upward from there instead.
+        this.rowSpan = config.getRowSpan();
+        this.row = Math.min(originRow, Battlefield.ROWS - rowSpan);
 
         // Spawns one tile ahead of the caster so it clears their own sprite.
         this.colPos = originCol + dir;
@@ -74,15 +78,22 @@ public class ProjectileInstance extends SkillInstance {
         int col = currentCol();
         if (col < 0 || col >= Battlefield.COLS) return;
 
-        Combatant target = ctx.battleState.combatantAt(col, row);
-        if (target == null || target.getTeam() == combatant.getTeam()) return;
-        fireImpact(visualState.bodyPos.x, visualState.bodyPos.y, visualState.bodyPos.z, ctx);
-        applyEffectsTo(target, ctx);
-        finish();
+        // A wide projectile detonates on the first column with any opposing
+        // body in its span, hitting everyone it covers there.
+        boolean hit = false;
+        for (int r = row; r < row + rowSpan; r++) {
+            Combatant target = ctx.battleState.combatantAt(col, r);
+            if (target == null || target.getTeam() == combatant.getTeam()) continue;
+            if (!hit) fireImpact(visualState.bodyPos.x, visualState.bodyPos.y, visualState.bodyPos.z, ctx);
+            hit = true;
+            applyEffectsTo(target, ctx);
+        }
+        if (hit) finish();
     }
 
     private void writeBodyPos() {
-        visualState.bodyPos.set(Battlefield.floorX(colPos), FLIGHT_HEIGHT, Battlefield.floorZ(row));
+        float z = (Battlefield.floorZ(row) + Battlefield.floorZ(row + rowSpan - 1)) * 0.5f;
+        visualState.bodyPos.set(Battlefield.floorX(colPos), FLIGHT_HEIGHT, z);
     }
 
 
@@ -92,9 +103,12 @@ public class ProjectileInstance extends SkillInstance {
     @Override
     public void coveredTiles(TileSink sink) {
         int col = currentCol();
-        if (col >= 0 && col < Battlefield.COLS) sink.tile(col, row);
+        if (col < 0 || col >= Battlefield.COLS) return;
+        for (int r = row; r < row + rowSpan; r++) sink.tile(col, r);
     }
 
+    // ponytail: clash matching compares this single row, so a wide projectile
+    // only clashes against projectiles in its base row.
     public int   getRow()    { return row; }
     public float getColPos() { return colPos; }
 }

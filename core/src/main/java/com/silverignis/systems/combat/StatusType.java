@@ -8,7 +8,16 @@ public enum StatusType {
     REGEN(true),
     SHIELD(true),
     POWER_UP(true),
-    MAGIC_UP(true);
+    MAGIC_UP(true),
+    COMBUSTION(false),
+    FROSTBITE(false),
+    VENOM(false),
+    CONDUCTIVE(false),
+    GRAVITY(false),
+    METABOLIZE(true),
+    CHILL(true),
+    MIASMA(false),
+    SAP(false);
 
     private final boolean beneficial;
 
