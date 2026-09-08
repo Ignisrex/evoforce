@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -23,6 +24,8 @@ import com.silverignis.ui.CelestialVeil;
 import com.silverignis.ui.RewardCardStyle;
 import com.silverignis.ui.TraceBorder;
 import com.silverignis.ui.UiUtil;
+import com.silverignis.ui.WorldTextLabel;
+import com.silverignis.glossary.Glossary;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +53,10 @@ public class RewardScreen implements Screen {
     private final ParticleEngine particles = new ParticleEngine();
     private final RenderContext particleCtx;
     private final List<Table> frames = new ArrayList<>();
+    /** Glossary cards for the selected option: a column beside its frame, on the
+     *  right unless that would leave the screen, then on the left. */
+    private final Group glossColumn = new Group();
+    private static final float GLOSS_W = 2.8f, GLOSS_GAP = 0.15f, GLOSS_EDGE = 0.2f;
     private EmitterHandle ambient, selectWisps;
     private final List<EmitterHandle> cardWisps = new ArrayList<>();
 
@@ -94,6 +101,8 @@ public class RewardScreen implements Screen {
         root.add(new Label("< / >  select    confirm  take    cancel  skip", style.small)).padTop(0.3f);
 
         stage.addActor(new ParticleLayer());
+        glossColumn.clearChildren();
+        stage.addActor(glossColumn);
         root.validate();
         for (Table frame : frames) frame.setOrigin(frame.getWidth() / 2f, frame.getHeight() / 2f);
 
@@ -183,6 +192,30 @@ public class RewardScreen implements Screen {
                 Actions.scaleTo(1.05f, 1.05f, 0.06f, Interpolation.pow2Out),
                 Actions.scaleTo(1f, 1f, 0.09f, Interpolation.pow2In)));
         }
+
+        buildGlossary(frame, offers.get(offerIndex).options.get(selected).description());
+    }
+
+    private void buildGlossary(Table frame, String plain) {
+        glossColumn.clearChildren();
+        Vector2 origin = frame.localToStageCoordinates(new Vector2(0f, 0f));
+        float x = origin.x + frame.getWidth() + GLOSS_GAP;
+        if (x + GLOSS_W > game.viewport.getWorldWidth() - GLOSS_EDGE) x = origin.x - GLOSS_GAP - GLOSS_W;
+        float top = origin.y + frame.getHeight();
+        for (Glossary.Term term : Glossary.termsIn(plain)) {
+            Table card = UiUtil.newTable();
+            card.setBackground(style.glossBg);
+            card.pad(0.15f).top();
+            card.add(new Label(term.name().toUpperCase(), style.small)).left().growX().row();
+            card.add(new WorldTextLabel(Glossary.markup(term.definition()), style.bodyMarkup, style.body.fontColor))
+                .growX().padTop(0.05f);
+            card.setWidth(GLOSS_W);
+            card.validate();
+            float h = card.getPrefHeight();
+            card.setBounds(x, top - h, GLOSS_W, h);
+            glossColumn.addActor(card);
+            top -= h + GLOSS_GAP;
+        }
     }
 
     private void revealBurst(Table frame, RewardOption option) {
@@ -255,6 +288,7 @@ public class RewardScreen implements Screen {
 
     private void exitOffer(boolean claimed) {
         exiting = true;
+        glossColumn.clearChildren();
         if (selectWisps != null) {
             selectWisps.stop();
             selectWisps = null;

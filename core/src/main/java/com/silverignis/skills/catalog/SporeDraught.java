@@ -16,7 +16,7 @@ public final class SporeDraught extends AuraInstance {
         return Skill.builder()
             .id("spore_draught")
             .displayName("Spore Draught")
-            .description("Inhale a bloom of digestive spores.\nMetabolize 6: recover 1 Mana per second while stacks last.")
+            .description("Inhale a bloom of digestive spores.\nMetabolize 6.")
             .icon(SkillCatalog.icon("skills/spore_draught.png"))
             .shape(Skill.Shape.AURA)
             .element(Element.POISON)

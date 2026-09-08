@@ -24,7 +24,7 @@ public final class VoltLance extends ProjectileInstance {
         return Skill.builder()
             .id("volt_lance")
             .displayName("Volt Lance")
-            .description("Hurl a crackling spear down the row.\nOvercharge 6s: a brimming lance stuns and electrifies the ground.")
+            .description("Hurl a crackling spear down the row.\nOvercharge 6s: the lance applies Stun and electrifies the ground.")
             .icon(SkillCatalog.icon("skills/volt_lance.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.LIGHTNING)

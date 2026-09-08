@@ -13,7 +13,7 @@ public final class MiasmaBeam {
         return Skill.builder()
             .id("miasma_beam")
             .displayName("Miasma Beam")
-            .description("A ray of creeping rot.\nMiasma: slows the target's recovery — mana regen, or an enemy's cooldowns.")
+            .description("A ray of creeping rot.\nApplies Miasma.")
             .icon(SkillCatalog.icon("skills/miasma_beam.png"))
             .shape(Skill.Shape.BEAM)
             .element(Element.DARK)

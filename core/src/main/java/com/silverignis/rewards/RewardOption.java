@@ -9,6 +9,9 @@ public interface RewardOption {
 
     Table buildContents(RewardCardStyle style);
 
+    /** Plain description text; the glossary scans and styles it. */
+    String description();
+
     void apply(GameSession session);
 
     Color accent();

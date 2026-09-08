@@ -21,7 +21,7 @@ public final class IceBeam extends BeamInstance {
         return Skill.builder()
             .id("ice_beam")
             .displayName("Ice Beam")
-            .description("Fire a freezing beam across the row.\nChill 1: banks a stack that discounts the next staged ice card.")
+            .description("Fire a freezing beam across the row.\nChill 1.")
             .icon(SkillCatalog.icon("skills/ice_beam.png"))
             .shape(Skill.Shape.BEAM)
             .element(Element.ICE)

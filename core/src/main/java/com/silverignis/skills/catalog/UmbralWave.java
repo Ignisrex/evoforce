@@ -19,7 +19,7 @@ public final class UmbralWave extends ProjectileInstance {
         return Skill.builder()
             .id("umbral_wave")
             .displayName("Umbral Wave")
-            .description("Sweep a crescent of living shadow down the row.\nBargain 2: resolved from a sequence, it slinks back into its slot.")
+            .description("Sweep a crescent of living shadow down the row.\nBargain 2.")
             .icon(SkillCatalog.icon("skills/umbral_wave.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.DARK)

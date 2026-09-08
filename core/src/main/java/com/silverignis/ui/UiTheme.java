@@ -26,6 +26,7 @@ final class UiTheme {
     static final Color CARD      = rgba(0x26, 0x2a, 0x31, 0.90f);
     static final Color CARD_HI   = rgb(0x31, 0x35, 0x3c);
     static final Color SURF_LOW  = rgba(0x0a, 0x0e, 0x14, 0.85f);
+    static final Color GLOSS     = rgba(0x12, 0x16, 0x1c, 0.97f); // glossary modals: near-opaque so text reads over anything
     static final Color STATBOX   = rgba(0x1c, 0x20, 0x26, 0.9f);
     static final Color DIM       = rgba(0x00, 0x00, 0x00, 0.45f);
 

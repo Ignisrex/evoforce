@@ -22,7 +22,7 @@ public final class VerdantFang extends StrikeInstance {
         return Skill.builder()
             .id("verdant_fang")
             .displayName("Verdant Fang")
-            .description("Lunge and bite with thorned fangs.\nCultivate 3: fully grown fangs sap life from every hit.")
+            .description("Lunge and bite with thorned fangs.\nCultivate 3: grown fangs heal you on every hit.")
             .icon(SkillCatalog.icon("skills/verdant_fang.png"))
             .shape(Skill.Shape.STRIKE)
             .element(Element.NATURE)

@@ -9,6 +9,8 @@ import com.silverignis.sessions.GameSession;
 import com.silverignis.traits.Trait;
 import com.silverignis.ui.RewardCardStyle;
 import com.silverignis.ui.UiUtil;
+import com.silverignis.ui.WorldTextLabel;
+import com.silverignis.glossary.Glossary;
 
 public class TraitRewardOption implements RewardOption {
 
@@ -25,13 +27,14 @@ public class TraitRewardOption implements RewardOption {
         card.add(new Label(trait.getDisplayName(), style.title)).padBottom(0.05f).row();
         card.add(new Label("TRAIT . PASSIVE", style.small)).padBottom(0.12f).row();
 
-        Label desc = new Label(trait.getDescription(), style.body);
-        desc.setWrap(true);
+        WorldTextLabel desc = new WorldTextLabel(Glossary.markup(description()), style.bodyMarkup, style.body.fontColor);
         desc.setAlignment(Align.center);
         card.add(desc).growX().top();
 
         return card;
     }
+
+    public String description() { return trait.getDescription(); }
 
     public void apply(GameSession session) {
         session.playerProfile.getCaster().getTraits().add(trait);

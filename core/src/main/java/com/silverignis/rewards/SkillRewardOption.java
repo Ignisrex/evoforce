@@ -10,6 +10,8 @@ import com.silverignis.sessions.GameSession;
 import com.silverignis.skills.Skill;
 import com.silverignis.ui.RewardCardStyle;
 import com.silverignis.ui.UiUtil;
+import com.silverignis.ui.WorldTextLabel;
+import com.silverignis.glossary.Glossary;
 
 public class SkillRewardOption implements RewardOption{
 
@@ -28,13 +30,14 @@ public class SkillRewardOption implements RewardOption{
             + " . " + (int) skill.getCooldown() + "s CD . " + skill.getManaCost() + " MP";
         card.add(new Label(sub, style.small)).padBottom(0.12f).row();
 
-        Label desc = new Label(skill.getDescription(), style.body);
-        desc.setWrap(true);
+        WorldTextLabel desc = new WorldTextLabel(Glossary.markup(description()), style.bodyMarkup, style.body.fontColor);
         desc.setAlignment(Align.center);
         card.add(desc).growX().top();
 
         return card;
     }
+
+    public String description() { return skill.getDescription(); }
 
     public void apply(GameSession session) {
         session.playerProfile.getCaster().getDeck().add(skill);

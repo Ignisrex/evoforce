@@ -20,7 +20,7 @@ public final class SeedBomb extends LobInstance {
         return Skill.builder()
             .id("seed_bomb")
             .displayName("Seed Bomb")
-            .description("Lob a leeching seed.\nSap: drains the victim to mend the thrower.")
+            .description("Lob a leeching seed.\nDirect hits apply Sap.")
             .icon(SkillCatalog.icon("skills/seed_bomb.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.NATURE)

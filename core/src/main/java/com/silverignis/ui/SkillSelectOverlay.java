@@ -34,10 +34,13 @@ import com.silverignis.skills.slots.ButtonSlot;
 import com.silverignis.skills.slots.SkillSlots;
 import com.silverignis.skills.slots.SlotKey;
 import com.silverignis.traits.Trait;
+import com.github.tommyettinger.textra.Font;
+import com.silverignis.glossary.Glossary;
 
 import java.util.List;
 
 import static com.silverignis.ui.UiUtil.genFont;
+import static com.silverignis.ui.UiUtil.markupFont;
 import static com.silverignis.ui.UiUtil.newTable;
 
 /**
@@ -88,12 +91,17 @@ public class SkillSelectOverlay {
     private static final float OPERATOR_PAD = 0.20f; // tighter than PANEL_PAD so the avatar fills the strip
     private static final float DETAIL_X = 0.30f, DETAIL_Y = 1.95f, DETAIL_W = 3.55f, DETAIL_H = 5.05f;
     private static final float DETAIL_IMAGE_H = 1.7f;
+    // Glossary side cards: a column right of the detail panel (clear of the trait tray's edge at 4.05).
+    private static final float GLOSS_X = 4.20f, GLOSS_W = 2.8f, GLOSS_TOP = DETAIL_Y + DETAIL_H;
+    private static final float GLOSS_PAD = PANEL_PAD * 0.6f;
     private static final float STAT_BOX_H = 0.72f, STAT_BOX_GAP = 0.15f;
-    private static final float STACKS_CENTER_X = 14.55f, STACKS_Y = 5.0f, SLOT_SIZE = 0.66f;
+    private static final float STACKS_CENTER_X = 10.0f, STACKS_Y = 5.0f, SLOT_SIZE = 1.0f;
+    private static final float STACK_STEP = 0.85f;  // fraction of SLOT_SIZE each deeper card peeks below
     private static final float CARD_ICON_INSET = 0.16f; // fraction of SLOT_SIZE
     private static final float TRAY_Y = 0.28f, TRAY_H = 1.62f;
     private static final float TRAY_CENTER_X = 8.0f, TRAY_CHIP_W = 1.05f, TRAY_MAX_W = 9.6f;
     private static final float TAB_X = 15.55f, TAB_Y = 3.9f, TAB_W = 0.45f, TAB_H = 1.2f;
+    private static final float HINT_CHIP = 0.42f, HINT_W = 1.85f, HINT_H = 0.70f; // RB / VIEW FIELD panel
     private static final float TRAIT_CHIP = 0.66f;  // match SLOT_SIZE
     private static final int   TRAIT_COLS = 4;      // 4 chips fit OPERATOR_W's interior
     private static final float TRAIT_TIP_H = 1.35f;
@@ -118,7 +126,9 @@ public class SkillSelectOverlay {
 
     private final BitmapFont titleFont, bodyFont, statFont, labelFont, tinyFont;
     private final Label.LabelStyle titleStyle, bodyStyle, statStyle, labelStyle, tinyStyle;
-    private final BezelDrawable glassBg, statBoxBg, avatarBg;
+    // Markup-capable views of bodyFont/tinyFont (shared textures; only the BitmapFonts are disposed).
+    private final Font bodyMarkup, tinyMarkup;
+    private final BezelDrawable glassBg, glossBg, statBoxBg, avatarBg;
 
     // Menu particles: screen-space engine drawn between the panels and the cursor.
     private final ParticleEngine particles = new ParticleEngine();
@@ -155,6 +165,8 @@ public class SkillSelectOverlay {
         labelFont = genFont(monoMed,  16, worldScale);
         tinyFont  = genFont(monoBold, 16, worldScale);
         grotesk.dispose(); monoBold.dispose(); monoMed.dispose();
+        bodyMarkup = markupFont(bodyFont);
+        tinyMarkup = markupFont(tinyFont);
 
         titleStyle = new Label.LabelStyle(titleFont, Color.WHITE);
         bodyStyle  = new Label.LabelStyle(bodyFont,  Color.WHITE);
@@ -163,6 +175,8 @@ public class SkillSelectOverlay {
         tinyStyle  = new Label.LabelStyle(tinyFont,  Color.WHITE);
 
         glassBg   = new BezelDrawable(roundedRect, PANEL, CYAN_45, BORDER, CORNER_RADIUS,
+                                      withA(CYAN, 0.35f), GLOW_WIDTH);
+        glossBg   = new BezelDrawable(roundedRect, UiTheme.GLOSS, CYAN_45, BORDER, CORNER_RADIUS,
                                       withA(CYAN, 0.35f), GLOW_WIDTH);
         statBoxBg = new BezelDrawable(roundedRect, STATBOX, OUTLINE_V, BORDER_THIN, CORNER_RADIUS);
         avatarBg  = new BezelDrawable(roundedRect, CARD_HI, CYAN_HI, BORDER, CORNER_RADIUS);
@@ -256,7 +270,12 @@ public class SkillSelectOverlay {
         rect(hud, 0f, 0f, viewport.getWorldWidth(), viewport.getWorldHeight()).fill(DIM);
         buildOperator(slots, mana, manaMax, traits.size(), operatorFocused, traitTrayOpen);
         buildDetail(highlighted, detailFocused);
+        Trait focusedTrait = traitTrayOpen && !traits.isEmpty()
+            ? traits.get(Math.clamp(traitCursor, 0, traits.size() - 1)) : null;
+        if (focusedTrait != null) buildGlossary(focusedTrait.getDescription());
+        else if (highlighted != null) buildGlossary(highlighted.getDescription());
         buildStacks(slots, inSlots, slotCursor);
+        buildTuckHint();
         buildTray(hand, handCursor, inSlots || detailFocused || operatorFocused);
         if (traitTrayOpen) buildTraitTray(traits, traitCursor);
         updateCursor();
@@ -311,9 +330,7 @@ public class SkillSelectOverlay {
 
         panel.add(divider()).growX().height(BORDER_THIN).padTop(0.10f).row();
 
-        Label description = label(bodyStyle, s.getDescription(), TEXT);
-        description.setWrap(true);
-        description.setAlignment(Align.topLeft);
+        WorldTextLabel description = markupLabel(Glossary.markup(s.getDescription()), bodyMarkup);
         panel.add(description).grow().padTop(0.10f).row();
 
         Table stats = newTable();
@@ -386,7 +403,7 @@ public class SkillSelectOverlay {
             // deepest-first so the front card sits on top.
             float iconInset = SLOT_SIZE * CARD_ICON_INSET;
             for (int depth = stacked.size() - 1; depth >= 1; depth--) {
-                float stackY = -depth * 0.56f;
+                float stackY = -depth * SLOT_SIZE * STACK_STEP;
                 rect(card, 0f, stackY, SLOT_SIZE, SLOT_SIZE).fill(CARD_70).border(OUTLINE_V_60, BORDER).radius(CORNER_RADIUS);
                 Skill back = stacked.get(depth);
                 if (back.getIcon() != null) {
@@ -469,6 +486,19 @@ public class SkillSelectOverlay {
         rect(chip, 0.1f, 0.1f, w - 0.2f, 0.06f).fill(CARD_HI);
     }
 
+    /** Small glass panel on the right, level with the tuck tab: RB chip + caption. */
+    private void buildTuckHint() {
+        float x = viewport.getWorldWidth() - OPERATOR_X - HINT_W;   // same edge margin as the left panels
+        float y = TAB_Y + TAB_H / 2f - HINT_H / 2f;
+        Table panel = glassPanel(x, y, HINT_W, HINT_H, (HINT_H - HINT_CHIP) / 2f);
+
+        Group chip = new Group();
+        rect(chip, 0f, 0f, HINT_CHIP, HINT_CHIP).fill(SURF_LOW).border(GOLD, BORDER).radius(CORNER_RADIUS);
+        placeLabel(chip, tinyStyle, "RB", GOLD, HINT_CHIP / 2f, HINT_CHIP - 0.09f, Align.center);
+        panel.add(chip).size(HINT_CHIP);
+        panel.add(label(labelStyle, "VIEW FIELD", TEXT_DIM)).padLeft(0.16f).expandX().left();
+    }
+
     /** Trait tray modal: chip grid + tooltip under the operator panel; draws over the detail panel. */
     private void buildTraitTray(List<Trait> traits, int cursor) {
         float panelTop = OPERATOR_TOP - OPERATOR_H - GAP;
@@ -502,10 +532,31 @@ public class SkillSelectOverlay {
         Table tip = glassPanel(OPERATOR_X, y - GAP - TRAIT_TIP_H, OPERATOR_W, TRAIT_TIP_H, PANEL_PAD * 0.6f);
         tip.top();
         tip.add(label(labelStyle, sel.getDisplayName().toUpperCase(), CYAN)).left().growX().row();
-        Label desc = label(tinyStyle, sel.getDescription(), TEXT);
-        desc.setWrap(true);
-        desc.setAlignment(Align.topLeft);
-        tip.add(desc).grow().padTop(0.06f);
+        tip.add(markupLabel(Glossary.markup(sel.getDescription()), tinyMarkup)).grow().padTop(0.06f);
+    }
+
+    /** One glass card per glossary term in {@code plain}, stacked down from the
+     *  detail panel's top; stops before the tray. Rebuilt each frame like the rest. */
+    private void buildGlossary(String plain) {
+        float top = GLOSS_TOP;
+        for (Glossary.Term term : Glossary.termsIn(plain)) {
+            Table card = glassPanel(GLOSS_X, 0f, GLOSS_W, 0f, GLOSS_PAD);
+            card.setBackground(glossBg);
+            card.top();
+            card.add(label(labelStyle, term.name().toUpperCase(), GOLD)).left().growX().row();
+            card.add(markupLabel(Glossary.markup(term.definition()), tinyMarkup)).growX().padTop(0.06f);
+            card.validate();
+            float h = card.getPrefHeight();
+            if (top - h < DETAIL_Y) { card.remove(); break; }
+            card.setBounds(GLOSS_X, top - h, GLOSS_W, h);
+            top -= h + GAP;
+        }
+    }
+
+    private WorldTextLabel markupLabel(String markup, Font font) {
+        WorldTextLabel l = new WorldTextLabel(markup, font, TEXT);
+        l.setAlignment(Align.topLeft);
+        return l;
     }
 
     private void updateCursor() {

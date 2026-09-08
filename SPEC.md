@@ -6,6 +6,7 @@ Combat is real-time. There is no turn timer; the staging menu can be opened at a
 - **Language:** Java 25
 - **Framework:** libGDX 1.14.0 (uses 2D `SpriteBatch` for entities/skills and 3D `g3d.ModelBatch`+`Environment` for the cave background)
 - **Post-FX:** `gdx-vfx` 0.5.4 (`VfxManager` + `BloomEffect`)
+- **Rich text:** TextraTypist 2.2.14 (+ `regexodus`) for description text only — the 2.2.x line is the last built against libGDX 1.14.0 (2.3.x wants 1.14.1, 2.4.x wants 1.14.2). Its `Font` wraps the existing FreeType `BitmapFont`s (shares their textures; only the BitmapFonts are disposed).
 - **Desktop backend:** LWJGL3 3.4.1
 - **Build tool:** Gradle (wrapper included)
 - **Asset tooling:** Python 3 scripts (Pillow)
@@ -72,8 +73,10 @@ evoforce/
 │       │   ├── SceneRenderable.java    # depth() / layer() / render(RenderContext) interface
 │       │   ├── RenderLayer.java        # GROUND, BILLBOARD, OVERLAY
 │       │   └── RenderContext.java      # batch + font + GameEnvironment bundle
+│       ├── glossary/
+│       │   └── Glossary.java           # game-term table (keywords, statuses, …): markup(text) styles terms in place, termsIn(text) lists them for side cards; libGDX-free, has an assert self-check main()
 │       ├── rewards/                    # post-battle reward domain
-│       │   ├── RewardOption.java       # interface: buildContents(RewardCardStyle) + apply(GameSession)
+│       │   ├── RewardOption.java       # interface: buildContents(RewardCardStyle) + description() + apply(GameSession)
 │       │   ├── RewardOffer.java        # titled set of same-type options; skillOffer()/traitOffer() factories
 │       │   ├── SkillRewardOption.java  # skill card (icon/name/stats/description); apply adds to deck
 │       │   └── TraitRewardOption.java  # trait card (icon/name/description, gold accent); apply adds to the caster's traits
@@ -139,6 +142,7 @@ evoforce/
 │       │   ├── LoadedHud.java          # hold-to-load burst column (loaded queue + armed glow)
 │       │   ├── ManaBarHud.java
 │       │   ├── RewardCardStyle.java    # style kit handed to RewardOptions (fonts, card bezels)
+│       │   ├── WorldTextLabel.java     # TypingLabel for the world-unit stage: wraps 1 unit early (TextraTypist's pixel slack), static by construction
 │       │   ├── SkillSelectOverlay.java
 │       │   ├── SlotsHud.java
 │       │   ├── StatusHud.java / StatusIndicator.java  # player status tray + per-status icon/timer
@@ -170,7 +174,8 @@ The deliberate import direction, top to bottom:
 ```
 Main                    →  screens, sessions, assets, registry, environment, particles, render
 screens, screens.state  →  systems, systems.combat, environment, entities, components, sessions, ui, skills, input, registry, rewards, traits, particles, render, util
-rewards                 →  skills, traits, sessions, ui, components, particles  (options wrap Skills/Traits, apply() mutates the GameSession, cards build on the ui style kit)
+rewards                 →  skills, traits, sessions, ui, glossary, components, particles  (options wrap Skills/Traits, apply() mutates the GameSession, cards build on the ui style kit)
+ui                      →  glossary                          (description labels + side cards; glossary imports nothing)
 assets                  →  registry, components, animation  (GameAssets slices monster strips into AnimSets)
 registry                →  assets, components, animation    (MonsterRegistry fetches from GameAssets; Monster declares AnimSheets)
 ui                      →  skills (+effects/elements/slots), entities, traits, assets, components, particles, render, systems.combat
@@ -464,6 +469,7 @@ The `components/` package is for ECS-style role components — entities compose 
 - **`LifeBarHud`** — horizontal player HP bar, top row of the top-left cluster table. Fill ratio is `player.getHp() / player.getMaxHp()`; tint shifts green → yellow → red as HP drops (functional colors, deliberately outside `UiTheme`). Scene2D `Group` on the HUD stage; persistent bezels, `refresh(Player)` updates the fill.
 - **`FpsHud`** — top-right frame-rate readout. Samples `Gdx.graphics.getFramesPerSecond()` every 0.25s (so the text doesn't flicker each frame).
 - **`SkillSelectOverlay`** — card hand renderer used by `SkillSelectState`. `trayLayout(handSize)` squeezes chip width to fit the tray for any hand size (currently 6). Also owns the show/hide animations `SkillSelectState` drives (`confirmFlourish`, `onHide(callback)`) and the tuck mode's hidden presentation. The operator panel shows a gold `TRAITS n` count next to `SLOTS x/y`, and `buildTraitTray` renders the trait viewer modal when open: a glass panel of icon chips (4 per row, `SLOT_SIZE`-sized) under the operator panel with a name+description tooltip beneath, drawn last so it overlays the detail panel; the shared gliding gold cursor targets the focused panel/chip. Trait icons are `TraitLibrary`-owned (borrowed).
+- **Glossary side cards + description markup.** `glossary/Glossary` is a plain term table — name, definition, and the TextraTypist markup that opens the term (default gold; no faux bold — 2.2.14 hardcodes its offset in unscaled units, which is a full world unit here, and the body fonts are the Bold TTF already; every span closes with `[ ]`, the full reset, which also ends any `{EFFECT}` a per-term override opens). It is deliberately **not** tied to `skills/keywords/Keywords`: keywords, statuses, shapes and whatever the user defines next are all just terms, matched whole-word and case-insensitively in any description (an optional trailing number rides along, so "Surge 3" is one span). Catalog descriptions stay plain strings and keep only the skill's own payload ("Surge 3: the bolt calls down a second strike."); the generic meaning lives in the glossary. Two consumers: `SkillSelectOverlay.buildGlossary` stacks one glass card per `termsIn(text)` in a column right of the detail panel (x 4.2, width 2.8, top-aligned with the panel, stops before the tray; with the trait tray open it describes the focused trait instead), and `RewardScreen.buildGlossary` (from every `applySelection`) stacks the same cards in a `Group` beside the selected frame — right of it by default, flipped to its left when the column would leave the screen — drawn above the card row, so a middle card's column overlaps its neighbour rather than moving anything. Description labels (detail panel, trait tooltip, reward cards, glossary cards) are `ui/WorldTextLabel`s — a `TypingLabel` subclass whose `layout()` wraps one unit early, because 2.2.14's `regenerateLayout` lets a line overrun its target by a hardcoded 1 (a pixel in its world, a whole unit on the 16×9 stage); built via `UiUtil.markupFont(BitmapFont)` fonts, wrapped and `skipToTheEnd()` by construction: static today, but `{EFFECT}` tokens are only parsed by `TypingLabel`, so switching one term's `open` to `{WAVE}[#ffd81d]` animates it everywhere. Caveat for that day: the overlay rebuilds its actor tree every frame, so an animated description label must be cached per highlighted skill or the effect restarts at t=0 each frame. Titles, stats and hints stay plain `Label`s.
 - **`UiUtil`** — shared world-unit-stage helpers, split out of `SkillSelectOverlay`: `newTable()` (a `Table` with `setRound(false)` — Tables round child geometry to whole units by default, which mangles the 16×9 stage; every table must come from here) and `genFont(generator, px, worldScale)` (FreeType font generated at pixel size, `setUseIntegerPositions(false)`, scaled to world units).
 - **`RewardCardStyle`** — the style kit `RewardScreen` builds once and hands to every `RewardOption.buildContents`. Lives in `ui` deliberately: `UiTheme`, `BezelDrawable`, and `RoundedRectShader.draw` are package-private, so the kit consumes them internally and exposes only public scene2d types (`Label.LabelStyle` title/body/small, `Drawable` cardBg/cardBgSelected/statBox, the shared `pixel`). Owns and disposes its fonts + shader; never the pixel texture.
 ## Viewport & Coordinates

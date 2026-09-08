@@ -21,7 +21,7 @@ public final class ToxicSpine extends ProjectileInstance {
         return Skill.builder()
             .id("toxic_spine")
             .displayName("Toxic Spine")
-            .description("Loose a barbed spine down the row.\nVirulence 3: bursts in a target already riddled with poison.")
+            .description("Loose a barbed spine down the row.\nVirulence 3: the spine bursts for extra damage.")
             .icon(SkillCatalog.icon("skills/toxic_spine.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.POISON)

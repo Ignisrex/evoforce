@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.github.tommyettinger.textra.Font;
 
 /** Shared scene2d helpers for the world-unit UI. */
 public final class UiUtil {
@@ -16,6 +17,13 @@ public final class UiUtil {
         Table t = new Table();
         t.setRound(false);
         return t;
+    }
+
+    /** Markup-capable view of a world-unit-scaled BitmapFont; keeps its scale and
+     *  shares its texture (dispose only the BitmapFont). Faux bold/oblique markup
+     *  offsets are hardcoded in unscaled units in TextraTypist 2.2.14 — don't use [*] or [/]. */
+    public static Font markupFont(BitmapFont f) {
+        return new Font(f);
     }
 
     public static BitmapFont genFont(FreeTypeFontGenerator g, int px, float worldScale) {

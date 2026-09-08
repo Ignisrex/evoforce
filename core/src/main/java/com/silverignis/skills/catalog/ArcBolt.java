@@ -20,7 +20,7 @@ public final class ArcBolt extends ProjectileInstance {
         return Skill.builder()
             .id("arc_bolt")
             .displayName("Arc Bolt")
-            .description("Loose a snapping bolt of lightning.\nSurge 3: resolved third in a sequence, the bolt calls down a second strike.")
+            .description("Loose a snapping bolt of lightning.\nSurge 3: the bolt calls down a second strike.")
             .icon(SkillCatalog.icon("skills/arc_bolt.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.LIGHTNING)

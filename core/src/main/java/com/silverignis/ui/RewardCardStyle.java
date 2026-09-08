@@ -9,12 +9,15 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.github.tommyettinger.textra.Font;
 import com.silverignis.assets.GeneratedAssets;
 
 public final class RewardCardStyle implements Disposable {
 
     public final Label.LabelStyle title, body, small;
-    public final Drawable cardBg, cardBgSelected, statBox;
+    /** Markup view of the body font for description text; shares its texture. */
+    public final Font bodyMarkup;
+    public final Drawable cardBg, cardBgSelected, statBox, glossBg;
     public final Texture pixel;
 
     private final BitmapFont titleFont, bodyFont, smallFont;
@@ -31,6 +34,7 @@ public final class RewardCardStyle implements Disposable {
         bodyFont  = UiUtil.genFont(mono, 17, worldScale);
         smallFont = UiUtil.genFont(mono, 16, worldScale);
         grotesk.dispose(); mono.dispose();
+        bodyMarkup = UiUtil.markupFont(bodyFont);
 
         title = new Label.LabelStyle(titleFont, UiTheme.TEXT);
         body  = new Label.LabelStyle(bodyFont,  UiTheme.TEXT);
@@ -42,6 +46,7 @@ public final class RewardCardStyle implements Disposable {
         cardBgSelected = new BezelDrawable(shader, new Color(0f, 0f, 0f, 0.7f), UiTheme.CYAN_HI, UiTheme.BORDER,
             UiTheme.CORNER_RADIUS, UiTheme.CYAN_45, UiTheme.GLOW_WIDTH);
         statBox = new BezelDrawable(shader, UiTheme.STATBOX, UiTheme.OUTLINE_V, UiTheme.BORDER_THIN, UiTheme.CORNER_RADIUS);
+        glossBg = new BezelDrawable(shader, UiTheme.GLOSS, UiTheme.OUTLINE_V, UiTheme.BORDER, UiTheme.CORNER_RADIUS);
     }
 
     @Override
