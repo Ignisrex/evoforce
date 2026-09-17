@@ -8,6 +8,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.silverignis.animation.AnimSet;
@@ -39,6 +40,7 @@ public final class GameAssets implements Disposable {
 
     public static final String CAVE_WALL  = "cave_wall.png";
     public static final String CAVE_FLOOR = "cave_floor.png";
+    public static final String ARENA_CRYSTAL_CAVE = "models/environments/crystal_cave/arena.g3dj";
     // Effect texture sets, individually addressable (spark/star/smoke/circle/flare(int), 1-based) —
     // effects pick which frames and in what order at their build site.
     public static final String[] SPARK_SET = {
@@ -144,6 +146,7 @@ public final class GameAssets implements Disposable {
         tiledParams.genMipMaps = true;
         mgr.load(CAVE_WALL, Texture.class, tiledParams);
         mgr.load(CAVE_FLOOR, Texture.class, tiledParams);
+        mgr.load(ARENA_CRYSTAL_CAVE, Model.class);
 
         for (String[] set : EFFECT_SETS)
             for (String s : set) mgr.load(s, Texture.class);
@@ -224,6 +227,7 @@ public final class GameAssets implements Disposable {
 
     public Texture caveWall()  { return texture(CAVE_WALL); }
     public Texture caveFloor() { return texture(CAVE_FLOOR); }
+    public Model arenaCrystalCave() { return mgr.get(ARENA_CRYSTAL_CAVE, Model.class); }
     // 1-based, matching the effects/<set>_XX filenames.
     public Texture spark(int n)  { return texture(SPARK_SET[n - 1]); }
     public Texture star(int n)   { return texture(STAR_SET[n - 1]); }

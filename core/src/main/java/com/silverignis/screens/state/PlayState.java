@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.silverignis.components.Direction;
@@ -69,7 +68,7 @@ public class PlayState implements GameScreenState {
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
-        environment.rebuild(MathUtils.random.nextLong());
+        environment.rebuildArena(screen.game.assets.arenaCrystalCave());
         this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
         this.panelSurfaces = new PanelSurfaces(battlefield, screen.game.assets, screen.game.particles);
 

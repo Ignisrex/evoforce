@@ -43,3 +43,16 @@ This is a Gradle multi-project build (`core`, `lwjgl3`) using the Gradle wrapper
 ## Asset pipeline
 
 Art is generated offline by Python/Pillow scripts under `tools/` (some hit the PixelLab API). Outputs live under `assets/{panels,sprites,attacks,effects,skills}/`. The scripts are run manually — they are not part of the Gradle build. The `generateAssetList` task is what wires `assets/` into the runtime classpath via `assets.txt`. `GameAssets.queueLoad` also reads that manifest to preload every `skills/sprites/*.png` and `skills/animations/*.png` — skill visuals never load on demand; drop new art in those folders and it is resident at startup.
+
+**Battle arena (authored 3D):** one Blender scene per biome (`art/blender/environments/<biome>/…blend`, scene `CRYSTAL_CAVE_ARENA`), exported by `tools/export_arena.py` to libGDX G3DJ under `assets/models/environments/<biome>/arena.g3dj` (no gdx-gltf). Blender materials are IDs only: colour lives in `CaveTheme.palette` keyed by material name, applied by `GameEnvironment.rebuildArena` (the floor slot reuses the tiled `cave_floor.png`); lighting is the stock `DefaultShader`. Coordinates: blender (x,y,z) → game (x,z,−y); the 8×4 grid footprint must stay flat and empty (see SPEC *Arena pipeline*).
+
+## Blender / Astra workflow
+
+- Claude is the main EvoForce development orchestrator.
+- Astra owns Blender authoring and visual iteration.
+- Claude invokes Astra through `tools/astra-blender.sh "<task>"`.
+- Claude delegates 3D modeling, Blender materials, Blender animation, mesh-based VFX, visual iteration, Blender imports, and Blender visual critique to Astra.
+- Claude gives Astra relevant EvoForce context (what the asset is for, scale/grid facts, style references) before asking it to work.
+- Claude owns Java/libGDX integration, gameplay behavior, skill logic, collisions, timings, runtime particle behavior, shaders, asset loading and disposal.
+- For VFX, Astra creates the visual ingredients; Claude determines how and when they behave in-game.
+- Claude inspects Astra's final report and integrates the exported assets (`assets/models/`, sources in `art/blender/`) rather than recreating Blender work itself.

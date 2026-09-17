@@ -61,6 +61,7 @@ public class GameEnvironment implements Disposable {
     private long currentSeed = Long.MIN_VALUE;
 
     private final SceneCamera sceneCamera;
+
     private final ModelBuilder modelBuilder = new ModelBuilder();
 
     public GameEnvironment(Viewport viewport, CaveTheme theme) {
@@ -85,20 +86,56 @@ public class GameEnvironment implements Disposable {
         rebuild(CaveTheme.OVERWORLD_SEED);
     }
 
+    /** Procedural cave (overworld). */
     public void rebuild(long seed) {
         if (seed == currentSeed) return;
         currentSeed = seed;
+        clearGeometry();
+        buildGeometry(new RandomXS128(seed));
+        placeLights();
+    }
 
-        for(Model m : models) m.dispose();
+    private static final long ARENA_SEED = Long.MAX_VALUE;   // sentinel: never a real seed
+    private static final String[] ARENA_LIGHT_NODES = {"LIGHT_crystal_hero", "LIGHT_crystal_L", "LIGHT_crystal_R"};
+
+    /** Authored battle arena: the g3dj model (owned by GameAssets) coloured from the theme
+     *  palette by material name. Crystal slots pulse like the procedural crystals; the three
+     *  crystal lights sit on the model's LIGHT_* anchor nodes. */
+    public void rebuildArena(Model arena) {
+        currentSeed = ARENA_SEED;
+        clearGeometry();
+        ModelInstance inst = new ModelInstance(arena);
+        for (Material m : inst.materials) {
+            CaveTheme.Slot slot = theme.palette.get(m.id);
+            if (slot == null) continue;
+            m.clear();
+            m.set(slot.texture() != null ? TextureAttribute.createDiffuse(slot.texture()) : ColorAttribute.createDiffuse(slot.diffuse()),
+                  ColorAttribute.createEmissive(slot.emissive()));
+            if (m.id.startsWith("MAT_crystal")) {
+                crystalEmissives.add((ColorAttribute) m.get(ColorAttribute.Emissive));
+                crystalEmissiveBases.add(new Color(slot.emissive()));
+                crystalPhases.add(crystalPhases.size * 1.7f);
+            }
+        }
+        instances.add(inst);
+        for (int i = 0; i < crystalLights.length; i++) {
+            crystalPositions.add(inst.getNode(ARENA_LIGHT_NODES[i]).translation);
+        }
+        placeLights();
+    }
+
+    private void clearGeometry() {
+        for (Model m : models) m.dispose();
         models.clear();
         instances.clear();
         crystalEmissives.clear();
         crystalEmissiveBases.clear();
         crystalPhases.clear();
         crystalPositions.clear();
-        buildGeometry( new RandomXS128(seed));
+    }
 
-        // Light pools emanate from actual glowing sources; front fill keeps sprites readable.
+    /** Light pools emanate from actual glowing sources; front fill keeps sprites readable. */
+    private void placeLights() {
         for (int i = 0; i < crystalLights.length; i++) {
             Vector3 p = crystalPositions.get(i % crystalPositions.size);
             crystalLights[i].position.set(p.x, p.y + 0.4f, p.z);
@@ -468,11 +505,12 @@ public class GameEnvironment implements Disposable {
         cam.viewportWidth  = screenW;
         cam.viewportHeight = screenH;
         cam.update();
+        drawScene(cam);
+    }
 
+    private void drawScene(PerspectiveCamera cam) {
         modelBatch.begin(cam);
-        for (ModelInstance inst : instances) {
-            modelBatch.render(inst, environment);
-        }
+        for (ModelInstance inst : instances) modelBatch.render(inst, environment);
         for (ModelInstance inst : decorInstances) modelBatch.render(inst, environment);
         modelBatch.end();
     }
