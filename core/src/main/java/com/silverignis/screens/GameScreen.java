@@ -89,7 +89,7 @@ public class GameScreen implements Screen {
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
 
-        setState(playState);
+        setState(skillSelectState);
     }
 
     public void setState(GameScreenState nextState) {

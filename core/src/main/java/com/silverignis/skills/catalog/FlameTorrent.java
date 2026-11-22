@@ -29,7 +29,7 @@ public final class FlameTorrent extends BeamInstance {
             .icon(SkillCatalog.icon("skills/flame_torrent.png"))
             .shape(Skill.Shape.BEAM)
             .element(Element.FIRE)
-            .cooldown(5.0f)
+            .cooldown(2f)
             .manaCost(2)
             .magicScale(0.6f)
             .effect(Effect.damage(16))

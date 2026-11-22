@@ -18,7 +18,7 @@ public final class VenomBomb {
             .icon(SkillCatalog.icon("skills/venom_bomb.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.POISON)
-            .cooldown(3.5f)
+            .cooldown(1f)
             .manaCost(1)
             .shapeConfig(ProjectileConfig.lob(2, 2.0f, 3.0f, 0.5f))
             .effect(Effect.damage(12))

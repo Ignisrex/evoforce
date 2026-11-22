@@ -23,7 +23,7 @@ public final class UmbralWave extends ProjectileInstance {
             .icon(SkillCatalog.icon("skills/umbral_wave.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.DARK)
-            .cooldown(4.0f)
+            .cooldown(2f)
             .manaCost(1)
             .magicScale(0.7f)
             .shapeConfig(ProjectileConfig.straight(8f))

@@ -18,7 +18,7 @@ public final class VoidPull {
             .icon(SkillCatalog.icon("skills/void_pull.png"))
             .shape(Skill.Shape.ZONE)
             .element(Element.DARK)
-            .cooldown(8.0f)
+            .cooldown(3f)
             .manaCost(2)
             .shapeConfig(new ZoneConfig(true, 6.0f, 1.0f))
             .effect(Effect.damage(6))

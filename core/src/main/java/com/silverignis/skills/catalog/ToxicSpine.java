@@ -25,7 +25,7 @@ public final class ToxicSpine extends ProjectileInstance {
             .icon(SkillCatalog.icon("skills/toxic_spine.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.POISON)
-            .cooldown(3.0f)
+            .cooldown(1f)
             .manaCost(1)
             .shapeConfig(ProjectileConfig.straight(9f))
             .effect(Effect.damage(14))

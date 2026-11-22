@@ -17,7 +17,7 @@ public final class DarkBlast {
             .icon(SkillCatalog.icon("skills/dark_blast.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.DARK)
-            .cooldown(3.0f)
+            .cooldown(1f)
             .manaCost(1)
             .powerScale(0.1f)
             .magicScale(0.8f)

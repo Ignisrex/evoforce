@@ -16,7 +16,7 @@ public final class Heal {
             .icon(SkillCatalog.icon("skills/heal.png"))
             .shape(Skill.Shape.AURA)
             .element(Element.NONE)
-            .cooldown(5.0f)
+            .cooldown(2f)
             .manaCost(2)
             .effect(Effect.heal(15))
             .build();

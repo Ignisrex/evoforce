@@ -48,7 +48,7 @@ public interface Combatant {
      */
     default boolean canUse(Skill skill) {
         if (skill == null) return false;
-        if (getCaster().getDeck().isOnCooldown(skill)) return false;
+        if (getCaster().isOnCooldown(skill)) return false;
         return skill == getCaster().getBasicAttack() ? canStartAttack() : canStartCast();
     }
 

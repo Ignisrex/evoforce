@@ -67,7 +67,8 @@ public final class Encounter {
                                                movementSystem, particles, mana, skillVars);
 
         for (Enemy e : enemies) enemyAis.add(new EnemyAi(e));
-
+        
+        player.getCaster().clearCooldowns();
         TraitsContainer traits = player.getCaster().getTraits();
         player.getSlots().setSlotCapacity(SkillSlots.BASE_CAPACITY + traits.slotCapacityBonus());
         traits.applyBattleHooks(player, triggerBus, damageSystem);

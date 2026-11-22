@@ -253,9 +253,9 @@ public class SkillSelectState implements GameScreenState {
         if (cursor >= hand.size()) cursor = Math.max(0, hand.size() - 1);
     }
 
-    /** Backing out costs half the bar — reading your hand and redrawing is not free. */
+    /** Backing out costs the whole bar — reading your hand and redrawing is not free. */
     private void cancel(){
-        screen.encounter.mana().drainHalf();
+        screen.encounter.mana().drainAll();
         restoreSnapshot();
         exit();
     }
@@ -271,6 +271,7 @@ public class SkillSelectState implements GameScreenState {
 
     /** Play the overlay's exit animation, then hand back to PlayState.**/
     private void exit() {
+        screen.playState.getPlayer().getCaster().tickDeck(1f);
         exiting = true;
         overlay.onHide(() -> screen.setState(screen.playState));
     }

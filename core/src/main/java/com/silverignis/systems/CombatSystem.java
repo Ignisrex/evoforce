@@ -181,7 +181,7 @@ public class CombatSystem {
      * instead of refusing it.
      */
     public void cast(Combatant combatant, Skill skill, CastInfo castInfo) {
-        combatant.getCaster().getDeck().onUsed(skill);
+        combatant.getCaster().onUsed(skill);
         ctx.triggerBus.fire(new TriggerEvent(Trigger.ON_SKILL_RESOLVED, combatant, skill));
         spawn(skill, combatant, castInfo);
     }

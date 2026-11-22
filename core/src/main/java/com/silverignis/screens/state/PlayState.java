@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.silverignis.components.Direction;
@@ -68,7 +69,7 @@ public class PlayState implements GameScreenState {
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
-        environment.rebuildArena(screen.game.assets.arenaCrystalCave());
+        environment.rebuild(MathUtils.random.nextLong());
         this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
         this.panelSurfaces = new PanelSurfaces(battlefield, screen.game.assets, screen.game.particles);
 
@@ -238,8 +239,10 @@ public class PlayState implements GameScreenState {
 
     private void handleSkillSelectOpen() {
         if (input.isActionPressed(GameAction.TRIGGER_LEFT)
-            && input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
+            && input.isActionPressed(GameAction.TRIGGER_RIGHT)
+            && encounter.mana().canOpenMenu()) {
             screen.setState(screen.skillSelectState);
         }
     }
+
 }

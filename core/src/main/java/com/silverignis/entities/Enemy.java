@@ -31,6 +31,8 @@ public class Enemy implements Combatant, SceneRenderable {
     private final StatusFx        statusFx;
     private final GridMovement    gridMovement;
 
+    public static final float ENEMY_TURN_SECONDS = 6f;
+
     /** Visual height above the ground plane (world units). Non-zero for jumps/floats. */
     public float visualHeight = 0f;
 
@@ -83,9 +85,10 @@ public class Enemy implements Combatant, SceneRenderable {
 
     /** Same shape as Player.update — deciding what this enemy does is EnemyAi's job. */
     public void update(float delta) {
+        caster.update(delta);
         // Only the caster tick is slowed by e.g. miasma — scaling the whole
         // delta would drag the move tween and death fade with it.
-        caster.update(delta * statusContainer.recoveryFactor());
+        caster.tickDeck(delta * statusContainer.recoveryFactor() / ENEMY_TURN_SECONDS);
         gridMovement.update(delta);
         animController.update(delta);
     }

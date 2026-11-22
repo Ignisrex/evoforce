@@ -76,13 +76,13 @@ public final class EnemyAi {
     /** Cooldown is checked here so a cooling skill is skipped in favour of a
      *  usable one, rather than chosen and then refused by the cast gate. */
     private Skill pickAction(BattleState battle) {
-        var deck = combatant.getCaster().getDeck();
-        for (Skill s : deck.all()) {
-            if (deck.isOnCooldown(s)) continue;
+        var caster = combatant.getCaster();
+        for (Skill s : caster.getDeck().all()) {
+            if (caster.isOnCooldown(s)) continue;
             if (canReachPlayer(battle, s)) return s;
         }
         Skill basic = combatant.getCaster().getBasicAttack();
-        if (basic != null && !deck.isOnCooldown(basic) && canReachPlayer(battle, basic)) {
+        if (basic != null && !caster.isOnCooldown(basic) && canReachPlayer(battle, basic)) {
             return basic;
         }
         return null;

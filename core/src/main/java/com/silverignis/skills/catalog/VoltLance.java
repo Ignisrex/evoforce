@@ -28,7 +28,7 @@ public final class VoltLance extends ProjectileInstance {
             .icon(SkillCatalog.icon("skills/volt_lance.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.LIGHTNING)
-            .cooldown(4.0f)
+            .cooldown(2f)
             .manaCost(1)
             .magicScale(0.6f)
             .shapeConfig(ProjectileConfig.straight(10f))

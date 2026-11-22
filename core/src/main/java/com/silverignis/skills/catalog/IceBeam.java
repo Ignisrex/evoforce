@@ -25,7 +25,7 @@ public final class IceBeam extends BeamInstance {
             .icon(SkillCatalog.icon("skills/ice_beam.png"))
             .shape(Skill.Shape.BEAM)
             .element(Element.ICE)
-            .cooldown(4.0f)
+            .cooldown(2f)
             .manaCost(2)
             .effect(Effect.damage(25))
             .effect(Effect.applyStatus(StatusType.FREEZE, 0, 100, 1))

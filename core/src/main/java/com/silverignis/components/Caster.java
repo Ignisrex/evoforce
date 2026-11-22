@@ -25,7 +25,7 @@ import java.util.List;
  * </ul>
  *
  * <p>Composed onto an entity (rather than inherited from). The entity's own
- * {@code update} must call {@link #update(float)} so deck cooldowns tick.
+ * {@code update} must call {@link #update(float)} so basic attack timer ticks.
  */
 public class Caster {
 
@@ -35,6 +35,10 @@ public class Caster {
     private final InputLock  inputLock = new InputLock();
 
     private Skill basicAttack;
+
+    /* Universal real-time basic attack rate; deck cooldowns count turns instead. */
+    public static final float BASIC_ATTACK_COOLDOWN = 0.5f;
+    private float basicAttackRemaining;
 
     public record LoadedSkill(Skill skill, SlotKey from) { }
 
@@ -55,10 +59,24 @@ public class Caster {
 
     public TraitsContainer getTraits() { return this.traits; }
 
-    /** Tick per-caster state (currently just cooldowns inside the deck). */
+    /** Real-time tick: only the basic attack timer. Deck cooldowns count turns and
+     *  advance through {@link #tickDeck} at whatever rate the owner decides. */
     public void update(float delta) {
-        deck.update(delta);
+        basicAttackRemaining = Math.max(0f, basicAttackRemaining - delta);
     }
+
+    public void tickDeck(float turns) { deck.update(turns); }
+
+    public void onUsed(Skill skill) {
+        if (skill == basicAttack) basicAttackRemaining = BASIC_ATTACK_COOLDOWN;
+        else deck.onUsed(skill);
+    }
+
+    public boolean isOnCooldown(Skill skill) {
+        return skill == basicAttack ? basicAttackRemaining > 0f : deck.isOnCooldown(skill);
+    }
+
+    public float basicAttackRemaining() { return basicAttackRemaining; }
 
     public void loadSkill(Skill skill, SlotKey from) {
         this.loadedSkills.add(new LoadedSkill(skill, from));
@@ -82,5 +100,10 @@ public class Caster {
     public void resetStaging() {
         this.slots.clearAll();
         this.loadedSkills.clear();
+    }
+
+    public void clearCooldowns(){
+        deck.clearCooldowns();
+        basicAttackRemaining = 0f;
     }
 }

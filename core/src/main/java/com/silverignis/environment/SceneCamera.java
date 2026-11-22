@@ -27,7 +27,7 @@ public class SceneCamera {
         cam.position.set(CAM_X, CAM_Y, CAM_Z);
         cam.lookAt(LOOK_X, LOOK_Y, LOOK_Z);
         cam.near = 0.1f;
-        cam.far  = 36f;  // DefaultShader fog is dist²/far²: the arena back wall sits ≈23u out and must stay readable
+        cam.far  = 26f;  // tight far plane so DefaultShader fog (dist²/far²) lands in the room; farthest corner ≈21u
         cam.update();
     }
 

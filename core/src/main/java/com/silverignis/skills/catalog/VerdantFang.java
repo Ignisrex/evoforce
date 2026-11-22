@@ -26,7 +26,7 @@ public final class VerdantFang extends StrikeInstance {
             .icon(SkillCatalog.icon("skills/verdant_fang.png"))
             .shape(Skill.Shape.STRIKE)
             .element(Element.NATURE)
-            .cooldown(3.0f)
+            .cooldown(1f)
             .manaCost(1)
             .powerScale(0.8f)
             .shapeConfig(new StrikeConfig(1, 1))
