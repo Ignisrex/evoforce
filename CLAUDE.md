@@ -13,7 +13,7 @@ This is a Gradle multi-project build (`core`, `lwjgl3`) using the Gradle wrapper
 - `./gradlew lwjgl3:run` — launch the desktop game (working dir is `assets/`).
 - `./gradlew lwjgl3:jar` — build runnable JAR at `lwjgl3/build/libs/evoforce-<version>.jar`. Variants: `jarWin`, `jarMac`, `jarLinux` (platform-specific, smaller).
 - `./gradlew core:clean` / `./gradlew clean` — clear build outputs for one project / all.
-- No tests yet — `./gradlew test` is a no-op.
+- `./gradlew core:test` — JUnit 5 unit tests (`core/src/test`). Only `InputManagerTest` exists so far.
 
 `processResources` depends on `generateAssetList`, which writes `assets/assets.txt` (a recursive manifest of `assets/`) on every build.
 

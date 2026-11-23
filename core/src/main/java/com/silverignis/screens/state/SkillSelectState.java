@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.silverignis.entities.Player;
 import com.silverignis.input.GameAction;
+import com.silverignis.input.InputEvent;
+import com.silverignis.input.InputFrame;
 import com.silverignis.screens.GameScreen;
 import com.silverignis.skills.Skill;
 import com.silverignis.skills.elements.Element;
@@ -76,49 +78,64 @@ public class SkillSelectState implements GameScreenState {
     }
 
     @Override
-    public void input() {
-        if (exiting) return;
-        var input = screen.getInputManager();
+    public void input(InputFrame frame) {
+        for (InputEvent inputEvent : frame.events()) {
+            if (exiting) return;
+            if (inputEvent.type() == InputEvent.Type.PRESSED) press(inputEvent.action());
+        }
+    }
 
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_TUCK)) tucked = !tucked;
+    private void press(GameAction action) {
+        if (action == GameAction.SKILL_SELECT_TUCK) {
+            tucked = !tucked;
+            return;
+        }
         if (tucked) return; //view-only mode so all other input commands are ignored
 
         if (traitTrayOpen) {
             List<Trait> traits = screen.playState.getPlayer().getCaster().getTraits().all();
             int max = Math.max(0, traits.size() - 1);
-            if (input.isActionJustPressed(GameAction.MOVE_LEFT))  traitCursor = Math.clamp(traitCursor - 1, 0, max);
-            if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) traitCursor = Math.clamp(traitCursor + 1, 0, max);
-            if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)
-                    || input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
-                traitTrayOpen = false;
+            switch (action) {
+                case MOVE_LEFT -> traitCursor = Math.clamp(traitCursor - 1, 0, max);
+                case MOVE_RIGHT -> traitCursor = Math.clamp(traitCursor + 1, 0, max);
+                case SKILL_SELECT_CONFIRM, SKILL_SELECT_CANCEL -> traitTrayOpen = false;
+                default -> {
+                }
             }
             return; // modal: swallow everything else — especially cancel's mana drain
         }
 
-        // Spatial navigation: UP/DOWN walks the left column (hand -> detail -> operator);
-        // LEFT/RIGHT jumps between the column and the stacks on the right (see moveCursor).
-        if (input.isActionJustPressed(GameAction.MOVE_UP)) {
-            if (zone == Zone.HAND) zone = Zone.DETAIL;
-            else if (zone == Zone.DETAIL) zone = Zone.OPERATOR;
+        switch (action) {
+            // Spatial navigation: UP/DOWN walks the left column (hand -> detail -> operator);
+            // LEFT/RIGHT jumps between the column and the stacks on the right (see moveCursor).
+            case MOVE_UP -> {
+                if (zone == Zone.HAND) zone = Zone.DETAIL;
+                else if (zone == Zone.DETAIL) zone = Zone.OPERATOR;
+            }
+
+            case MOVE_DOWN -> {
+                if (zone == Zone.OPERATOR) zone = Zone.DETAIL;
+                else if (zone == Zone.DETAIL || zone == Zone.STACKS) zone = Zone.HAND;
+            }
+
+            case MOVE_LEFT -> moveCursor(-1);
+            case MOVE_RIGHT -> moveCursor(+1);
+
+            case SKILL_X -> tryAssign(SlotKey.X);
+            case SKILL_Y -> tryAssign(SlotKey.Y);
+            case SKILL_B -> tryAssign(SlotKey.B);
+
+            case SKILL_SELECT_UNDO -> tryUndo();
+
+            case SKILL_SELECT_CONFIRM -> {
+                if (zone == Zone.OPERATOR) {
+                    traitTrayOpen = true;
+                    traitCursor = 0;
+                } else  confirm();
+            }
+            case SKILL_SELECT_CANCEL -> cancel();
+            default -> {}
         }
-        if (input.isActionJustPressed(GameAction.MOVE_DOWN)) {
-            if (zone == Zone.OPERATOR) zone = Zone.DETAIL;
-            else if (zone == Zone.DETAIL || zone == Zone.STACKS) zone = Zone.HAND;
-        }
-
-        if (input.isActionJustPressed(GameAction.MOVE_LEFT)) moveCursor(-1);
-        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) moveCursor(+1);
-
-        if (input.isActionJustPressed(GameAction.SKILL_X)) tryAssign(SlotKey.X);
-        if (input.isActionJustPressed(GameAction.SKILL_Y)) tryAssign(SlotKey.Y);
-        if (input.isActionJustPressed(GameAction.SKILL_B)) tryAssign(SlotKey.B);
-
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_UNDO)) tryUndo();
-
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) {
-            if (zone == Zone.OPERATOR) { traitTrayOpen = true; traitCursor = 0; }
-            else confirm();
-        } else if (input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) cancel();
     }
 
     private void moveCursor(int d) {

@@ -1,60 +1,53 @@
 package com.silverignis.input;
 
-import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.InputAdapter;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
-/**
- * {@link InputSource} backed by the keyboard via {@link Gdx#input}.
- *
- * <p>Edge detection ({@link #isActionJustPressed}) is delegated to libGDX,
- * which already tracks just-pressed state per key, so this class only needs
- * to translate {@link GameAction}s into key codes.
- */
-public class KeyboardInputSource implements InputSource {
+public class KeyboardInputSource extends InputAdapter {
 
-    /** Default bindings. Grouped here so rebinding later is a one-line change. */
-    private final Map<GameAction, Integer> bindings = new EnumMap<>(GameAction.class);
+    private final InputManager manager;
+    private final Map<Integer, GameAction> bindings = new HashMap<>();
 
-    public KeyboardInputSource() {
-        bindings.put(GameAction.MOVE_UP,              Keys.W);
-        bindings.put(GameAction.MOVE_DOWN,            Keys.S);
-        bindings.put(GameAction.MOVE_LEFT,            Keys.A);
-        bindings.put(GameAction.MOVE_RIGHT,           Keys.D);
+    public KeyboardInputSource(InputManager manager) {
+        this.manager = manager;
 
-        bindings.put(GameAction.ATTACK_BASIC,         Keys.J);
+        bindings.put(Keys.W, GameAction.MOVE_UP);
+        bindings.put(Keys.S, GameAction.MOVE_DOWN);
+        bindings.put(Keys.A, GameAction.MOVE_LEFT);
+        bindings.put(Keys.D, GameAction.MOVE_RIGHT);
 
-        bindings.put(GameAction.TRIGGER_LEFT,         Keys.Q);
-        bindings.put(GameAction.TRIGGER_RIGHT,        Keys.E);
+        bindings.put(Keys.J, GameAction.ATTACK_BASIC);
 
-        // Slot buttons: number row, classic ARPG layout.
-        bindings.put(GameAction.SKILL_X,              Keys.NUM_1);
-        bindings.put(GameAction.SKILL_Y,              Keys.NUM_2);
-        bindings.put(GameAction.SKILL_B,              Keys.NUM_3);
+        bindings.put(Keys.Q, GameAction.TRIGGER_LEFT);
+        bindings.put(Keys.E, GameAction.TRIGGER_RIGHT);
 
-        bindings.put(GameAction.SKILL_SELECT_CONFIRM, Keys.ENTER);
-        bindings.put(GameAction.SKILL_SELECT_CANCEL,  Keys.ESCAPE);
-        bindings.put(GameAction.SKILL_SELECT_UNDO,    Keys.BACKSPACE);
-        bindings.put(GameAction.SKILL_SELECT_TUCK,    Keys.TAB);
+        bindings.put(Keys.NUM_1, GameAction.SKILL_X);
+        bindings.put(Keys.NUM_2, GameAction.SKILL_Y);
+        bindings.put(Keys.NUM_3, GameAction.SKILL_B);
+
+        bindings.put(Keys.ENTER,     GameAction.SKILL_SELECT_CONFIRM);
+        bindings.put(Keys.ESCAPE,    GameAction.SKILL_SELECT_CANCEL);
+        bindings.put(Keys.BACKSPACE, GameAction.SKILL_SELECT_UNDO);
+        bindings.put(Keys.TAB,       GameAction.SKILL_SELECT_TUCK);
     }
 
     @Override
-    public boolean isActionPressed(GameAction action) {
-        Integer key = bindings.get(action);
-        return key != null && Gdx.input.isKeyPressed(key);
+    public boolean keyDown(int keycode) {
+        return report(keycode, true);
     }
 
     @Override
-    public boolean isActionJustPressed(GameAction action) {
-        Integer key = bindings.get(action);
-        return key != null && Gdx.input.isKeyJustPressed(key);
+    public boolean keyUp(int keycode) {
+        return report(keycode, false);
     }
 
-    @Override
-    public void update() {
-        // No-op: libGDX manages per-frame just-pressed state internally.
+    private boolean report(int keycode, boolean pressed) {
+        GameAction action = bindings.get(keycode);
+        if (action != null) manager.set(InputDevice.KEYBOARD, action, pressed);
+        return false;
     }
+
 }

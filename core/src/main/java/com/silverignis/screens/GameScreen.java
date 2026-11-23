@@ -9,7 +9,6 @@ import com.silverignis.components.Team;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
 import com.silverignis.registry.Monster;
 import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
@@ -23,7 +22,7 @@ import java.util.List;
 public class GameScreen implements Screen {
 
     public Main game;
-    private final InputManager input = InputManager.defaultSetup();
+    private long inputTick;
 
     //States
     public final PlayState playState;
@@ -99,8 +98,6 @@ public class GameScreen implements Screen {
         currentState.onEnter();
     }
 
-    public InputManager getInputManager(){ return input; }
-
     @Override
     public void show() {
     }
@@ -108,8 +105,7 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
 
-        input.update();
-        currentState.input();
+        currentState.input(game.input.nextFrame(inputTick++));
         currentState.update(delta);
         currentState.render(game.batch);
 
@@ -127,7 +123,7 @@ public class GameScreen implements Screen {
         // Stage manages its own begin()/end(), so it draws outside the block above.
         if (!overlayUp) {
             slotsHud.refresh(playState.getPlayer().getSlots());
-            loadedHud.refresh(playState.getPlayer().getCaster(), input.isActionPressed(GameAction.TRIGGER_RIGHT));
+            loadedHud.refresh(playState.getPlayer().getCaster(), game.input.isHeld(GameAction.TRIGGER_RIGHT));
             lifeBarHud.refresh(playState.getPlayer());
             manaBarHud.refresh(encounter.mana());
             statusHud.refresh(playState.getPlayer());
