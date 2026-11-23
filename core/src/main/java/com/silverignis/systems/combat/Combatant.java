@@ -57,6 +57,10 @@ public interface Combatant {
      *  are the render pass's business, not a combatant's. */
     default float getVisualCol() { return getGridMovement().visualCol(); }
     default float getVisualRow() { return getGridMovement().visualRow(); }
+
+    default float getVisualCol(float secondsAgo) { return getGridMovement().visualCol(secondsAgo); }
+    default float getVisualRow(float secondsAgo) { return getGridMovement().visualRow(secondsAgo); }
+
     // ponytail: tile-snapped, not smoothed — fine for feet emission; invert projection if you need sprite-glued anchors; for example particles on dashing sprite
     default void worldPos(Vector3 out) {getGridPosition().worldPos(out);}
 

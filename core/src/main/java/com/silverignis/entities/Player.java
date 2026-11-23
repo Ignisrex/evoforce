@@ -92,8 +92,8 @@ public class Player implements Combatant, SceneRenderable {
         TextureRegion frame = animController.currentFrame();
         if (frame == null) return;
 
-        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
-        float pw = rc.panelWidth() * rc.tileDepthScale(getVisualRow());
+        Vector2 p = rc.tileWorld(getVisualCol(rc.lag()), getVisualRow(rc.lag()));
+        float pw = rc.panelWidth() * rc.tileDepthScale(getVisualRow(rc.lag()));
         float alpha = animController.getRenderAlpha();
         rc.batch.setColor(statusFx.spriteColor(spriteTint, alpha));
         rc.batch.draw(frame, p.x - pw * 0.5f, p.y + visualHeight, pw, pw);
@@ -101,7 +101,7 @@ public class Player implements Combatant, SceneRenderable {
     }
 
     private void renderShadow(RenderContext rc, Texture shadowTex) {
-        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
+        Vector2 p = rc.tileWorld(getVisualCol(rc.lag()), getVisualRow(rc.lag()));
         float sw = rc.panelWidth() * 0.75f;
         float sh = rc.panelRenderHeight() * 0.35f;
         rc.batch.setColor(Color.WHITE);

@@ -96,7 +96,7 @@ public class Enemy implements Combatant, SceneRenderable {
     /** Shadow ellipse drawn at ground position before the sprite pass. */
     private void renderShadow(RenderContext rc, Texture shadowTex) {
         if (isDead()) return;
-        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
+        Vector2 p = rc.tileWorld(getVisualCol(rc.lag()), getVisualRow(rc.lag()));
         float sw = rc.panelWidth() * 0.75f;
         float sh = rc.panelRenderHeight() * 0.35f;
         float alpha = isDying() ? animController.getRenderAlpha() * 0.5f : 0.5f;
@@ -112,8 +112,8 @@ public class Enemy implements Combatant, SceneRenderable {
         TextureRegion frame = animController.currentFrame();
         if (frame == null) return;
 
-        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
-        float pw = rc.panelWidth() * rc.tileDepthScale(getVisualRow());
+        Vector2 p = rc.tileWorld(getVisualCol(rc.lag()), getVisualRow(rc.lag()));
+        float pw = rc.panelWidth() * rc.tileDepthScale(getVisualRow(rc.lag()));
         float alpha = animController.getRenderAlpha();
         rc.batch.setColor(statusFx.spriteColor(spriteTint, alpha));
         rc.batch.draw(frame, p.x - pw * 0.5f, p.y + visualHeight, pw, pw);
@@ -123,7 +123,7 @@ public class Enemy implements Combatant, SceneRenderable {
     private void renderHpLabel(RenderContext rc) {
         BitmapFont font = rc.font;
         hpLayout.setText(font, Integer.toString(health.getCurrent()));
-        Vector2 p = rc.tileWorld(getVisualCol(), getVisualRow());
+        Vector2 p = rc.tileWorld(getVisualCol(rc.lag()), getVisualRow(rc.lag()));
         float x = p.x - hpLayout.width * 0.5f;
         float y = p.y - 0.05f;
         float alpha = isDying() ? animController.getRenderAlpha() : 1f;

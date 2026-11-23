@@ -121,13 +121,16 @@ public class PlayState implements GameScreenState {
             }
         }
         handleReleaseSkills(frame);
-        handleSkillSelectOpen(frame);
+    }
+
+    public void fixedUpdate(InputFrame frame, float delta) {
+        input(frame);
+        encounter.tick(delta);
+        if (!checkBattleOver()) handleSkillSelectOpen(frame);
     }
 
     @Override
     public void update(float delta) {
-        encounter.tick(delta);
-
         encounter.collectCoveredTiles(battlefieldDecor::glow);
         battlefieldDecor.update(delta);
 
@@ -135,7 +138,6 @@ public class PlayState implements GameScreenState {
         player.statusFx().update(delta, particles);
         for (Enemy e : enemies) e.statusFx().update(delta, particles);
         environment.update(delta);
-        checkBattleOver();
     }
 
     /** The encounter reports the result; deciding what a result *means* for the

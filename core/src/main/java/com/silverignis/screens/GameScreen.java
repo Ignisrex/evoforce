@@ -14,6 +14,7 @@ import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
 import com.silverignis.screens.state.SkillSelectState;
 import com.silverignis.systems.Encounter;
+import com.silverignis.systems.FixedStepClock;
 import com.silverignis.systems.SpawnSystem;
 import com.silverignis.ui.*;
 
@@ -22,7 +23,7 @@ import java.util.List;
 public class GameScreen implements Screen {
 
     public Main game;
-    private long inputTick;
+    private final FixedStepClock clock =  new FixedStepClock();
 
     //States
     public final PlayState playState;
@@ -105,8 +106,16 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
 
-        currentState.input(game.input.nextFrame(inputTick++));
+        if(currentState == playState) {
+            clock.add(delta);
+            while(game.getScreen() == this && currentState == playState && clock.step()) {
+                playState.fixedUpdate(game.input.nextFrame(clock.tick()), FixedStepClock.DT);
+            }
+        } else {
+            currentState.input(game.input.nextFrame(clock.tick()));
+        }
         currentState.update(delta);
+        game.renderContext.alpha = clock.alpha();
         currentState.render(game.batch);
 
         // HUD draws on top of whichever state is active — except the bottom-left

@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * One battle: its roster, its systems, and its per-frame tick. Knows nothing
+ * One battle: its roster, its systems, and its fixed-step tick. Knows nothing
  * about screens, cameras or the run — it is handed a player and a roster, and
  * reports an {@link Outcome} rather than acting on one.
  *
  * Unlike the Godot port, this exposes a single {@link #tick} instead of separate
- * phases. It can: libGDX runs {@code input()} before {@code update()}, so the
- * loaded-burst release already happens outside the tick. In Godot everything
+ * phases. It can: {@code PlayState.fixedUpdate} applies input before the tick, so
+ * the loaded-burst release already happens outside the tick. In Godot everything
  * lives in {@code _Process}, which forces the release between two phases and so
  * forces the phases apart.
  */
@@ -97,9 +97,10 @@ public final class Encounter {
      *  Wrapping the whole API in delegates would be ceremony. */
     public CombatSystem combat() { return combatSystem; }
 
-    // ── per-frame ─────────────────────────────────────────────────────────
+    // ── per-tick ──────────────────────────────────────────────────────────
 
-    /** Order is the legacy PlayState ordering and is load-bearing. */
+    /** Order is the legacy PlayState ordering and is load-bearing. Always called
+     *  with {@link FixedStepClock#DT}. */
     public void tick(float delta) {
         battleState.player.update(delta);
         for (Enemy e : battleState.enemies) e.update(delta);

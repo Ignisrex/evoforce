@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.silverignis.entities.Battlefield;
 import com.silverignis.environment.GameEnvironment;
+import com.silverignis.systems.FixedStepClock;
 
 /**
  * What a {@link SceneRenderable} is allowed to reach during a draw: the batch,
@@ -27,6 +28,12 @@ public final class RenderContext {
     private final GameEnvironment env;
 
     private final Vector2 scratch = new Vector2();
+
+    /** 0..1 past the last sim tick; set by GameScreen each render. */
+    public float alpha = 1f;
+
+    /** Seconds the draw sits behind the last sim tick. */
+    public float lag() { return (1f - alpha) * FixedStepClock.DT; }
 
     public RenderContext(SpriteBatch batch, BitmapFont font, GameEnvironment gameEnvironment,
                          SkillShaders skillShaders) {
