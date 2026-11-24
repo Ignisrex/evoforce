@@ -16,7 +16,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.silverignis.Main;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
+import com.silverignis.input.InputFrame;
 import com.silverignis.ui.MenuBackdrop;
 import com.silverignis.ui.MainMenuStyle;
 import com.silverignis.ui.UiUtil;
@@ -30,7 +30,7 @@ public class MainMenuScreen implements Screen {
     private final MenuBackdrop backdrop;
     private final Stage stage;
     private final MainMenuStyle style;
-    private final InputManager input = InputManager.defaultSetup();
+    private long inputTick;
 
     private final List<TextButton> buttons = new ArrayList<>();
     private final List<Runnable> actions = new ArrayList<>();
@@ -121,7 +121,7 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void show() {
-        Gdx.input.setInputProcessor(stage);
+        game.inputMux.addProcessor(stage);
     }
 
     @Override
@@ -137,10 +137,10 @@ public class MainMenuScreen implements Screen {
         backdrop.draw(game.batch, game.viewport.getWorldWidth(), game.viewport.getWorldHeight());
         game.batch.end();
 
-        input.update();
-        if (input.isActionJustPressed(GameAction.MOVE_UP))   moveFocus(-1);
-        if (input.isActionJustPressed(GameAction.MOVE_DOWN)) moveFocus(1);
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) press(selected);
+        InputFrame frame = game.input.nextFrame(inputTick++);
+        if (frame.pressed(GameAction.MOVE_UP))   moveFocus(-1);
+        if (frame.pressed(GameAction.MOVE_DOWN)) moveFocus(1);
+        if (frame.pressed(GameAction.SKILL_SELECT_CONFIRM)) press(selected);
 
         stage.act(delta);
         stage.draw();
@@ -164,7 +164,7 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void hide() {
-        Gdx.input.setInputProcessor(null);
+        game.inputMux.removeProcessor(stage);
     }
 
     @Override

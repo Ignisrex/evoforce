@@ -18,7 +18,7 @@ public final class FrostTrap {
             .icon(SkillCatalog.icon("skills/frost_trap.png"))
             .shape(Skill.Shape.ZONE)
             .element(Element.ICE)
-            .cooldown(3.5f)
+            .cooldown(1f)
             .manaCost(2)
             .shapeConfig(new ZoneConfig(false, 5.0f, 0.33f))
             .effect(Effect.damage(5))

@@ -17,7 +17,7 @@ public final class MiasmaBeam {
             .icon(SkillCatalog.icon("skills/miasma_beam.png"))
             .shape(Skill.Shape.BEAM)
             .element(Element.DARK)
-            .cooldown(5.0f)
+            .cooldown(2f)
             .manaCost(2)
             .magicScale(0.6f)
             .effect(Effect.damage(12))

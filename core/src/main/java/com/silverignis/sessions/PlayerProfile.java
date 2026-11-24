@@ -15,7 +15,7 @@ public class PlayerProfile {
     private int progressionLevel;
 
     /** Capacity and regen only — the per-battle bar lives on the Encounter. */
-    private final ManaStats manaStats = new ManaStats(10, 2f);
+    private final ManaStats manaStats = new ManaStats(10, 1f);
 
     public PlayerProfile(SkillLibrary library){
         this.stats = new Stats(20, 10, 100, 10, 20);

@@ -5,9 +5,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.silverignis.assets.GeneratedAssets;
+import com.silverignis.components.Caster;
 import com.silverignis.entities.Player;
 import com.silverignis.skills.Skill;
-import com.silverignis.skills.SkillDeck;
 
 /**
  * Always-on HUD that draws the player's basic-attack skill — the icon held in
@@ -59,9 +59,9 @@ public class BasicAttackHud {
             batch.setColor(Color.WHITE);
             batch.draw(skill.getIcon(), x, y, ICON_W, ICON_H);
 
-            SkillDeck deck = player.getDeck();
-            if (skill.getCooldown() > 0f && deck.isOnCooldown(skill)) {
-                float frac = Math.min(1f, deck.remainingFor(skill) / skill.getCooldown());
+            float remaining = player.getCaster().basicAttackRemaining();
+            if (remaining > 0f) {
+                float frac = Math.min(1f, remaining / Caster.BASIC_ATTACK_COOLDOWN);
                 batch.setColor(COOLDOWN_VEIL);
                 // ponytail: square veil over a rounded card; inset hides the corner overhang.
                 float inset = 0.03f;

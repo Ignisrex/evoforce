@@ -35,9 +35,11 @@ public final class ManaPool {
         current = 0f;
     }
 
-    /** Backing out still costs — half the bar, so reading your hand and
-     *  cancelling to redraw is not free. */
-    public void drainHalf() { current *= 0.5f; }
+    /** Backing out forfeits the whole bar — a pass is a turn, so it costs
+     *  the same clock as a real one. */
+    public void drainAll() { current = 0f; }
+
+    public boolean canOpenMenu() { return current >= stats.getMax() / 2f; }
 
     /** Spend exactly {@code cost} if the bar holds it. */
     public boolean trySpend(int cost) {

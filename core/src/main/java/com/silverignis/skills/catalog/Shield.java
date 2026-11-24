@@ -17,7 +17,7 @@ public final class Shield {
             .icon(SkillCatalog.icon("skills/shield.png"))
             .shape(Skill.Shape.AURA)
             .element(Element.NONE)
-            .cooldown(4.0f)
+            .cooldown(2f)
             .manaCost(1)
             .effect(Effect.applyStatus(StatusType.SHIELD, 6f, 100, 0))
             .build();

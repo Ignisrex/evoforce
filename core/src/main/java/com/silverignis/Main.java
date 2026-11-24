@@ -2,7 +2,9 @@ package com.silverignis;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -13,6 +15,9 @@ import com.silverignis.assets.GameAssets;
 import com.silverignis.assets.GeneratedAssets;
 import com.silverignis.environment.CaveTheme;
 import com.silverignis.environment.GameEnvironment;
+import com.silverignis.input.GamepadInputSource;
+import com.silverignis.input.InputManager;
+import com.silverignis.input.KeyboardInputSource;
 import com.silverignis.particles.Anchor;
 import com.silverignis.particles.Channel;
 import com.silverignis.particles.EmitterSpec;
@@ -44,6 +49,9 @@ public class Main extends Game {
     public BloomEffect bloomEffect;
 
     public GameSession session;
+
+    public final InputManager input = new InputManager();
+    public final InputMultiplexer inputMux = new InputMultiplexer();
 
     public ParticleEngine particles;
 
@@ -79,6 +87,9 @@ public class Main extends Game {
         font.getData().setScale(viewport.getWorldHeight()/ Gdx.graphics.getHeight());
 
         this.session = new GameSession();
+        inputMux.addProcessor(new KeyboardInputSource(input));
+        Gdx.input.setInputProcessor(inputMux);
+        Controllers.addListener(new GamepadInputSource(input));
 
         this.setScreen(new MainMenuScreen(this));
     }

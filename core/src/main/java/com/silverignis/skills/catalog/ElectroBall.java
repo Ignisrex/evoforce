@@ -18,7 +18,7 @@ public final class ElectroBall {
             .icon(SkillCatalog.icon("skills/electro_ball.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.LIGHTNING)
-            .cooldown(6.0f)
+            .cooldown(2f)
             .manaCost(2)
             .shapeConfig(ProjectileConfig.lob(2, 2.0f, 3.0f, 1.0f))
             .effect(Effect.damage(10))

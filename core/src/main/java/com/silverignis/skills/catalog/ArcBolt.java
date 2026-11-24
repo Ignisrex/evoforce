@@ -24,7 +24,7 @@ public final class ArcBolt extends ProjectileInstance {
             .icon(SkillCatalog.icon("skills/arc_bolt.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.LIGHTNING)
-            .cooldown(3.0f)
+            .cooldown(1f)
             .manaCost(1)
             .magicScale(0.5f)
             .shapeConfig(ProjectileConfig.straight(11f))

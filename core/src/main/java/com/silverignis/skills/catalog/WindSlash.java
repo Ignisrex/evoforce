@@ -17,7 +17,7 @@ public final class WindSlash {
             .icon(SkillCatalog.icon("skills/sprites/wind_slash.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.NONE)
-            .cooldown(0.5f)
+            .cooldown(0f)
             .manaCost(1)
             .shapeConfig(ProjectileConfig.straight(12.0f))
             .effect(Effect.damage(5))

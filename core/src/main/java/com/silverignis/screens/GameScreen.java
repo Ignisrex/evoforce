@@ -9,12 +9,12 @@ import com.silverignis.components.Team;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
 import com.silverignis.registry.Monster;
 import com.silverignis.screens.state.GameScreenState;
 import com.silverignis.screens.state.PlayState;
 import com.silverignis.screens.state.SkillSelectState;
 import com.silverignis.systems.Encounter;
+import com.silverignis.systems.FixedStepClock;
 import com.silverignis.systems.SpawnSystem;
 import com.silverignis.ui.*;
 
@@ -23,7 +23,7 @@ import java.util.List;
 public class GameScreen implements Screen {
 
     public Main game;
-    private final InputManager input = InputManager.defaultSetup();
+    private final FixedStepClock clock =  new FixedStepClock();
 
     //States
     public final PlayState playState;
@@ -89,7 +89,7 @@ public class GameScreen implements Screen {
         this.playState = new PlayState(this);
         this.skillSelectState = new SkillSelectState(this);
 
-        setState(playState);
+        setState(skillSelectState);
     }
 
     public void setState(GameScreenState nextState) {
@@ -99,8 +99,6 @@ public class GameScreen implements Screen {
         currentState.onEnter();
     }
 
-    public InputManager getInputManager(){ return input; }
-
     @Override
     public void show() {
     }
@@ -108,9 +106,16 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
 
-        input.update();
-        currentState.input();
+        if(currentState == playState) {
+            clock.add(delta);
+            while(game.getScreen() == this && currentState == playState && clock.step()) {
+                playState.fixedUpdate(game.input.nextFrame(clock.tick()), FixedStepClock.DT);
+            }
+        } else {
+            currentState.input(game.input.nextFrame(clock.tick()));
+        }
         currentState.update(delta);
+        game.renderContext.alpha = clock.alpha();
         currentState.render(game.batch);
 
         // HUD draws on top of whichever state is active — except the bottom-left
@@ -127,7 +132,7 @@ public class GameScreen implements Screen {
         // Stage manages its own begin()/end(), so it draws outside the block above.
         if (!overlayUp) {
             slotsHud.refresh(playState.getPlayer().getSlots());
-            loadedHud.refresh(playState.getPlayer().getCaster(), input.isActionPressed(GameAction.TRIGGER_RIGHT));
+            loadedHud.refresh(playState.getPlayer().getCaster(), game.input.isHeld(GameAction.TRIGGER_RIGHT));
             lifeBarHud.refresh(playState.getPlayer());
             manaBarHud.refresh(encounter.mana());
             statusHud.refresh(playState.getPlayer());

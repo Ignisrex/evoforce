@@ -18,7 +18,7 @@ public final class FlameClaw {
             .icon(SkillCatalog.icon("skills/flame_claw.png"))
             .shape(Skill.Shape.STRIKE)
             .element(Element.FIRE)
-            .cooldown(3.0f)
+            .cooldown(1f)
             .manaCost(1)
             .powerScale(0.6f)
             .shapeConfig(new StrikeConfig(1, 2))

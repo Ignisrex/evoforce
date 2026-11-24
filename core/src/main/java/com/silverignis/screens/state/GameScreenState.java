@@ -1,6 +1,7 @@
 package com.silverignis.screens.state;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.silverignis.input.InputFrame;
 
 public interface GameScreenState {
 
@@ -8,7 +9,7 @@ public interface GameScreenState {
 
     void onExit();
 
-    void input();
+    void input(InputFrame input);
 
     void update(float delta);
 

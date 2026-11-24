@@ -3,13 +3,8 @@ package com.silverignis.input;
 import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.ControllerAdapter;
 import com.badlogic.gdx.controllers.ControllerMapping;
-import com.badlogic.gdx.controllers.Controllers;
 
-import java.util.EnumMap;
-import java.util.Map;
-
-/** Event-driven {@link InputSource} backed by gdx-controllers. */
-public class GamepadInputSource extends ControllerAdapter implements InputSource {
+public class GamepadInputSource extends ControllerAdapter {
 
     private static final float STICK_DEADZONE = 0.5f;
     private static final float TRIGGER_DEADZONE = 0.5f;
@@ -21,9 +16,6 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
      */
     private static final int AXIS_LEFT_TRIGGER  = 4;
     private static final int AXIS_RIGHT_TRIGGER = 5;
-
-    private final Map<GameAction, Boolean> currentPressed = new EnumMap<>(GameAction.class);
-    private final Map<GameAction, Boolean> previousPressed = new EnumMap<>(GameAction.class);
 
     private boolean dpadUp, dpadDown, dpadLeft, dpadRight, attackA;
     private boolean stickUp, stickDown, stickLeft, stickRight;
@@ -38,42 +30,40 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
     private boolean slotX, slotY, slotB;
     private boolean bumperL, bumperR;
 
-    public GamepadInputSource() {
-        for (GameAction action : GameAction.values()) {
-            currentPressed.put(action, false);
-            previousPressed.put(action, false);
-        }
-        Controllers.addListener(this);
+    private final InputManager manager;
+
+    public GamepadInputSource(InputManager manager) {
+        this.manager = manager;
     }
 
-    @Override
-    public void update() {
-        previousPressed.putAll(currentPressed);
-        currentPressed.put(GameAction.MOVE_UP,              dpadUp    || stickUp);
-        currentPressed.put(GameAction.MOVE_DOWN,            dpadDown  || stickDown);
-        currentPressed.put(GameAction.MOVE_LEFT,            dpadLeft  || stickLeft);
-        currentPressed.put(GameAction.MOVE_RIGHT,           dpadRight || stickRight);
-        currentPressed.put(GameAction.ATTACK_BASIC,         attackA);
-        currentPressed.put(GameAction.TRIGGER_LEFT,         triggerLeft);
-        currentPressed.put(GameAction.TRIGGER_RIGHT,        triggerRight);
-        currentPressed.put(GameAction.SKILL_SELECT_CONFIRM, confirmA);
-        currentPressed.put(GameAction.SKILL_SELECT_CANCEL,  cancelBack);
-        currentPressed.put(GameAction.SKILL_SELECT_UNDO,    bumperL);
-        currentPressed.put(GameAction.SKILL_SELECT_TUCK,    bumperR);
-        currentPressed.put(GameAction.SKILL_X,              slotX);
-        currentPressed.put(GameAction.SKILL_Y,              slotY);
-        currentPressed.put(GameAction.SKILL_B,              slotB);
+    private void publish() {
+        manager.set(InputDevice.GAMEPAD, GameAction.MOVE_UP,              dpadUp    || stickUp);
+        manager.set(InputDevice.GAMEPAD, GameAction.MOVE_DOWN,            dpadDown  || stickDown);
+        manager.set(InputDevice.GAMEPAD, GameAction.MOVE_LEFT,            dpadLeft  || stickLeft);
+        manager.set(InputDevice.GAMEPAD, GameAction.MOVE_RIGHT,           dpadRight || stickRight);
+        manager.set(InputDevice.GAMEPAD, GameAction.ATTACK_BASIC,         attackA);
+        manager.set(InputDevice.GAMEPAD, GameAction.TRIGGER_LEFT,         triggerLeft);
+        manager.set(InputDevice.GAMEPAD, GameAction.TRIGGER_RIGHT,        triggerRight);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_SELECT_CONFIRM, confirmA);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_SELECT_CANCEL,  cancelBack);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_SELECT_UNDO,    bumperL);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_SELECT_TUCK,    bumperR);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_X,              slotX);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_Y,              slotY);
+        manager.set(InputDevice.GAMEPAD, GameAction.SKILL_B,              slotB);
     }
 
     @Override
     public boolean buttonDown(Controller controller, int buttonCode) {
         setButton(controller.getMapping(), buttonCode, true);
+        publish();
         return false;
     }
 
     @Override
     public boolean buttonUp(Controller controller, int buttonCode) {
         setButton(controller.getMapping(), buttonCode, false);
+        publish();
         return false;
     }
 
@@ -92,6 +82,8 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
         } else if (axisCode == AXIS_RIGHT_TRIGGER) {
             triggerRight = value > TRIGGER_DEADZONE;
         }
+
+        publish();
         return false;
     }
 
@@ -103,6 +95,8 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
         confirmA = cancelBack = false;
         slotX = slotY = slotB = false;
         bumperL = bumperR = false;
+
+        publish();
     }
 
     private void setButton(ControllerMapping map, int buttonCode, boolean pressed) {
@@ -127,16 +121,5 @@ public class GamepadInputSource extends ControllerAdapter implements InputSource
         else if (buttonCode == map.buttonR1)        bumperR      = pressed;
         else if (buttonCode == map.buttonL2)        triggerLeft  = pressed;
         else if (buttonCode == map.buttonR2)        triggerRight = pressed;
-    }
-
-    @Override
-    public boolean isActionPressed(GameAction action) {
-        return Boolean.TRUE.equals(currentPressed.get(action));
-    }
-
-    @Override
-    public boolean isActionJustPressed(GameAction action) {
-        return Boolean.TRUE.equals(currentPressed.get(action))
-            && !Boolean.TRUE.equals(previousPressed.get(action));
     }
 }

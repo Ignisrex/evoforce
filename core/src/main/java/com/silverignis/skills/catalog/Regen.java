@@ -17,7 +17,7 @@ public final class Regen {
             .icon(SkillCatalog.icon("skills/regen.png"))
             .shape(Skill.Shape.AURA)
             .element(Element.NONE)
-            .cooldown(5.0f)
+            .cooldown(2f)
             .manaCost(1)
             .effect(Effect.applyStatus(StatusType.REGEN, 4f, 100, 6))
             .build();

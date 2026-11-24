@@ -323,7 +323,7 @@ public class SkillSelectOverlay {
         panel.add(label(titleStyle, s.getDisplayName().toUpperCase(), CYAN)).left().padTop(0.10f).row();
 
         Table meta = newTable();
-        meta.add(label(labelStyle, "CD " + String.format("%.1fs", s.getCooldown()), TEXT_DIM)).width(1.4f).left();
+        meta.add(label(labelStyle, "CD " + (int) s.getCooldown() + "T", TEXT_DIM)).width(1.4f).left();
         meta.add(label(labelStyle, s.getShape().name(), GOLD)).left().expandX();
         meta.add(label(labelStyle, s.getManaCost() + " MP", UiTheme.MANA)).right();
         panel.add(meta).growX().padTop(0.06f).row();
@@ -336,7 +336,7 @@ public class SkillSelectOverlay {
         Table stats = newTable();
         stats.defaults().uniformX().growX().height(STAT_BOX_H);
         stats.add(statBox("DAMAGE", String.valueOf(damageOf(s)))).padRight(STAT_BOX_GAP);
-        stats.add(statBox("COOLDOWN", String.format("%.1fs", s.getCooldown())));
+        stats.add(statBox("COOLDOWN", turns(s)));
         panel.add(stats).growX();
     }
 
@@ -693,6 +693,12 @@ public class SkillSelectOverlay {
         stage.dispose();
         roundedRect.dispose();
         titleFont.dispose(); bodyFont.dispose(); statFont.dispose(); labelFont.dispose(); tinyFont.dispose();
+    }
+
+    /** Cooldowns count staging turns, not seconds. */
+    private static String turns(Skill s) {
+        int n = (int) s.getCooldown();
+        return n + (n == 1 ? " TURN" : " TURNS");
     }
 
     private static int damageOf(Skill s) {

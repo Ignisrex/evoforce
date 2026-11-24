@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.crashinvaders.vfx.VfxManager;
 import com.silverignis.components.Direction;
@@ -12,9 +13,10 @@ import com.silverignis.entities.Battlefield;
 import com.silverignis.entities.Enemy;
 import com.silverignis.entities.Player;
 import com.silverignis.environment.BattlefieldDecor;
+import com.silverignis.input.InputEvent;
+import com.silverignis.input.InputFrame;
 import com.silverignis.particles.ParticleEngine;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.SceneRenderable;
 import com.silverignis.render.WorldRenderer;
@@ -35,7 +37,6 @@ import java.util.List;
 public class PlayState implements GameScreenState {
 
     private GameScreen screen;
-    private final InputManager input;
 
     private final Battlefield battlefield;
     private final Encounter encounter;
@@ -58,7 +59,6 @@ public class PlayState implements GameScreenState {
 
     public PlayState(GameScreen screen) {
         this.screen = screen;
-        this.input  = screen.getInputManager();
 
         this.encounter = screen.encounter;
         this.player    = encounter.player();
@@ -68,7 +68,7 @@ public class PlayState implements GameScreenState {
         this.worldRenderer = screen.game.worldRenderer;
         this.particles = screen.game.particles;
         this.environment = screen.game.environment;
-        environment.rebuildArena(screen.game.assets.arenaCrystalCave());
+        environment.rebuild(MathUtils.random.nextLong());
         this.battlefieldDecor = new BattlefieldDecor(environment, battlefield);
         this.panelSurfaces = new PanelSurfaces(battlefield, screen.game.assets, screen.game.particles);
 
@@ -96,23 +96,41 @@ public class PlayState implements GameScreenState {
 
 
     @Override
-    public void input() {
-        if (input.isActionJustPressed(GameAction.MOVE_UP))    encounter.tryMove(player, Direction.UP);
-        if (input.isActionJustPressed(GameAction.MOVE_DOWN))  encounter.tryMove(player, Direction.DOWN);
-        if (input.isActionJustPressed(GameAction.MOVE_LEFT))  encounter.tryMove(player, Direction.LEFT);
-        if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) encounter.tryMove(player, Direction.RIGHT);
+    public void input(InputFrame frame) {
+        boolean loadHeld = frame.heldBefore().contains(GameAction.TRIGGER_RIGHT);
 
-        handleAttack();
-        handleSlotFire();
-        handleReleaseSkills();
-        handleSkillSelectOpen();
+        for(InputEvent inputEvent : frame.events()) {
+            boolean pressed = inputEvent.type() == InputEvent.Type.PRESSED;
+            if (inputEvent.action() == GameAction.TRIGGER_RIGHT) {
+                loadHeld = pressed;
+                continue;
+            }
+            if (!pressed) continue;
 
+            switch (inputEvent.action()) {
+                case MOVE_UP -> encounter.tryMove(player, Direction.UP);
+                case MOVE_DOWN -> encounter.tryMove(player, Direction.DOWN);
+                case MOVE_LEFT  -> encounter.tryMove(player, Direction.LEFT);
+                case MOVE_RIGHT -> encounter.tryMove(player, Direction.RIGHT);
+
+                case ATTACK_BASIC -> encounter.tryCast(player, player.getBasicAttack());
+                case SKILL_X -> tryFireSlot(SlotKey.X, loadHeld);
+                case SKILL_Y -> tryFireSlot(SlotKey.Y, loadHeld);
+                case SKILL_B -> tryFireSlot(SlotKey.B, loadHeld);
+                default -> {}
+            }
+        }
+        handleReleaseSkills(frame);
+    }
+
+    public void fixedUpdate(InputFrame frame, float delta) {
+        input(frame);
+        encounter.tick(delta);
+        if (!checkBattleOver()) handleSkillSelectOpen(frame);
     }
 
     @Override
     public void update(float delta) {
-        encounter.tick(delta);
-
         encounter.collectCoveredTiles(battlefieldDecor::glow);
         battlefieldDecor.update(delta);
 
@@ -120,7 +138,6 @@ public class PlayState implements GameScreenState {
         player.statusFx().update(delta, particles);
         for (Enemy e : enemies) e.statusFx().update(delta, particles);
         environment.update(delta);
-        checkBattleOver();
     }
 
     /** The encounter reports the result; deciding what a result *means* for the
@@ -199,26 +216,13 @@ public class PlayState implements GameScreenState {
         panelSurfaces.dispose();
     }
 
-    private void handleReleaseSkills(){
-        if (!input.isActionPressed(GameAction.TRIGGER_RIGHT) && player.getCaster().areSkillsLoaded()) {
+    private void handleReleaseSkills(InputFrame frame){
+        if (!frame.isHeld(GameAction.TRIGGER_RIGHT) && player.getCaster().areSkillsLoaded()) {
             encounter.releaseLoadedSkills(player);
         }
     }
 
-    private void handleAttack() {
-        if (!input.isActionJustPressed(GameAction.ATTACK_BASIC)) return;
-        // Gate lives in tryCast — basic attacks check blocksAttack, casts check
-        // blocksCasting, and neither is this screen's business to re-decide.
-        encounter.tryCast(player, player.getBasicAttack());
-    }
-
-    private void handleSlotFire() {
-        if (input.isActionJustPressed(GameAction.SKILL_X)) tryFireSlot(SlotKey.X);
-        if (input.isActionJustPressed(GameAction.SKILL_Y)) tryFireSlot(SlotKey.Y);
-        if (input.isActionJustPressed(GameAction.SKILL_B)) tryFireSlot(SlotKey.B);
-    }
-
-    private void tryFireSlot(SlotKey key){
+    private void tryFireSlot(SlotKey key, boolean loadHeld){
         // Checked *before* popping: a refused cast must not eat the staged card.
         // Cooldown is deliberately not re-checked — the card was filtered against
         // cooldowns when it was staged, which is why this uses cast, not tryCast.
@@ -229,17 +233,19 @@ public class PlayState implements GameScreenState {
 
         Skill skill = slot.pop();
 
-        if (input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
+        if (loadHeld) {
             encounter.loadSkill(player, skill, key);
         } else {
             encounter.cast(player, skill);
         }
     }
 
-    private void handleSkillSelectOpen() {
-        if (input.isActionPressed(GameAction.TRIGGER_LEFT)
-            && input.isActionPressed(GameAction.TRIGGER_RIGHT)) {
+    private void handleSkillSelectOpen(InputFrame frame) {
+        if (frame.isHeld(GameAction.TRIGGER_LEFT)
+            && frame.isHeld(GameAction.TRIGGER_RIGHT)
+            && encounter.mana().canOpenMenu()) {
             screen.setState(screen.skillSelectState);
         }
     }
+
 }

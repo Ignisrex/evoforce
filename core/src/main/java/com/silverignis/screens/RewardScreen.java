@@ -14,7 +14,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.silverignis.Main;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
+import com.silverignis.input.InputFrame;
 import com.silverignis.particles.*;
 import com.silverignis.render.RenderContext;
 import com.silverignis.rewards.RewardOffer;
@@ -33,7 +33,7 @@ import java.util.List;
 public class RewardScreen implements Screen {
     private Main game;
     private final List<RewardOffer> offers;
-    private final InputManager input = InputManager.defaultSetup();
+    private long inputTick;
     private final Stage stage;
     private final RewardCardStyle style;
     private final CelestialVeil sky;
@@ -259,24 +259,24 @@ public class RewardScreen implements Screen {
         sky.draw(game.batch, game.viewport.getWorldWidth(), game.viewport.getWorldHeight());
         game.batch.end();
 
-        input.update();
+        InputFrame frame = game.input.nextFrame(inputTick++);
         if (ceremonyActive) {
-            if (input.isActionJustPressed(GameAction.MOVE_LEFT)
-                || input.isActionJustPressed(GameAction.MOVE_RIGHT)
-                || input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)
-                || input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
+            if (frame.pressed(GameAction.MOVE_LEFT)
+                || frame.pressed(GameAction.MOVE_RIGHT)
+                || frame.pressed(GameAction.SKILL_SELECT_CONFIRM)
+                || frame.pressed(GameAction.SKILL_SELECT_CANCEL)) {
                 timeScale = 3f;
             }
         } else if (!exiting) {
             int count = offers.get(offerIndex).options.size();
-            if (input.isActionJustPressed(GameAction.MOVE_LEFT))  applySelection((selected + count - 1) % count, true);
-            if (input.isActionJustPressed(GameAction.MOVE_RIGHT)) applySelection((selected + 1) % count, true);
+            if (frame.pressed(GameAction.MOVE_LEFT))  applySelection((selected + count - 1) % count, true);
+            if (frame.pressed(GameAction.MOVE_RIGHT)) applySelection((selected + 1) % count, true);
 
-            if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) {
+            if (frame.pressed(GameAction.SKILL_SELECT_CONFIRM)) {
                 offers.get(offerIndex).options.get(selected).apply(game.session);
                 exitOffer(true);
             }
-            if (input.isActionJustPressed(GameAction.SKILL_SELECT_CANCEL)) {
+            if (frame.pressed(GameAction.SKILL_SELECT_CANCEL)) {
                 exitOffer(false);
             }
         }

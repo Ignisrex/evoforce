@@ -16,7 +16,7 @@ public final class WindStrike {
             .icon(SkillCatalog.icon("skills/wind_strike.png"))
             .shape(Skill.Shape.STRIKE)
             .element(Element.NONE)
-            .cooldown(2.0f)
+            .cooldown(1f)
             .manaCost(1)
             .powerScale(0.5f)
             .effect(Effect.damage(30))

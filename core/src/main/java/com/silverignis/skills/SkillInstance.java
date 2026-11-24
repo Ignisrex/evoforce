@@ -1,6 +1,7 @@
 package com.silverignis.skills;
 
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector3;
 import com.silverignis.components.Caster;
 import com.silverignis.components.GridPosition;
 import com.silverignis.components.Stats;
@@ -54,6 +55,12 @@ public abstract class SkillInstance implements SceneRenderable {
     protected final SkillVisual visual;
     protected final VisualState visualState = new VisualState();
     private boolean castFired = false;
+    // Last tick's values of the moving VisualState fields, so render can draw between ticks.
+    private final Vector3 prevBody = new Vector3(), prevCaster = new Vector3();
+    private final Vector3 simBody = new Vector3(), simCaster = new Vector3();
+    private float prevProgress, prevElapsed;
+    private Phase prevPhase;
+    private boolean hasPrev = false;
     //cached for end state
     private ParticleEngine engine;
     protected float panelBoost = 1f;
@@ -153,7 +160,14 @@ public abstract class SkillInstance implements SceneRenderable {
      *  unresolved, visual clock always — a visual may outlive its gameplay. */
     public final void tick(float delta, SkillContext ctx) {
         if (engine == null) engine = ctx.particleEngine;
-        if (!castFired) {
+        if (castFired) {
+            prevBody.set(visualState.bodyPos);
+            prevCaster.set(visualState.casterPos);
+            prevProgress = visualState.phaseProgress;
+            prevElapsed = visualState.elapsed;
+            prevPhase = visualState.phase;
+            hasPrev = true;
+        } else {
             castFired = true;
             writeCasterPos();
             visual.onTrigger(Trigger.CAST, visualState, ctx.particleEngine);
@@ -193,7 +207,26 @@ public abstract class SkillInstance implements SceneRenderable {
     public void render(RenderContext rc) {
         // An instance spawned mid-tick (the lob's cloud) is submitted for
         // render before its first tick: no CAST yet, no phase, nothing to draw.
-        if (castFired) visual.render(rc, visualState);
+        if (!castFired) return;
+        if (!hasPrev) { visual.render(rc, visualState); return; }
+
+        VisualState s = visualState;
+        float a = rc.alpha;
+        simBody.set(s.bodyPos);
+        simCaster.set(s.casterPos);
+        float simProgress = s.phaseProgress, simElapsed = s.elapsed;
+
+        s.bodyPos.set(prevBody).lerp(simBody, a);
+        s.casterPos.set(prevCaster).lerp(simCaster, a);
+        s.elapsed = prevElapsed + (simElapsed - prevElapsed) * a;
+        if (s.phase == prevPhase) s.phaseProgress = prevProgress + (simProgress - prevProgress) * a;
+
+        visual.render(rc, s);
+
+        s.bodyPos.set(simBody);
+        s.casterPos.set(simCaster);
+        s.phaseProgress = simProgress;
+        s.elapsed = simElapsed;
     }
 
     /** Caster anchor from the tweened visual tile, so a look riding the caster

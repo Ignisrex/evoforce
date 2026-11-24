@@ -19,13 +19,15 @@ public class GridMovement {
     /** Tile-to-tile glide time for a voluntary step. */
     public static final float STEP_DURATION = 0.15f;
 
+    private static final float SETTLED = STEP_DURATION * 2f;
+
     private final GridPosition position;
     private final GridBounds bounds;
 
     /** Where the body was when the current step began; float so that
      *  interrupting a glide resumes from the exact point reached. */
     private float prevCol, prevRow;
-    private float stepElapsed = STEP_DURATION;   // starts settled
+    private float stepElapsed = SETTLED;   // starts settled
 
     public GridMovement(GridPosition position, GridBounds bounds){
         this.position = position;
@@ -50,19 +52,24 @@ public class GridMovement {
         position.setTile(col, row);
         prevCol = col;
         prevRow = row;
-        stepElapsed = STEP_DURATION;
+        stepElapsed = SETTLED;
     }
 
     public void update(float delta) {
-        stepElapsed = Math.min(stepElapsed + delta, STEP_DURATION);
+        stepElapsed = Math.min(stepElapsed + delta, SETTLED);
     }
 
     /** 0 at the start of a step, 1 once settled. Drives move i-frames. */
-    public float stepProgress() { return stepElapsed / STEP_DURATION; }
+    public float stepProgress() { return progressAt(0f); }
 
-    // Interpolating toward position.getCol() rather than a stored copy is what
-    // makes drift impossible: the target is read live from the authority, so the
-    // body always converges on the real tile within STEP_DURATION.
-    public float visualCol() { return prevCol + (position.getCol() - prevCol) * stepProgress(); }
-    public float visualRow() { return prevRow + (position.getRow() - prevRow) * stepProgress(); }
+    public float progressAt(float secondsAgo) {
+        return Math.clamp(stepElapsed - secondsAgo, 0f, STEP_DURATION) / STEP_DURATION;
+    }
+
+    public float visualCol() { return visualCol(0f); }
+    public float visualRow() { return visualRow(0f); }
+
+    /** Where the body read {@code secondsAgo} before the last tick — for drawing between ticks. */
+    public float visualCol(float secondsAgo) { return prevCol + (position.getCol() - prevCol) * progressAt(secondsAgo); }
+    public float visualRow(float secondsAgo) { return prevRow + (position.getRow() - prevRow) * progressAt(secondsAgo); }
 }

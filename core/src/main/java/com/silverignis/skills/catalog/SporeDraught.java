@@ -20,7 +20,7 @@ public final class SporeDraught extends AuraInstance {
             .icon(SkillCatalog.icon("skills/spore_draught.png"))
             .shape(Skill.Shape.AURA)
             .element(Element.POISON)
-            .cooldown(10.0f)
+            .cooldown(3f)
             .manaCost(1)
             .instance(SporeDraught::new)
             .build();

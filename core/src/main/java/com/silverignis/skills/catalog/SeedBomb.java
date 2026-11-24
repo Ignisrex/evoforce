@@ -24,7 +24,7 @@ public final class SeedBomb extends LobInstance {
             .icon(SkillCatalog.icon("skills/seed_bomb.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.NATURE)
-            .cooldown(6.0f)
+            .cooldown(2f)
             .manaCost(2)
             .shapeConfig(ProjectileConfig.lob(2, 2.0f, 2.0f, 0.5f))
             .effect(Effect.damage(10))

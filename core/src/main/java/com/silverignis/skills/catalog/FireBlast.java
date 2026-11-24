@@ -18,7 +18,7 @@ public final class FireBlast {
             .icon(SkillCatalog.icon("skills/fire_blast.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.FIRE)
-            .cooldown(3.0f)
+            .cooldown(1f)
             .manaCost(1)
             .shapeConfig(ProjectileConfig.straight(8.0f))
             .effect(Effect.damage(20))

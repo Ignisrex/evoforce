@@ -27,7 +27,7 @@ public class SkillRewardOption implements RewardOption{
         card.add(new Label(skill.getDisplayName(), style.title)).padBottom(0.05f).row();
 
         String sub = skill.getElement() + " . " + skill.getShape()
-            + " . " + (int) skill.getCooldown() + "s CD . " + skill.getManaCost() + " MP";
+            + " . " + (int) skill.getCooldown() + "T CD . " + skill.getManaCost() + " MP";
         card.add(new Label(sub, style.small)).padBottom(0.12f).row();
 
         WorldTextLabel desc = new WorldTextLabel(Glossary.markup(description()), style.bodyMarkup, style.body.fontColor);

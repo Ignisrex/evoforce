@@ -17,7 +17,7 @@ public final class Thunder {
             .icon(SkillCatalog.icon("skills/thunder.png"))
             .shape(Skill.Shape.BEAM)
             .element(Element.LIGHTNING)
-            .cooldown(4.5f)
+            .cooldown(2f)
             .manaCost(2)
             .magicScale(0.7f)
             .effect(Effect.damage(28))

@@ -13,7 +13,7 @@ import com.silverignis.components.FreePosition;
 import com.silverignis.environment.CaveTheme;
 import com.silverignis.environment.GameEnvironment;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
+import com.silverignis.input.InputFrame;
 import com.silverignis.render.RenderContext;
 import com.silverignis.render.RenderLayer;
 import com.silverignis.render.SceneRenderable;
@@ -35,7 +35,7 @@ public class OverworldScreen implements Screen {
     private boolean transitioning = false;
 
     private final Main game;
-    private final InputManager input = InputManager.defaultSetup();
+    private long inputTick;
 
     private final GameEnvironment environment;
     private final Sprite avatar;
@@ -68,8 +68,8 @@ public class OverworldScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        input.update();
-        handleInput(delta);
+
+        handleInput(game.input.nextFrame(inputTick++),delta);
         game.particles.update(delta);
         environment.update(delta);
         checkDoors();
@@ -108,12 +108,12 @@ public class OverworldScreen implements Screen {
         }
     }
 
-    private void handleInput(float delta) {
+    private void handleInput(InputFrame frame, float delta) {
         float dx = 0f, dz = 0f;
-        if (input.isActionPressed(GameAction.MOVE_LEFT))  dx -= 1f;
-        if (input.isActionPressed(GameAction.MOVE_RIGHT)) dx += 1f;
-        if (input.isActionPressed(GameAction.MOVE_UP))    dz -= 1f;   // away from camera
-        if (input.isActionPressed(GameAction.MOVE_DOWN))  dz += 1f;   // toward camera
+        if (frame.isHeld(GameAction.MOVE_LEFT))  dx -= 1f;
+        if (frame.isHeld(GameAction.MOVE_RIGHT)) dx += 1f;
+        if (frame.isHeld(GameAction.MOVE_UP))    dz -= 1f;   // away from camera
+        if (frame.isHeld(GameAction.MOVE_DOWN))  dz += 1f;   // toward camera
         MovementSystem.applyFreeInput(pos, dx, dz, delta);
     }
 

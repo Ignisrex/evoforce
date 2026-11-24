@@ -17,7 +17,7 @@ public final class VoidCollapse {
             .icon(SkillCatalog.icon("skills/void_collapse.png"))
             .shape(Skill.Shape.PROJECTILE)
             .element(Element.DARK)
-            .cooldown(8.0f)
+            .cooldown(3f)
             .manaCost(4)
             .debt(2)
             .magicScale(0.8f)

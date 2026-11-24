@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.silverignis.Main;
 import com.silverignis.input.GameAction;
-import com.silverignis.input.InputManager;
 
 public class GameOverScreen implements Screen {
 
@@ -17,8 +16,8 @@ public class GameOverScreen implements Screen {
 
     private final Main game;
     private final Result result;
-    private final InputManager input = InputManager.defaultSetup();
     private final GlyphLayout layout = new GlyphLayout();
+    private long inputTick;
 
     public GameOverScreen(Main game, Result result) {
         this.game = game;
@@ -59,8 +58,7 @@ public class GameOverScreen implements Screen {
 
         game.batch.end();
 
-        input.update();
-        if (input.isActionJustPressed(GameAction.SKILL_SELECT_CONFIRM)) {
+        if (game.input.nextFrame(inputTick++).pressed(GameAction.SKILL_SELECT_CONFIRM)) {
             game.setScreen(new GameScreen(game));
         }
     }

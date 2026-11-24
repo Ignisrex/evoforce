@@ -17,7 +17,7 @@ public final class MagicUp {
             .icon(SkillCatalog.icon("skills/magic_up.png"))
             .shape(Skill.Shape.AURA)
             .element(Element.NONE)
-            .cooldown(12.0f)
+            .cooldown(3f)
             .manaCost(1)
             .effect(Effect.applyStatus(StatusType.MAGIC_UP, 10f, 100, 0))
             .build();
